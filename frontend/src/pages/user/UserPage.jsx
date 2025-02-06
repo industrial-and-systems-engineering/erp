@@ -9,12 +9,12 @@ const UserPage = () => {
     email: "",
     password: "",
   });
-  
+
   const [loading, setLoading] = useState(true);
 
   const { isAuthenticated, checkAuth } = useAuthStore();
   const navigate = useNavigate();
-  const location = useLocation(); 
+  const location = useLocation();
 
   useEffect(() => {
     const verifyAuth = async () => {
@@ -25,9 +25,9 @@ const UserPage = () => {
   }, [checkAuth]);
 
   useEffect(() => {
-    
+
     if (!loading) {
-     
+
       if (!isAuthenticated && location.pathname !== "/user/signup" && location.pathname !== "/user") {
         alert("You are not authenticated. Please log in.");
         navigate("/user");
@@ -79,10 +79,10 @@ const UserPage = () => {
         <Outlet />
       ) : (
         <div className="flex justify-center items-center my-30">
-          <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-1/4 text-center">
-            <h1 className="text-white text-xl mb-4">User Login</h1>
+          <div className="bg-white p-6 rounded-lg shadow-lg w-1/4 text-center">
+            <h1 className="text-xl mb-4">User Login</h1>
             <form className="flex flex-col space-y-4" onSubmit={handleSubmit}>
-              <label className="text-teal-200 text-left">
+              <label className="text-left">
                 Username:
                 <input
                   type="text"
@@ -94,7 +94,7 @@ const UserPage = () => {
                   className="w-full p-2 mt-1 border rounded-md focus:ring focus:ring-blue-400"
                 />
               </label>
-              <label className="text-teal-200 text-left">
+              <label className="text-left">
                 Email:
                 <input
                   type="email"
@@ -106,7 +106,7 @@ const UserPage = () => {
                   className="w-full p-2 mt-1 border rounded-md focus:ring focus:ring-blue-400"
                 />
               </label>
-              <label className="text-teal-200 text-left">
+              <label className="text-left">
                 Password:
                 <input
                   type="password"
@@ -126,8 +126,8 @@ const UserPage = () => {
               </button>
             </form>
             <div className="mt-4">
-              <p className="text-white">Don't have an account?</p>
-              <Link to="/user/signup" className="text-blue-300 hover:text-blue-500">
+              <p className="text-blace">Don't have an account?</p>
+              <Link to="/user/signup" className="hover:text-blue-500">
                 Sign Up
               </Link>
             </div>

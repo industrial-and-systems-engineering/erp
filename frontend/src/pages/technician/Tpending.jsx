@@ -1,17 +1,3 @@
-// import React from 'react'
-
-// const Tpending = () => {
-
-
-//     export default Tpending;
-//     return (
-//         <div>
-
-//         </div>
-//     )
-// }
-
-// export default Tpending'
 import React from 'react'
 import { useEffect } from 'react';
 import { usePendingEquipmentsStore } from '../../utils/pendingEquipments';

@@ -22,7 +22,8 @@ const Tcard = ({ equipment }) => {
 
     return (
         <div className="equipment-card">
-            <p>Date: {equipment.createdAt.substr(0, 10)}</p>
+            <p>Date: {new Date(equipment.updatedAt).toLocaleDateString()}</p>
+            <p>Time: {new Date(equipment.updatedAt).toLocaleTimeString()}</p>
             <p><strong>Job No:</strong> {equipment.jobNo}</p>
             <p><strong>Instrument Description:</strong> {equipment.instrumentDescription}</p>
             <p><strong>Serial No:</strong> {equipment.serialNo}</p>
@@ -56,12 +57,14 @@ const Tcard = ({ equipment }) => {
                             </div>
                         </div>
                     ) : (
-                        <button
-                            onClick={handleUpdateClick}
-                            className="mt-2 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700"
-                        >
-                            Update
-                        </button>
+                        <div className='mt-2 flex justify-end'>
+                            <button
+                                onClick={handleUpdateClick}
+                                className="mt-2 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700"
+                            >
+                                Update
+                            </button>
+                        </div>
                     )}
                 </div>
             ) : (

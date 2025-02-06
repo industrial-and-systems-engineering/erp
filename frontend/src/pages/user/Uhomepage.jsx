@@ -1,6 +1,9 @@
 import React from "react";
 const Uhomepage = () => {
 
+  const pendingRequests = 5; // Example count, replace with actual logic
+  const completedRequests = 10; // Example count, replace with actual logic
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-center my-15">User Homepage</h1>
@@ -31,10 +34,14 @@ const Uhomepage = () => {
             <p>Get help and support for your account.</p>
             <button className="mt-4 bg-blue-500 text-white py-2 px-4 rounded">Contact Support</button>
           </div>
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold mb-2">Requests</h2>
+            <p>Pending Requests: {pendingRequests}</p>
+            <p>Completed Requests: {completedRequests}</p>
+          </div>
         </div>
       </div>
     </div>
-
   );
 };
 

@@ -32,12 +32,27 @@ export default function LoginpageNavbar() {
                     <div className="flex lg:hidden">
                         <button
                             type="button"
-                            onClick={() => setMobileMenuOpen(true)}
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                             className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-700"
                         >
                             <span className="sr-only">Open main menu</span>
-                            <Bars3Icon aria-hidden="true" className="size-6" />
+                            {mobileMenuOpen ? (
+                                <XMarkIcon aria-hidden="true" className="h-6 w-6" />
+                            ) : (
+                                <Bars3Icon aria-hidden="true" className="h-6 w-6" />
+                            )}
                         </button>
+                    </div>
+                    <div className={`lg:hidden ${mobileMenuOpen ? 'absolute inset-x-0 top-0 mt-16 p-6 bg-white' : 'hidden'}`}>
+                        <div className="flex flex-col items-center space-y-4">
+                            {navigation.map((item) => (
+                                <a key={item.name} href={item.href} className="text-sm/6 font-semibold text-gray-900">
+                                    {item.name}
+                                </a>
+                            ))}
+                            <Link to="/user" className="text-sm/6 font-semibold text-gray-900">User Log in</Link>
+                            <Link to="/technician" className="text-sm/6 font-semibold text-gray-900">Technician Log in</Link>
+                        </div>
                     </div>
 
 

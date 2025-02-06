@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../utils/isloggedin';
 import UserNavbar from '../../components/navbar/UserNavbar.jsx';
+import Ucard from '../../components/EquipmentCard/Ucard.jsx';
 
 const Ucompleted = () => {
   const [calibratedForms, setCalibratedForms] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
- const [isLoading, setIsLoading] = useState(true); 
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchCalibratedForms = async () => {
@@ -31,42 +32,52 @@ const Ucompleted = () => {
     setSelectedProduct((prevProduct) => (prevProduct && prevProduct._id === product._id ? null : product));
   };
   if (isLoading) {
-    return <div>Loading...</div>; 
+    return <div>Loading...</div>;
   }
 
   return (
-    <div className="p-6 max-w-xl mx-auto space-y-4">
+    <div className="p-6 w-full">
       <h1 className="text-2xl font-bold text-center my-10">Completed Products</h1>
       {calibratedForms.length > 0 ? (
-        <div className="space-y-2">
-          {calibratedForms.map((form, formIndex) =>
-            form.products.map((product, productIndex) => (
-              <button
-                key={product._id}
-                className="bg-blue-500 text-white p-3 w-full rounded-lg hover:bg-blue-700"
-                onClick={() => toggleProductDetails(product)}
-              >
-                Product {formIndex + 1}-{productIndex + 1}
-              </button>
-            ))
-          )}
+        <div className="space-y-2 w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white p-4">
+            {calibratedForms.map((form, formIndex) =>
+              form.products.map((product, productIndex) => (
+                <div key={product._id} className="bg-white p-4">
+                  <p className="text-gray-700">Form Number: {formIndex + 1}</p>
+                  <p className="text-gray-700">Product Number: {productIndex + 1}</p>
+                  <div className="flex justify-end">
+                    <button
+                      key={product._id}
+                      className="bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-700"
+                      onClick={() => toggleProductDetails(product)}
+                    >
+                      {selectedProduct && selectedProduct._id === product._id ? 'Hide Details' : 'Show Details'}
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-center">Product Details</h1>
+            {selectedProduct && (
+              <div className="mt-4 p-4 rounded-lg shadow-md w-full">
+                <Ucard equipment={selectedProduct} />
+                <div className="flex justify-end">
+                  <button
+                    className="bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-700"
+                    onClick={() => { }}
+                  >
+                    Open Form
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         <p className="text-gray-500 text-center">No calibrated products found.</p>
-      )}
-
-      {/* Show selected product details */}
-      {selectedProduct && (
-        <div className="mt-4 p-4 border rounded-lg shadow-md bg-gray-100">
-          <h2 className="text-lg font-bold">Product Details</h2>
-          <p><strong>Job No:</strong> {selectedProduct.jobNo}</p>
-          <p><strong>Description:</strong> {selectedProduct.instrumentDescription}</p>
-          <p><strong>Serial No:</strong> {selectedProduct.serialNo}</p>
-          <p><strong>Parameter:</strong> {selectedProduct.parameter}</p>
-          <p><strong>Ranges:</strong> {selectedProduct.ranges}</p>
-          <p><strong>Accuracy:</strong> {selectedProduct.accuracy}</p>
-          <p><strong>Calibrated:</strong> {selectedProduct.isCalibrated ? "Yes" : "No"}</p>
-        </div>
       )}
     </div>
   );

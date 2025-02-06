@@ -1,13 +1,9 @@
 import React from 'react'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
-import { Link } from 'react-router-dom'
+import { Link, Links } from 'react-router-dom'
 import { Button } from '@headlessui/react'
-const navigation = [
-  { name: 'Pending', href: '#' },
-  { name: 'Completed', href: '#' },
-]
 
-const TechnicianNavbar =  ({ setFormData, setIsAuthenticated }) => {
+const TechnicianNavbar = ({ setFormData, setIsAuthenticated }) => {
 
   const handleLogout = async () => {
     try {
@@ -21,54 +17,68 @@ const TechnicianNavbar =  ({ setFormData, setIsAuthenticated }) => {
       console.error("Logout error:", error);
     }
   };
-  
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   return (
     <div className="bg-white">
       <header className="absolute inset-x-0 top-0 z-50">
         <nav aria-label="Global" className="flex items-center justify-between p-6 lg:px-8">
           <div className="flex lg:flex-1">
-            <a href="#" className="-m-1.5 p-1.5">
-              <span className="sr-only">Your Company</span>
+            <Link to="homepage">
               <img
                 alt=""
                 src="https://tailwindui.com/plus/img/logos/mark.svg?color=indigo&shade=600"
                 className="h-8 w-auto"
               />
-            </a>
+            </Link>
           </div>
 
           <div className="flex lg:hidden">
             <button
               type="button"
-              onClick={() => setMobileMenuOpen(true)}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-700"
             >
               <span className="sr-only">Open main menu</span>
-              <Bars3Icon aria-hidden="true" className="size-6" />
+              {mobileMenuOpen ? (
+                <XMarkIcon aria-hidden="true" className="h-6 w-6" />
+              ) : (
+                <Bars3Icon aria-hidden="true" className="h-6 w-6" />
+              )}
             </button>
           </div>
 
-
-          <div className="hidden lg:flex lg:gap-x-12">
-            <Button as={Link} to="pending" className='text-sm/6 font-semibold text-gray-900'>Pending</Button>
-            <Button as={Link} to="completed" className='text-sm/6 font-semibold text-gray-900'>Completed</Button>
+          <div className={`lg:hidden ${mobileMenuOpen ? 'absolute inset-x-0 top-0 mt-16 p-6 bg-white' : 'hidden'}`}>
+            <div className="flex flex-col items-center space-y-4">
+              <Link to="homepage" onClick={() => setMobileMenuOpen(false)} className='text-sm font-semibold text-gray-900'>Homepage</Link>
+              <Link to="pending" onClick={() => setMobileMenuOpen(false)} className='text-sm font-semibold text-gray-900'>Pending</Link>
+              <Link to="completed" onClick={() => setMobileMenuOpen(false)} className='text-sm font-semibold text-gray-900'>Completed</Link>
+              <Link
+                onClick={handleLogout}
+                className="text-sm font-semibold text-gray-900 p-2"
+              >
+                Log out
+              </Link>
+            </div>
           </div>
 
+          <div className="hidden lg:flex lg:gap-x-12">
+            <Link to="homepage" className='text-sm font-semibold text-gray-900'>Homepage</Link>
+            <Link to="pending" className='text-sm font-semibold text-gray-900'>Pending</Link>
+            <Link to="completed" className='text-sm font-semibold text-gray-900'>Completed</Link>
+          </div>
 
           <div className="hidden lg:flex lg:flex-1 lg:justify-end">
-            <Button 
-              as={Link} 
-              to="/technician" 
-              onClick={handleLogout} 
-              className="text-sm/6 font-semibold text-gray-900 p-2"
+            <Link to="#"
+              onClick={handleLogout}
+              className="text-sm font-semibold text-gray-900 p-2"
             >
               Log out
-            </Button>
+            </Link>
           </div>
         </nav>
       </header>
     </div>
-  )
+  );
 }
 
 export default TechnicianNavbar
