@@ -23,8 +23,8 @@ const App = () => {
           <Route path="completed" element={<Ucompleted />} />
           <Route path="pending" element={<Upending />} />
           <Route path="create" element={<Ucreate />} />
-          <Route path="signup" element={<Usignup />} />
         </Route>
+        <Route path="signup" element={<Usignup />} />
         <Route path="/technician" element={<TechPage />}>
           <Route path="homepage" element={<Thomepage />} />
           <Route path="completed" element={<Tcompleted />} />

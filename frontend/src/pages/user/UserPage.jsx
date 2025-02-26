@@ -126,8 +126,8 @@ const UserPage = () => {
               </button>
             </form>
             <div className="mt-4">
-              <p className="text-blace">Don't have an account?</p>
-              <Link to="/user/signup" className="hover:text-blue-500">
+              <p className="text-black">Don't have an account?</p>
+              <Link to="/signup" className="hover:text-blue-500">
                 Sign Up
               </Link>
             </div>
