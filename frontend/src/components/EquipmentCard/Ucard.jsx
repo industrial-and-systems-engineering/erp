@@ -11,6 +11,7 @@ const Ucard = ({ equipment, onUpdate }) => {
             <p><strong>Parameter:</strong> {equipment.parameter}</p>
             <p><strong>Ranges:</strong> {equipment.ranges}</p>
             <p><strong>Accuracy:</strong> {equipment.accuracy}</p>
+            <p><strong>Tolerance:</strong>{equipment.tolerance}</p>
             {equipment.isCalibrated && (
                 <div>
                     <p><strong>Calibration Details:</strong> {equipment.calibrationDetails}</p>

@@ -37,10 +37,10 @@ const store = MongoDBStore.create({
   mongoUrl: 'mongodb://localhost:27017/erpdevelopment',
   collectionName: 'sessions',
 });
-app.use(cors({
-  origin: 'http://localhost:5173',
-  credentials: true
-}));
+// app.use(cors({
+//   origin: 'http://localhost:5173',
+//   credentials: true
+// }));
 
 const sessionConfig = {
   name: "session",

@@ -3,7 +3,12 @@ const router = express.Router();
 const passport = require('passport');
 const { ErrorDetector, Product } = require("../models/db");
 //const { isLoggedIn } = require('../middleware'); 
-
+function preprocessing(products) {
+    for (let i = 0; i < products.length; i++) {
+        products[i].tolerance = parseFloat(products[i].parameter) * 0.05;
+    }
+    return products;
+}
 router.post("/", async (req, res) => {
   try {
     console.log("Received form data:", req.body);
@@ -12,8 +17,7 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "No form data provided" });
     }
 
-
-    const productDocs = await Product.insertMany(req.body.products);
+    const productDocs = await Product.insertMany(preprocessing(req.body.products));
 
     const userId = req.user.id;
     const newForm = new ErrorDetector({

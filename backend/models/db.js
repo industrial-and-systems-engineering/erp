@@ -11,6 +11,7 @@ const ProductSchema = new Schema({
   ranges: { type: String, required: true },
   accuracy: { type: String, required: true },
   isCalibrated: { type: Boolean, default: false },
+  tolerance: { type: Number, default: 0 },
   calibrationDetails: { type: String },
 }, {
   timestamps: true

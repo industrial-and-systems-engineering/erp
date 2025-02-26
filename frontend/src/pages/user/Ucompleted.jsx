@@ -69,7 +69,7 @@ const Ucompleted = () => {
                     className="bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-700"
                     onClick={() => { }}
                   >
-                    Open Form
+                    Download Form
                   </button>
                 </div>
               </div>
