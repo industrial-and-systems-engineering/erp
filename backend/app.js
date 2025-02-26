@@ -21,8 +21,9 @@ const Errorformroutes = require('./routes/errorformroutes');
 const Middlewareroutes = require('./middleware');
 const dotenv = require('dotenv');
 
-mongoose.connect('mongodb://localhost:27017/erpdevelopment', {});
+MONGO_URI = 'mongodb://localhost:27017/erpdevelopment';
 
+mongoose.connect(MONGO_URI, {});
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "connection error:"));
 db.once("open", () => {
@@ -34,7 +35,7 @@ app.use(express.json());
 app.use(bodyParser.json());
 const PORT = process.env.PORT || 5000;
 const store = MongoDBStore.create({
-  mongoUrl: 'mongodb://localhost:27017/erpdevelopment',
+  mongoUrl: MONGO_URI,
   collectionName: 'sessions',
 });
 // app.use(cors({
