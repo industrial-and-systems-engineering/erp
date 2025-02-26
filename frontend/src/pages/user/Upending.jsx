@@ -34,7 +34,7 @@ const Ucompleted = () => {
   }
 
   return (
-    <div className="container mx-auto mt-8 p-10">
+    <div className="container">
       <h1 className="text-2xl font-bold text-center my-10">Pending Products</h1>
 
       {calibratedForms.length > 0 ? (

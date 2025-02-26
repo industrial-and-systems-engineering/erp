@@ -36,7 +36,7 @@ const Ucompleted = () => {
   }
 
   return (
-    <div className="p-6 w-full">
+    <div className="w-full">
       <h1 className="text-2xl font-bold text-center my-10">Completed Products</h1>
       {calibratedForms.length > 0 ? (
         <div className="space-y-2 w-full grid grid-cols-1 md:grid-cols-2 gap-4">

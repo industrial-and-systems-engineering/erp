@@ -2,7 +2,7 @@ import React from 'react'
 
 const Thomepage = () => {
   return (
-    <div className="container mx-auto mt-8 p-10" >
+    <div className="container" >
       <h1 className="text-2xl font-bold mb-4 text-center">Technician Page</h1>
       <div className="mt-4">
         <p className="text-lg">Welcome to the Technician Home Page. Here you can find essential details about your tasks.</p>
