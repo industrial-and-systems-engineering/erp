@@ -80,13 +80,14 @@ Ensure you have the following installed on your machine:
 1. Start the backend server:
 
      ```sh
+     cd ..
      npm run dev
      ```
 
 2. Start the frontend development server:
 
      ```sh
-     cd ../frontend
+     cd frontend
      npm run dev
      ```
 
@@ -95,6 +96,7 @@ Ensure you have the following installed on your machine:
 1. Build the frontend:
 
      ```sh
+     cd ..
      npm run build
      ```
 
