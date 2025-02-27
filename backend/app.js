@@ -1,6 +1,5 @@
 const express = require('express');
 const path = require('path');
-const cors = require('cors');
 const mongoose = require('mongoose');
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
@@ -92,9 +91,10 @@ app.use('/api/admin', Adminroutes);
 app.use('/api/errorform', Errorformroutes);
 app.use('/api', Middlewareroutes);
 
-app.use(express.static(path.join(__dirname, '../frontend/dist')))
-app.get('*', (req, res) => res.sendFile(path.resolve(__dirname, 'frontend', 'dist', 'index.html')));
-
-app.listen(process.env.PORT, () => {
-  console.log(`Server running on port ${process.env.PORT}`);
+if(process.env.NODE_ENV === 'production'){
+  app.use(express.static(path.join(__dirname, '/frontend/dist')))
+  app.get('*', (req, res) => res.sendFile(path.resolve(__dirname, 'frontend', 'build', 'index.html')));
+}
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
