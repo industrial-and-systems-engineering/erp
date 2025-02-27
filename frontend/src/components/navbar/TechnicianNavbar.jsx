@@ -23,13 +23,12 @@ const TechnicianNavbar = ({ setFormData, setIsAuthenticated }) => {
     <header className="absolute inset-x-0 top-0 z-50 bg-blue-500 text-white">
       <nav aria-label="Global" className="flex items-center justify-between p-6 lg:px-8">
         <div className="flex lg:flex-1">
-          <Link to="homepage">
-            <img
-              alt=""
-              src="https://tailwindui.com/plus/img/logos/mark.svg?color=indigo&shade=600"
-              className="h-8 w-auto"
-            />
-          </Link>
+          <img
+            alt=""
+            src="https://anab.ansi.org/wp-content/uploads/2022/10/ANAB-logo.png"
+            className="h-10 w-auto"
+          />
+          <Link to="homepage"></Link>
         </div>
 
         <div className="flex lg:hidden">

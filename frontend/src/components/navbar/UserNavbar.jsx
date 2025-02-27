@@ -30,15 +30,16 @@ const UserNavbar = ({ setFormData }) => {
         <header className="absolute inset-x-0 top-0 z-50 bg-blue-500 text-white">
             <nav aria-label="Global" className="flex items-center justify-between p-6 lg:px-8">
                 <div className="flex lg:flex-1">
-                    <a href="#" className="-m-1.5 p-1.5">
+                    <a href="#" className="-m-2 p-2">
                         <span className="sr-only">Your Company</span>
                         <img
                             alt=""
-                            src="https://tailwindui.com/plus/img/logos/mark.svg?color=indigo&shade=600"
-                            className="h-8 w-auto"
+                            src="https://anab.ansi.org/wp-content/uploads/2022/10/ANAB-logo.png"
+                            className="h-10 w-auto"
                         />
                     </a>
                 </div>
+                {/* Mobile Menu */}
                 <div className="flex lg:hidden">
                     <button
                         type="button"
@@ -53,6 +54,7 @@ const UserNavbar = ({ setFormData }) => {
                         )}
                     </button>
                 </div>
+
                 <div className={`lg:hidden ${mobileMenuOpen ? 'absolute inset-x-0 top-0 mt-16 p-6 bg-white' : 'hidden'}`}>
                     <div className="flex flex-col items-center space-y-4">
                         <Link to="/user" className="text-sm/6 font-semibold text-gray-900" onClick={() => setMobileMenuOpen(false)}>Home</Link>
@@ -71,6 +73,8 @@ const UserNavbar = ({ setFormData }) => {
                         </Link>
                     </div>
                 </div>
+
+                {/* Desktop Menu */}
                 <div className="hidden lg:flex lg:gap-x-12">
                     <Link to="/user" className="text-sm/6 font-semibold ">Home</Link>
                     <Link to="/user/completed" className="text-sm/6 font-semibold ">Completed Products</Link>

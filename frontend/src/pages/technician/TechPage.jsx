@@ -77,7 +77,10 @@ const TechPage = () => {
             <div className="relative isolate px-6 pt-14 lg:px-8 min-h-screen">
 
                 {/* Login Form or Nested Routes */}
-                {!isAuthenticated ? (
+                {isAuthenticated ? (
+                    <Outlet /> // Render nested routes after authentication
+
+                ) : (
                     <div className="flex flex-col items-center justify-center w-full my-20">
                         <div className="bg-white shadow-lg rounded-lg p-8 w-full max-w-md">
                             <h2 className="text-2xl font-semibold text-gray-800 text-center mb-4">
@@ -140,8 +143,6 @@ const TechPage = () => {
                             </form>
                         </div>
                     </div>
-                ) : (
-                    <Outlet /> // Render nested routes after authentication
                 )}
             </div>
             <Footer />
