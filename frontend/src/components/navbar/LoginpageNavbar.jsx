@@ -43,6 +43,7 @@ export default function LoginpageNavbar() {
                         )}
                     </button>
                 </div>
+
                 <div className={`lg:hidden ${mobileMenuOpen ? 'absolute inset-x-0 top-0 mt-16 p-6 bg-white' : 'hidden'}`}>
                     <div className="flex flex-col items-center space-y-4">
                         {navigation.map((item) => (
@@ -67,7 +68,6 @@ export default function LoginpageNavbar() {
                 <div className="hidden lg:flex lg:flex-1 lg:justify-end">
                     <Link to="/user" className="text-sm font-bold p-2">User Log in</Link>
                     <Link to="/technician" className="text-sm font-bold p-2">Technician Log in</Link>
-
                 </div>
             </nav>
         </header>

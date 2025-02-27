@@ -6,10 +6,10 @@ const Loginpage = () => {
   return (
     <>
       <LoginpageNavbar />
-      <div className="relative isolate px-6 pt-14 lg:px-8">
+      <div className="relative isolate pt-14">
         {/* Hero Section */}
         <section
-          className="relative w-full h-100 bg-center bg-cover flex items-center justify-center"
+          className="relative w-full h-100 object-cover bg-center bg-cover flex items-center justify-center"
           style={{
             backgroundImage: "url('https://plus.unsplash.com/premium_photo-1681412205238-8171ccaca82b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')"
           }}

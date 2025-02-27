@@ -3,12 +3,14 @@ const router = express.Router();
 const passport = require('passport');
 const { ErrorDetector, Product } = require("../models/db");
 //const { isLoggedIn } = require('../middleware'); 
+
 function preprocessing(products) {
     for (let i = 0; i < products.length; i++) {
         products[i].tolerance = parseFloat(products[i].parameter) * 0.05;
     }
     return products;
 }
+
 router.post("/", async (req, res) => {
   try {
     console.log("Received form data:", req.body);
