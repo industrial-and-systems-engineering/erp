@@ -7,13 +7,13 @@ const session = require('express-session');
 const MongoDBStore = require("connect-mongo");
 const bodyParser = require('body-parser');
 const flash = require('connect-flash');
-const User = require('./models/user');
-const Technician = require('./models/technician');
-const Userroutes = require('./routes/userroutes');
+const User = require('./models/user.js');
+const Technician = require('./models/technician.js');
+const Userroutes = require('./routes/userroutes.js');
 const Technicianroutes = require('./routes/technicianroutes.js');
-const Adminroutes = require('./routes/adminroutes');
-const Errorformroutes = require('./routes/errorformroutes');
-const Middlewareroutes = require('./middleware');
+const Adminroutes = require('./routes/adminroutes.js');
+const Errorformroutes = require('./routes/errorformroutes.js');
+const Middlewareroutes = require('./middleware.js');
 const dotenv = require('dotenv');
 dotenv.config();
 
@@ -92,7 +92,7 @@ app.use('/api/errorform', Errorformroutes);
 app.use('/api', Middlewareroutes);
 
 if(process.env.NODE_ENV === 'production'){
-  app.use(express.static(path.join(__dirname, '/frontend/dist')))
+  app.use(express.static(path.join(__dirname, '../frontend/dist')))
   app.get('*', (req, res) => res.sendFile(path.resolve(__dirname, 'frontend', 'build', 'index.html')));
 }
 app.listen(PORT, () => {
