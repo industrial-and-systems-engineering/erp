@@ -10,9 +10,6 @@ mongoose.connect(process.env.MONGO_URI, {})
 
 const seedDB = async () => {
     try {
-        // Remove existing data
-        await Technician.deleteMany({});
-        await Admin.deleteMany({});
 
         // Create dummy technician
         await Technician.register(
