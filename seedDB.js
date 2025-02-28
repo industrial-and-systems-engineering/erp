@@ -1,8 +1,10 @@
 const mongoose = require('mongoose');
-const Technician = require('./models/technician');
-const Admin = require('./models/admin');
+const Technician = require('./backend/models/technician');
+const Admin = require('./backend/models/admin');
+const dotenv = require('dotenv');
+dotenv.config();
 
-mongoose.connect('mongodb://localhost:27017/erpdevelopment', {})
+mongoose.connect(process.env.MONGO_URI, {})
     .then(() => console.log("Database connected"))
     .catch(err => console.log(err));
 
