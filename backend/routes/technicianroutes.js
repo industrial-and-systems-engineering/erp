@@ -79,6 +79,7 @@ router.put('/update-equipment/:id', async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 });
+
 router.get('/check-auth', (req, res) => {
     if (req.isAuthenticated() && req.user instanceof Technician) {
       res.status(200).json({ 

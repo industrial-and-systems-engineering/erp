@@ -41,13 +41,14 @@ router.post("/", async (req, res) => {
     console.log("ErrorDetector form successfully saved!");
 
     return res.status(201).json({
+      success: true,	
       message: "Form submitted successfully",
       redirectURL: "/user",
     });
 
   } catch (error) {
     console.error("Error saving form data:", error);
-    res.status(500).json({ error: "Error saving form data" });
+    res.status(500).json({ success:false, error: "Error saving form data" });
   }
 });
 

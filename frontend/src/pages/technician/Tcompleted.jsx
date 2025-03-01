@@ -6,6 +6,7 @@ import { useCalibratedEquipmentsStore } from '../../utils/calibratedEquipments';
 const Tpending = () => {
 
     const { calibratedEquipments, fetchCalibratedEquipments } = useCalibratedEquipmentsStore();
+
     useEffect(() => {
         console.log(calibratedEquipments)
         fetchCalibratedEquipments();
