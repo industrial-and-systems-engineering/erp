@@ -1,6 +1,6 @@
 import React from 'react'
 import LoginpageNavbar from '../../components/navbar/LoginpageNavbar'
-import Footer from '../../components/footer'
+import Footer from '../../components/Footer'
 
 const Loginpage = () => {
   return (
@@ -22,7 +22,7 @@ const Loginpage = () => {
         </section>
 
         {/* Main Content */}
-        <main className="flex-grow">
+        <main className="flex-grow z-10">
           <div className="max-w-7xl mx-auto px-4 py-8 md:flex md:space-x-8">
             {/* Left Content */}
             <div className="md:w-1/2 mb-8 md:mb-0">

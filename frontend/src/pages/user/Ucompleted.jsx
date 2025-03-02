@@ -12,13 +12,13 @@ const Ucompleted = () => {
   useEffect(() => {
     const fetchCalibratedForms = async () => {
       try {
-        const response = await fetch('/api/errorform/calibrated');
+        const response = await fetch('/api/errorform/completed');
         if (!response.ok) {
           throw new Error('Failed to fetch data');
         }
         const data = await response.json();
         console.log("Fetched calibrated forms data:", data); // Log the data structure
-        setCalibratedForms(data);
+        setCalibratedForms(data.data);
       } catch (error) {
         console.error('Error fetching calibrated forms:', error);
       } finally {

@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
-import { usePendingEquipmentsStore } from '../../utils/pendingEquipments';
+import { usePendingFormsStore } from '../../utils/pendingForms';
+
 
 const Tcard = ({ equipment }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [result, setResult] = useState({
         calibrationDetails: equipment.calibrationDetails || ""
     });
-    const { updateEquipment } = usePendingEquipmentsStore();
+    const { updateForm } = usePendingFormsStore();
 
     const handleUpdateClick = () => {
         setIsEditing(true);
     };
 
     const handleSaveClick = async () => {
-        const response = await updateEquipment(equipment._id, result);
+        const response = await updateForm(equipment._id, result);
         if (response.success) {
             setIsEditing(false);
         }
@@ -31,7 +32,7 @@ const Tcard = ({ equipment }) => {
             <p><strong>Ranges:</strong> {equipment.ranges}</p>
             <p><strong>Accuracy:</strong> {equipment.accuracy}</p>
             <p><strong>Tolerance:</strong>{equipment.tolerance}</p>
-            {!equipment.isCalibrated ? (
+            {!equipment.requestStatus ? (
                 <div>
                     {isEditing ? (
                         <div className="mt-2 flex justify-between items-center">

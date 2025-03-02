@@ -1,125 +1,151 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const passport = require('passport');
-const { ErrorDetector, Product } = require("../models/db");
-//const { isLoggedIn } = require('../middleware'); 
+const passport = require("passport");
+const { srfForms, Product } = require("../models/db");
+//const { isLoggedIn } = require('../middleware');
 
 function preprocessing(products) {
-    for (let i = 0; i < products.length; i++) {
-        products[i].tolerance = parseFloat(products[i].parameter) * 0.05;
-    }
-    return products;
+  for (let i = 0; i < products.length; i++) {
+    products[i].tolerance = parseFloat(products[i].parameter) * 0.05;
+  }
+  return products;
 }
 
 router.post("/", async (req, res) => {
   try {
+    let { form, products } = req.body;
     console.log("Received form data:", req.body);
-
-    if (!req.body || !req.body.products) {
-      return res.status(400).json({ error: "No form data provided" });
+    if (!form || !products) {
+      return res
+        .status(400)
+        .json({ success: false, message: "All fields are required" });
     }
 
-    const productDocs = await Product.insertMany(preprocessing(req.body.products));
+    const productDocs = await Product.insertMany(products);
 
     const userId = req.user.id;
-    const newForm = new ErrorDetector({
-      srfNo: req.body.srfNo,
-      date: req.body.date,
-      probableDate: req.body.probableDate,
-      organization: req.body.organization,
-      address: req.body.address,
-      contactPerson: req.body.contactPerson,
-      mobileNumber: req.body.mobileNumber,
-      telephoneNumber: req.body.telephoneNumber,
-      emailId: req.body.emailId,
-      products: productDocs.map((p) => p._id),
+
+    const newForm = new srfForms({
+      ...form,
       user: userId,
-      decisionRules: req.body.decisionRules || {}
+      products: productDocs.map((doc) => doc._id),
     });
-
     await newForm.save(); // Ensure this runs every time
-    console.log("ErrorDetector form successfully saved!");
-
-    return res.status(201).json({
-      success: true,	
-      message: "Form submitted successfully",
-      redirectURL: "/user",
-    });
-
+    return res
+      .status(201)
+      .json({ success: true, data: newForm, redirectURL: "/user" });
   } catch (error) {
     console.error("Error saving form data:", error);
-    res.status(500).json({ success:false, error: "Error saving form data" });
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal Server Error" });
   }
 });
 
-
-router.get("/calibrated", async (req, res) => {
+router.get("/completed", async (req, res) => {
   try {
     const userId = req.user.id;
-    const errorForms = await ErrorDetector.find({ user: userId }).populate("products");
+    const completedForms = await srfForms
+      .find({
+        user: userId,
+        requestStatus: true,
+      })
+      .populate("products");
 
-
-    const calibratedForms = errorForms.map(form => ({
-      ...form.toObject(),
-      products: form.products.filter(product => product.isCalibrated)
-    })).filter(form => form.products.length > 0);
-
-    res.status(200).json(calibratedForms);
+    return res.status(200).json({ success: true, data: completedForms });
   } catch (error) {
-    console.error("Error fetching calibrated error forms:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Error fetching completed error forms:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
 
-
-router.get("/calibrated/pending", async (req, res) => {
+router.get("/pending", async (req, res) => {
   try {
-
     const userId = req.user.id;
-    const errorForms = await ErrorDetector.find({ user: userId }).populate("products");
+    const pendingForms = await srfForms
+      .find({
+        user: userId,
+        requestStatus: false,
+      })
+      .populate("products");
 
-
-    const pendingForms = errorForms.map(form => ({
-      ...form.toObject(),
-      products: form.products.filter(product => (!product.isCalibrated))
-    })).filter(form => form.products.length > 0);
-
-    res.status(200).json(pendingForms);
+    return res.status(200).json({ success: true, data: pendingForms });
   } catch (error) {
-    console.error("Error fetching calibrated error forms:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Error fetching pending error forms:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
 
+// router.get("/calibrated", async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+//     const errorForms = await srfForms.find({ user: userId }).populate(
+//       "products"
+//     );
 
-router.put("/technician/updateEquipment/:id", async (req, res) => {
-  const { id } = req.params;
-  const { isCalibrated } = req.body;
+//     const calibratedForms = errorForms
+//       .map((form) => ({
+//         ...form.toObject(),
+//         products: form.products.filter((product) => product.isCalibrated),
+//       }))
+//       .filter((form) => form.products.length > 0);
 
-  if (typeof isCalibrated === "undefined") {
-    return res.status(400).json({ success: false, message: "isCalibrated field is required" });
-  }
+//     res.status(200).json(calibratedForms);
+//   } catch (error) {
+//     console.error("Error fetching calibrated error forms:", error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// });
 
-  try {
-    const updatedProduct = await Product.findByIdAndUpdate(
-      id,
-      { isCalibrated }, // Allow true/false values
-      { new: true }
-    );
+// router.get("/calibrated/pending", async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+//     const errorForms = await srfForms.find({ user: userId }).populate(
+//       "products"
+//     );
 
-    if (!updatedProduct) {
-      return res.status(404).json({ success: false, message: "Product not found" });
-    }
+//     const pendingForms = errorForms
+//       .map((form) => ({
+//         ...form.toObject(),
+//         products: form.products.filter((product) => !product.isCalibrated),
+//       }))
+//       .filter((form) => form.products.length > 0);
 
-    res.status(200).json({ success: true, data: updatedProduct });
-  } catch (error) {
-    console.error("Error updating product:", error.message);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-});
+//     res.status(200).json(pendingForms);
+//   } catch (error) {
+//     console.error("Error fetching calibrated error forms:", error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// });
+
+// router.put("/technician/updateEquipment/:id", async (req, res) => {
+//   const { id } = req.params;
+//   const { isCalibrated } = req.body;
+
+//   if (typeof isCalibrated === "undefined") {
+//     return res
+//       .status(400)
+//       .json({ success: false, message: "isCalibrated field is required" });
+//   }
+
+//   try {
+//     const updatedProduct = await Product.findByIdAndUpdate(
+//       id,
+//       { isCalibrated }, // Allow true/false values
+//       { new: true }
+//     );
+
+//     if (!updatedProduct) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "Product not found" });
+//     }
+
+//     res.status(200).json({ success: true, data: updatedProduct });
+//   } catch (error) {
+//     console.error("Error updating product:", error.message);
+//     res.status(500).json({ success: false, message: "Server error" });
+//   }
+// });
 
 module.exports = router;
-
-
-
-
