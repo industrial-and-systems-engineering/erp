@@ -1,22 +1,42 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import UserNavbar from "../../components/navbar/UserNavbar.jsx";
+import { useLocation } from "react-router-dom";
+import { countstore } from "../../utils/getcounter.js";
 
 const ErrorDetectorForm = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { UserNumber, checkcount } = countstore();
 
+  
+  useEffect(() => {
+    const verifycnt = async () => {
+      await checkcount();
+    };
+    verifycnt();
+  }, [checkcount]);
+
+ 
+  const today = new Date().toISOString().slice(0, 10);
+
+  
+  const defaultConditionOfProduct = "technician will enter";
+  const defaultItemEnclosed = "labworker will enter";
+
+  
   const [formData, setFormData] = useState({
-    srfNo: "",
-    date: "",
-    probableDate: "",
+    srfNo: `kpg/24-25/${UserNumber}`, // Initially "kpg/24-25/0"
+    date: today,
+    probableDate: today,
     organization: "",
     address: "",
     contactPersonName: "",
     mobileNumber: "",
     telephoneNumber: "",
     emailId: "",
-    conditionOfProduct: "",
-    itemEnclosed: "",
+    conditionOfProduct: defaultConditionOfProduct,
+    itemEnclosed: defaultItemEnclosed,
     specialRequest: "",
     calibrationPeriodicity: "",
     reviewRequest: "",
@@ -24,6 +44,12 @@ const ErrorDetectorForm = () => {
     calibrationServiceDoneByExternalAgency: "",
     calibrationMethodUsed: "",
   });
+  useEffect(() => {
+    setFormData((prevData) => ({
+      ...prevData,
+      srfNo: `kpg/24-25/${UserNumber}`,
+    }));
+  }, [UserNumber]);
 
   const [decisionRules, setDecisionRules] = useState({
     noDecision: false,
@@ -69,15 +95,20 @@ const ErrorDetectorForm = () => {
       decisionRules: decisionRules,
     };
 
-    // Format the products data
-    const formattedProducts = tableRows.map(row => ({
+    // Filter out empty table rows (all fields empty)
+    const nonEmptyRows = tableRows.filter(row => 
+      Object.values(row).some(value => value !== "")
+    );
+
+    // Format the products data - only include non-empty rows
+    const formattedProducts = nonEmptyRows.map((row) => ({
       ...row,
       calibratedDate: row.calibratedDate ? new Date(row.calibratedDate).toISOString() : null,
     }));
 
     const requestData = {
       form: formattedFormData,
-      products: formattedProducts
+      products: formattedProducts, // This can now be an empty array if no products were entered
     };
 
     console.log("Submitting form data:", JSON.stringify(requestData, null, 2));
@@ -100,11 +131,9 @@ const ErrorDetectorForm = () => {
       .then((data) => {
         console.log("Response from backend:", data);
 
-        // Reset form state
-        setFormData({
-          srfNo: "",
-          date: "",
-          probableDate: "",
+        // Reset form state (keeping the default values for srfNo, date and probableDate)
+        setFormData((prevData) => ({
+          ...prevData,
           organization: "",
           address: "",
           contactPersonName: "",
@@ -119,7 +148,7 @@ const ErrorDetectorForm = () => {
           calibrationFacilityAvailable: "",
           calibrationServiceDoneByExternalAgency: "",
           calibrationMethodUsed: "",
-        });
+        }));
 
         setDecisionRules({
           noDecision: false,
@@ -142,7 +171,7 @@ const ErrorDetectorForm = () => {
       });
   };
 
-  // Helper function to handle input changes
+  // Helper function to handle input changes for editable fields
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -166,41 +195,43 @@ const ErrorDetectorForm = () => {
         <div className="bg-gray-50 p-4 rounded-md shadow-sm">
           <h3 className="font-semibold text-lg mb-3 text-blue-700">1. Basic Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* SRF Number (read-only) */}
             <div className="flex flex-col">
               <label className="font-medium text-gray-700">SRF Number</label>
               <input
                 type="text"
                 name="srfNo"
                 value={formData.srfNo}
-                onChange={handleInputChange}
-                className="p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                required
+                disabled
+                className="p-2 border rounded-md bg-gray-100 text-gray-700"
               />
             </div>
 
+            {/* Date (read-only) */}
             <div className="flex flex-col">
               <label className="font-medium text-gray-700">Date</label>
               <input
-                type="date"
+                type=""
                 name="date"
                 value={formData.date}
-                onChange={handleInputChange}
-                className="p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                required
+                disabled
+                className="p-2 border rounded-md bg-gray-100 text-gray-700"
               />
             </div>
 
+            {/* Probable Date (read-only) */}
             <div className="flex flex-col">
               <label className="font-medium text-gray-700">Probable Date</label>
               <input
                 type="date"
                 name="probableDate"
                 value={formData.probableDate}
-                onChange={handleInputChange}
-                className="p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
+                disabled
+                className="p-2 border rounded-md bg-gray-100 text-gray-700"
               />
             </div>
 
+            {/* Organization */}
             <div className="flex flex-col">
               <label className="font-medium text-gray-700">Organization</label>
               <input
@@ -213,6 +244,7 @@ const ErrorDetectorForm = () => {
               />
             </div>
 
+            {/* Address */}
             <div className="flex flex-col">
               <label className="font-medium text-gray-700">Address</label>
               <input
@@ -225,6 +257,7 @@ const ErrorDetectorForm = () => {
               />
             </div>
 
+            {/* Contact Person */}
             <div className="flex flex-col">
               <label className="font-medium text-gray-700">Contact Person</label>
               <input
@@ -237,6 +270,7 @@ const ErrorDetectorForm = () => {
               />
             </div>
 
+            {/* Mobile Number */}
             <div className="flex flex-col">
               <label className="font-medium text-gray-700">Mobile Number</label>
               <input
@@ -249,6 +283,7 @@ const ErrorDetectorForm = () => {
               />
             </div>
 
+            {/* Telephone Number */}
             <div className="flex flex-col">
               <label className="font-medium text-gray-700">Telephone Number</label>
               <input
@@ -260,6 +295,7 @@ const ErrorDetectorForm = () => {
               />
             </div>
 
+            {/* Email ID */}
             <div className="flex flex-col">
               <label className="font-medium text-gray-700">Email ID</label>
               <input
@@ -274,9 +310,12 @@ const ErrorDetectorForm = () => {
           </div>
         </div>
 
-        {/* Section 2: Product Description */}
+        {/* Section 2: Product Description (now optional) */}
         <div className="bg-gray-50 p-4 rounded-md shadow-sm">
-          <h3 className="font-semibold text-lg mb-3 text-blue-700">2. Product Description</h3>
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="font-semibold text-lg text-blue-700">2. Product Description (Optional)</h3>
+            <div className="text-sm text-gray-600 italic">You can submit the form without filling this section</div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
@@ -349,7 +388,8 @@ const ErrorDetectorForm = () => {
               <textarea
                 name="conditionOfProduct"
                 value={formData.conditionOfProduct}
-                onChange={handleInputChange}
+                //onChange={handleInputChange}
+                disabled
                 className="w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
                 rows="2"
               ></textarea>
@@ -360,7 +400,8 @@ const ErrorDetectorForm = () => {
               <textarea
                 name="itemEnclosed"
                 value={formData.itemEnclosed}
-                onChange={handleInputChange}
+               // onChange={handleInputChange}
+                disabled
                 className="w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
                 rows="2"
               ></textarea>
@@ -388,7 +429,8 @@ const ErrorDetectorForm = () => {
                     type="checkbox"
                     name="noDecision"
                     checked={decisionRules.noDecision}
-                    onChange={handleCheckboxChange}
+                   // onChange={handleCheckboxChange}
+                   disabled
                     className="w-4 h-4"
                   />
                   No decision on conformative statement
@@ -398,7 +440,8 @@ const ErrorDetectorForm = () => {
                     type="checkbox"
                     name="simpleConformative"
                     checked={decisionRules.simpleConformative}
-                    onChange={handleCheckboxChange}
+                   // onChange={handleCheckboxChange}
+                   disabled
                     className="w-4 h-4"
                   />
                   Simple conformative decision
@@ -408,7 +451,8 @@ const ErrorDetectorForm = () => {
                     type="checkbox"
                     name="conditionalConformative"
                     checked={decisionRules.conditionalConformative}
-                    onChange={handleCheckboxChange}
+                   // onChange={handleCheckboxChange}
+                   disabled
                     className="w-4 h-4"
                   />
                   Conditional conformative decision
@@ -418,7 +462,8 @@ const ErrorDetectorForm = () => {
                     type="checkbox"
                     name="customerDrivenConformative"
                     checked={decisionRules.customerDrivenConformative}
-                    onChange={handleCheckboxChange}
+                    //onChange={handleCheckboxChange}
+                    disabled
                     className="w-4 h-4"
                   />
                   Customer-driven conformative decision
@@ -443,7 +488,8 @@ const ErrorDetectorForm = () => {
                 type="text"
                 name="reviewRequest"
                 value={formData.reviewRequest}
-                onChange={handleInputChange}
+                //onChange={handleInputChange}
+                disabled
                 className="w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -458,7 +504,8 @@ const ErrorDetectorForm = () => {
               type="text"
               name="calibrationFacilityAvailable"
               value={formData.calibrationFacilityAvailable}
-              onChange={handleInputChange}
+              //onChange={handleInputChange}
+              disabled
               className="w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
@@ -469,7 +516,8 @@ const ErrorDetectorForm = () => {
               type="text"
               name="calibrationServiceDoneByExternalAgency"
               value={formData.calibrationServiceDoneByExternalAgency}
-              onChange={handleInputChange}
+              //onChange={handleInputChange}
+              disabled
               className="w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
@@ -480,7 +528,8 @@ const ErrorDetectorForm = () => {
               type="text"
               name="calibrationMethodUsed"
               value={formData.calibrationMethodUsed}
-              onChange={handleInputChange}
+              //onChange={handleInputChange}
+              disabled
               className="w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
             />
           </div>

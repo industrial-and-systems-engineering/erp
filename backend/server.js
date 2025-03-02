@@ -18,7 +18,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
-mongoose.connect(process.env.MONGO_URI, {});
+mongoose.connect( 'mongodb://localhost:27017/erpdevelopment', {});
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "connection error:"));
 db.once("open", () => {
@@ -30,12 +30,12 @@ app.use(express.json());
 app.use(bodyParser.json());
 
 const store = MongoDBStore.create({
-  mongoUrl: process.env.MONGO_URI,
+  mongoUrl:'mongodb://localhost:27017/erpdevelopment',
   collectionName: 'sessions',
 });
 const sessionConfig = {
   name: "session",
-  secret: process.env.SESSION_SECRET,
+  secret: "thisshouldbeabettersecret!",
   resave: false,
   saveUninitialized: false,
   store: store,

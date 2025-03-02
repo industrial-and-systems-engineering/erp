@@ -12,4 +12,12 @@ router.get('/isloggedin', (req, res) => {
     }
 });
 
+router.get('/getcount', (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    return res.status(200).json({ usernumber: req.user.userNumber });
+  });
+  
+
 module.exports=router;
