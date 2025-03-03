@@ -24,13 +24,16 @@ router.post("/", async (req, res) => {
     const productDocs = await Product.insertMany(products);
 
     const userId = req.user.id;
+    const usernumber=req.user.userNumber;
+    const urlno=`CC373125${usernumber}F`;
 
     const newForm = new srfForms({
       ...form,
       user: userId,
       products: productDocs.map((doc) => doc._id),
-    });
-    await newForm.save(); // Ensure this runs every time
+      URL_NO: urlno,
+      });
+    await newForm.save(); 
     return res
       .status(201)
       .json({ success: true, data: newForm, redirectURL: "/user" });

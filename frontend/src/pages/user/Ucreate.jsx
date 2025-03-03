@@ -9,7 +9,8 @@ const ErrorDetectorForm = () => {
   const location = useLocation();
   const { UserNumber, checkcount } = countstore();
 
-  
+  const [nextJobNumber, setNextJobNumber] = useState(1);
+
   useEffect(() => {
     const verifycnt = async () => {
       await checkcount();
@@ -17,16 +18,33 @@ const ErrorDetectorForm = () => {
     verifycnt();
   }, [checkcount]);
 
- 
-  const today = new Date().toISOString().slice(0, 10);
+  // Load the next job number from localStorage when component mounts
+  useEffect(() => {
+    if (UserNumber) {
+      // Try to get the last job number from localStorage
+      const lastJobNumberKey = `lastJobNumber_${UserNumber}`;
+      const storedLastJobNumber = localStorage.getItem(lastJobNumberKey);
+      
+      if (storedLastJobNumber) {
+        // If we have a stored number, the next number is one more than that
+        setNextJobNumber(parseInt(storedLastJobNumber) + 1);
+      } else {
+        // If no stored number, start at 1
+        setNextJobNumber(1);
+      }
+      
+      // You could also fetch this from your backend if you prefer server-side storage
+      // fetchLastJobNumber(UserNumber);
+    }
+  }, [UserNumber]);
 
+  const today = new Date().toISOString().slice(0, 10);
   
   const defaultConditionOfProduct = "technician will enter";
   const defaultItemEnclosed = "labworker will enter";
-
   
   const [formData, setFormData] = useState({
-    srfNo: `kpg/24-25/${UserNumber}`, // Initially "kpg/24-25/0"
+    srfNo: `kpg/24-25/${UserNumber}`,
     date: today,
     probableDate: today,
     organization: "",
@@ -44,6 +62,7 @@ const ErrorDetectorForm = () => {
     calibrationServiceDoneByExternalAgency: "",
     calibrationMethodUsed: "",
   });
+
   useEffect(() => {
     setFormData((prevData) => ({
       ...prevData,
@@ -58,22 +77,8 @@ const ErrorDetectorForm = () => {
     customerDrivenConformative: false,
   });
 
-  const [tableRows, setTableRows] = useState([
-    {
-      jobNo: "",
-      instrumentDescription: "",
-      serialNo: "",
-      parameter: "",
-      ranges: "",
-      accuracy: "",
-      calibrationStatus: "",
-      calibratedDate: "",
-      remarks: "",
-    },
-  ]);
-
+  // Modified emptyRow without jobNo field
   const emptyRow = {
-    jobNo: "",
     instrumentDescription: "",
     serialNo: "",
     parameter: "",
@@ -83,6 +88,8 @@ const ErrorDetectorForm = () => {
     calibratedDate: "",
     remarks: "",
   };
+
+  const [tableRows, setTableRows] = useState([{ ...emptyRow }]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -100,15 +107,35 @@ const ErrorDetectorForm = () => {
       Object.values(row).some(value => value !== "")
     );
 
-    // Format the products data - only include non-empty rows
-    const formattedProducts = nonEmptyRows.map((row) => ({
-      ...row,
-      calibratedDate: row.calibratedDate ? new Date(row.calibratedDate).toISOString() : null,
-    }));
+    // Check if we're trying to create more than the allowed max of 15 products
+    const totalJobsAfterSubmit = nextJobNumber + nonEmptyRows.length - 1;
+    if (totalJobsAfterSubmit > 15) {
+      alert(`You can only create a maximum of 15 products per user. Currently trying to create ${totalJobsAfterSubmit}.`);
+      return;
+    }
+
+    // Format the products data - generate sequential job numbers
+    let currentJobNumber = nextJobNumber;
+    const formattedProducts = nonEmptyRows.map((row) => {
+      // Create a job number with format "1-01", "1-02", etc.
+      const jobNo = `${UserNumber}-${String(currentJobNumber).padStart(2, '0')}`;
+      currentJobNumber++;
+      
+      return {
+        ...row,
+        jobNo,
+        calibratedDate: row.calibratedDate ? new Date(row.calibratedDate).toISOString() : null,
+      };
+    });
+
+    // Store the last job number used
+    if (formattedProducts.length > 0) {
+      localStorage.setItem(`lastJobNumber_${UserNumber}`, (currentJobNumber - 1).toString());
+    }
 
     const requestData = {
       form: formattedFormData,
-      products: formattedProducts, // This can now be an empty array if no products were entered
+      products: formattedProducts,
     };
 
     console.log("Submitting form data:", JSON.stringify(requestData, null, 2));
@@ -117,8 +144,6 @@ const ErrorDetectorForm = () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        // Include authorization header if you're using JWT
-        // "Authorization": `Bearer ${localStorage.getItem("token")}`
       },
       body: JSON.stringify(requestData),
     })
@@ -131,6 +156,9 @@ const ErrorDetectorForm = () => {
       .then((data) => {
         console.log("Response from backend:", data);
 
+        // Update next job number for next form submission
+        setNextJobNumber(currentJobNumber);
+
         // Reset form state (keeping the default values for srfNo, date and probableDate)
         setFormData((prevData) => ({
           ...prevData,
@@ -140,8 +168,8 @@ const ErrorDetectorForm = () => {
           mobileNumber: "",
           telephoneNumber: "",
           emailId: "",
-          conditionOfProduct: "",
-          itemEnclosed: "",
+          conditionOfProduct: defaultConditionOfProduct,
+          itemEnclosed: defaultItemEnclosed,
           specialRequest: "",
           calibrationPeriodicity: "",
           reviewRequest: "",
@@ -320,7 +348,6 @@ const ErrorDetectorForm = () => {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-blue-600 text-white">
-                  <th className="p-2 text-sm">Job No</th>
                   <th className="p-2 text-sm">Instrument Description</th>
                   <th className="p-2 text-sm">Serial No</th>
                   <th className="p-2 text-sm">Parameter</th>
@@ -369,13 +396,25 @@ const ErrorDetectorForm = () => {
                 ))}
               </tbody>
             </table>
-            <button
-              type="button"
-              onClick={() => setTableRows([...tableRows, { ...emptyRow }])}
-              className="mt-4 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-            >
-              Add Row
-            </button>
+            <div className="mt-4 flex justify-between items-center">
+              <button
+                type="button"
+                onClick={() => {
+                  // Check if adding a new row would exceed the max limit of 15
+                  if (nextJobNumber + tableRows.length - 1 < 15) {
+                    setTableRows([...tableRows, { ...emptyRow }]);
+                  } else {
+                    alert("Maximum of 15 products per user allowed.");
+                  }
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+              >
+                Add Row
+              </button>
+              <div className="text-sm text-gray-700">
+                <span className="font-medium">Note:</span> Job numbers will be assigned as {UserNumber}-{String(nextJobNumber).padStart(2, '0')}, {UserNumber}-{String(nextJobNumber+1).padStart(2, '0')}, etc. (Max 15 products per user)
+              </div>
+            </div>
           </div>
         </div>
 
@@ -388,7 +427,6 @@ const ErrorDetectorForm = () => {
               <textarea
                 name="conditionOfProduct"
                 value={formData.conditionOfProduct}
-                //onChange={handleInputChange}
                 disabled
                 className="w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
                 rows="2"
@@ -400,7 +438,6 @@ const ErrorDetectorForm = () => {
               <textarea
                 name="itemEnclosed"
                 value={formData.itemEnclosed}
-               // onChange={handleInputChange}
                 disabled
                 className="w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
                 rows="2"
@@ -429,8 +466,7 @@ const ErrorDetectorForm = () => {
                     type="checkbox"
                     name="noDecision"
                     checked={decisionRules.noDecision}
-                   // onChange={handleCheckboxChange}
-                   disabled
+                    disabled
                     className="w-4 h-4"
                   />
                   No decision on conformative statement
@@ -440,8 +476,7 @@ const ErrorDetectorForm = () => {
                     type="checkbox"
                     name="simpleConformative"
                     checked={decisionRules.simpleConformative}
-                   // onChange={handleCheckboxChange}
-                   disabled
+                    disabled
                     className="w-4 h-4"
                   />
                   Simple conformative decision
@@ -451,8 +486,7 @@ const ErrorDetectorForm = () => {
                     type="checkbox"
                     name="conditionalConformative"
                     checked={decisionRules.conditionalConformative}
-                   // onChange={handleCheckboxChange}
-                   disabled
+                    disabled
                     className="w-4 h-4"
                   />
                   Conditional conformative decision
@@ -462,7 +496,6 @@ const ErrorDetectorForm = () => {
                     type="checkbox"
                     name="customerDrivenConformative"
                     checked={decisionRules.customerDrivenConformative}
-                    //onChange={handleCheckboxChange}
                     disabled
                     className="w-4 h-4"
                   />
@@ -488,7 +521,6 @@ const ErrorDetectorForm = () => {
                 type="text"
                 name="reviewRequest"
                 value={formData.reviewRequest}
-                //onChange={handleInputChange}
                 disabled
                 className="w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
               />
@@ -504,7 +536,6 @@ const ErrorDetectorForm = () => {
               type="text"
               name="calibrationFacilityAvailable"
               value={formData.calibrationFacilityAvailable}
-              //onChange={handleInputChange}
               disabled
               className="w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
             />
@@ -516,7 +547,6 @@ const ErrorDetectorForm = () => {
               type="text"
               name="calibrationServiceDoneByExternalAgency"
               value={formData.calibrationServiceDoneByExternalAgency}
-              //onChange={handleInputChange}
               disabled
               className="w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
             />
@@ -528,7 +558,6 @@ const ErrorDetectorForm = () => {
               type="text"
               name="calibrationMethodUsed"
               value={formData.calibrationMethodUsed}
-              //onChange={handleInputChange}
               disabled
               className="w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
             />
