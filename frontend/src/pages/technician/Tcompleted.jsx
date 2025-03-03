@@ -10,6 +10,7 @@ const Tpending = () => {
 
     useEffect(() => {
         fetchCompletedForms();
+        console.log(completedForms)
     }, [fetchCompletedForms]);
 
     return (
