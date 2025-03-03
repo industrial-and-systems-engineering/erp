@@ -8,8 +8,9 @@ export const usePendingFormsStore = create((set) => ({
     fetchPendingForms: async () => {
         const response = await fetch("/api/technician/pending");
         const Forms = await response.json();
-        console.log(Forms);
-        set({ pendingForms: Forms.data });
+        const { data } = Forms;
+        set((state) => ({ pendingForms: [...data] }));
+
     },
 
     updateForm: async (id, details) => {

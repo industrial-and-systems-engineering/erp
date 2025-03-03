@@ -8,6 +8,7 @@ export const useCompletedFormsStore = create((set) => ({
   fetchCompletedForms: async () => {
     const response = await fetch("/api/technician/completed");
     const equipments = await response.json();
-    set((state) => ({ completedForms: [...equipments.data] }));
+    const data = equipments.data;
+    set((state) => ({ completedForms: [...data] }));
   },
 }));
