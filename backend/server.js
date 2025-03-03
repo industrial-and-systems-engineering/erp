@@ -17,8 +17,8 @@ const Middlewareroutes = require('./middleware.js');
 const dotenv = require('dotenv');
 dotenv.config();
 
-const PORT = process.env.PORT || 5000;
-mongoose.connect( 'mongodb://localhost:27017/erpdevelopment', {});
+const PORT = process.env.PORT || 5001;
+mongoose.connect(process.env.MONGO_URI, {});
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "connection error:"));
 db.once("open", () => {
@@ -30,12 +30,12 @@ app.use(express.json());
 app.use(bodyParser.json());
 
 const store = MongoDBStore.create({
-  mongoUrl:'mongodb://localhost:27017/erpdevelopment',
+  mongoUrl: process.env.MONGO_URI,
   collectionName: 'sessions',
 });
 const sessionConfig = {
   name: "session",
-  secret: "thisshouldbeabettersecret!",
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   store: store,
@@ -91,7 +91,7 @@ app.use('/api/admin', Adminroutes);
 app.use('/api/errorform', Errorformroutes);
 app.use('/api', Middlewareroutes);
 
-if(process.env.NODE_ENV === 'production'){
+if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../frontend/dist')))
   app.get('*', (req, res) => res.sendFile(path.resolve(__dirname, 'frontend', 'build', 'index.html')));
 }
