@@ -16,7 +16,9 @@ const UserSchema = new Schema({
   }
 });
 
-// Pre-save hook to assign a sequential userNumber to new users
+//presave hooks used for doing any operation before saving this scheam to database
+//ypu can access information that comes here using this keyword
+//this.isNew is used to check if the document is new or not
 UserSchema.pre('save', async function (next) {
   if (this.isNew) {
     try {
