@@ -31,7 +31,7 @@ const CTcard = ({ equipment, form }) => {
                             <div className="flex justify-between flex-wrap">
                                 <p className="mb-2">
                                     <span className="font-semibold">
-                                        ULR No : {form.ULR_NO}
+                                        ULR No : {form.URL_NO}
                                     </span>
                                 </p>
                             </div>

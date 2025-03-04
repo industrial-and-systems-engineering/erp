@@ -11,7 +11,7 @@ const Tcard = ({ equipment, form }) => {
         remarks: equipment.remarks,
     });
     const [formData, setFormData] = useState({
-        ulrNo: form.ULR_NO,
+        ulrNo: form.URL_NO,
         jobNo: equipment.jobNo,
         jobCardIssueDate: new Date(form.createdAt).toLocaleDateString(),
         srfNo: form.srfNo,

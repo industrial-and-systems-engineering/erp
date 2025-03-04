@@ -12,15 +12,55 @@ const ProductSchema = new Schema(
     parameter: { type: String, required: true },
     ranges: { type: String, required: true },
     accuracy: { type: String, required: true },
-    calibrationStatus: { type: String, default: undefined, required: false },
-    calibratedDate: { type: Date, required: false },
-    remarks: { type: String, required: false },
+    calibrationStatus: { type: String },
+    calibratedDate: { type: Date },
+    remarks: { type: String },
     isCalibrated: { type: Boolean, default: false },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
+ProductSchema.pre("save", async function (next) {
+  if (this.isNew) {
+    try {
+      // if (!this.user) {
+      //   console.log("User ID missing");
+      //   return next(new Error("User ID is required for product creation."));
+      // }
+      let userId;
+      if (typeof this.user === "string") {
+        userId = mongoose.Types.ObjectId(this.user);
+      } else {
+        userId = this.user;
+      }
+      const user = await mongoose.model("User").findById(userId);
+
+      if (!user || !user.userNumber) {
+        console.log("User or userNumber missing", user);
+        return next(new Error("UserNumber is missing for the user."));
+      }
+      const counterId = `productNumber_${userId}`;
+
+      const counter = await Counter.findOneAndUpdate(
+        { _id: counterId },
+        { $inc: { sequence_value: 1 } },
+        { new: true, upsert: true }
+      );
+      this.productNumber = counter.sequence_value;
+      this.jobNo = `${user.userNumber}-${this.productNumber}`;
+      console.log("Generated jobNo:", this.jobNo);
+      next();
+    } catch (err) {
+      console.error("Error in pre-save hook:", err);
+      next(err);
+    }
+  } else {
+    console.log("Product is not new, skipping jobNo generation");
+    next();
+  }
+});
+
+// Optional: Create a compound index to ensure productNumber uniqueness per user
+ProductSchema.index({ user: 1, productNumber: 1 }, { unique: true });
 
 const Product = mongoose.model("Product", ProductSchema);
 const ServiceRequestFormSchema = new Schema(
@@ -28,8 +68,8 @@ const ServiceRequestFormSchema = new Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     srfNo: { type: String, required: true },
     date: { type: Date, required: true },
-    probableDate: { type: Date, required: false },
-    //1.
+    probableDate: { type: Date },
+    // Organization details
     organization: { type: String, required: true },
     address: { type: String, required: true },
     contactPersonName: { type: String, required: true },
@@ -55,8 +95,6 @@ const ServiceRequestFormSchema = new Schema(
     calibrationMethodUsed: { type: String },
     requestStatus: { type: Boolean, default: false },
     URL_NO: { type: String },
-
-    ULR_NO: { type: String, default: " " },
   },
   { timestamps: true }
 );

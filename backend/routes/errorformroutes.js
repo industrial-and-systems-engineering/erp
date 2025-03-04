@@ -15,13 +15,13 @@ router.post("/", async (req, res) => {
   try {
     let { form, products } = req.body;
     console.log("Received form data:", req.body);
-    
+
     if (!form || !products) {
       return res
         .status(400)
         .json({ success: false, message: "All fields are required" });
     }
-    
+
     const userId = req.user.id;
     const userNumber = req.user.userNumber;
     const urlno = `CC373125${userNumber}F`;
@@ -31,7 +31,7 @@ router.post("/", async (req, res) => {
       products: [], // We'll add product IDs later
       URL_NO: urlno,
     });
-    
+
     // Save the products one by one to ensure the pre-save hook runs
     const productIds = [];
     for (const productData of products) {
@@ -40,21 +40,21 @@ router.post("/", async (req, res) => {
         ...productData,
         user: userId,
       });
-      
+
       try {
         const savedProduct = await product.save();
         productIds.push(savedProduct._id);
       } catch (productError) {
         console.error("Error saving product:", productError);
-        return res.status(400).json({ 
-          success: false, 
-          error: `Error saving product: ${productError.message}` 
+        return res.status(400).json({
+          success: false,
+          error: `Error saving product: ${productError.message}`
         });
       }
     }
     newForm.products = productIds;
     await newForm.save();
-    
+
     return res
       .status(201)
       .json({ success: true, data: newForm, redirectURL: "/user" });
