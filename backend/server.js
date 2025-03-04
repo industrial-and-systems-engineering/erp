@@ -55,7 +55,6 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 passport.use(new LocalStrategy(User.authenticate()));
-// Replace existing passport configuration with:
 passport.serializeUser((user, done) => {
   done(null, {
     id: user.id,

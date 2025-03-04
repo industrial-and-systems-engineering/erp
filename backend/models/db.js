@@ -1,10 +1,12 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
+const Counter = require("./counter");
 const User = require("./user");
-
 const ProductSchema = new Schema(
   {
-    jobNo: { type: String, required: true },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    productNumber: { type: Number },
+    jobNo: { type: String },
     instrumentDescription: { type: String, required: true },
     serialNo: { type: String, required: true },
     parameter: { type: String, required: true },
@@ -21,7 +23,6 @@ const ProductSchema = new Schema(
 );
 
 const Product = mongoose.model("Product", ProductSchema);
-
 const ServiceRequestFormSchema = new Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
@@ -35,35 +36,25 @@ const ServiceRequestFormSchema = new Schema(
     mobileNumber: { type: String, required: true },
     telephoneNumber: { type: String },
     emailId: { type: String, required: true },
-    //2.
+    // Products array
     products: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
-    //3.
-    conditionOfProduct: { type: String, required: false },
-    //4.
-    itemEnclosed: { type: String, required: false },
-    //5
-    specialRequest: { type: String, required: false },
-    //6
+    // Additional details
+    conditionOfProduct: { type: String },
+    itemEnclosed: { type: String },
+    specialRequest: { type: String },
     decisionRules: {
       noDecision: { type: Boolean, default: false },
       simpleConformative: { type: Boolean, default: false },
       conditionalConformative: { type: Boolean, default: false },
       customerDrivenConformative: { type: Boolean, default: false },
     },
-    //7
-    calibrationPeriodicity: { type: String, required: false },
-    //8
+    calibrationPeriodicity: { type: String },
     reviewRequest: { type: String, default: false },
-    //9
-    calibrationFacilityAvailable: { type: String, required: false },
-    //10
-    calibrationServiceDoneByExternalAgency: { type: String, required: false },
-    //11
-    calibrationMethodUsed: { type: String, required: false },
-    //requestStatus
+    calibrationFacilityAvailable: { type: String },
+    calibrationServiceDoneByExternalAgency: { type: String },
+    calibrationMethodUsed: { type: String },
     requestStatus: { type: Boolean, default: false },
-
-    ULR_NO: { type: String, default: " " },
+    URL_NO: { type: String },
   },
   { timestamps: true }
 );
