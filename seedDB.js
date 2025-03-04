@@ -13,8 +13,8 @@ const seedDB = async () => {
 
         // Create dummy technician
         await Technician.register(
-            { username: "techuser", email: "tech@example.com", userType: "technician" },
-            "techpassword"
+            { username: "pspkmahali", email: "pspk.prasad2004@gmail.com", userType: "technician" },
+            "123"
         );
 
         // Create dummy admin
