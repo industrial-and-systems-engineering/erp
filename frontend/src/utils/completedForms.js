@@ -11,4 +11,5 @@ export const useCompletedFormsStore = create((set) => ({
     const data = equipments.data;
     set((state) => ({ completedForms: [...data] }));
   },
+
 }));

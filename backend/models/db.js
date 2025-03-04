@@ -10,9 +10,10 @@ const ProductSchema = new Schema(
     parameter: { type: String, required: true },
     ranges: { type: String, required: true },
     accuracy: { type: String, required: true },
-    calibrationStatus: { type: String, required: false },
+    calibrationStatus: { type: String, default: undefined, required: false },
     calibratedDate: { type: Date, required: false },
     remarks: { type: String, required: false },
+    isCalibrated: { type: Boolean, default: false },
   },
   {
     timestamps: true,
@@ -26,7 +27,7 @@ const ServiceRequestFormSchema = new Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     srfNo: { type: String, required: true },
     date: { type: Date, required: true },
-    probableDate: { type: Date },
+    probableDate: { type: Date, required: false },
     //1.
     organization: { type: String, required: true },
     address: { type: String, required: true },
@@ -62,7 +63,7 @@ const ServiceRequestFormSchema = new Schema(
     //requestStatus
     requestStatus: { type: Boolean, default: false },
 
-    URL_NO: { type: String, required: false },
+    ULR_NO: { type: String, default: " " },
   },
   { timestamps: true }
 );
