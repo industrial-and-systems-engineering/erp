@@ -163,6 +163,14 @@ const CTcard = ({ equipment, form }) => {
                                 </tbody>
                             </table>
                         </div>
+                        <div className="flex justify-between items-center mt-8">
+
+                            <div className="text-center">
+                                <p className="font-semibold">Issued by</p>
+                                <div className="mt-8 border-t border-gray-400 w-40 ml-auto"></div>
+                            </div>
+
+                        </div>
                     </form>
                 </div>
             </div>
