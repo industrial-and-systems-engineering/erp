@@ -17,7 +17,7 @@ const Middlewareroutes = require('./middleware.js');
 const dotenv = require('dotenv');
 dotenv.config();
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 mongoose.connect(process.env.MONGO_URI, {});
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "connection error:"));
@@ -55,7 +55,6 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 passport.use(new LocalStrategy(User.authenticate()));
-// Replace existing passport configuration with:
 passport.serializeUser((user, done) => {
   done(null, {
     id: user.id,
@@ -92,8 +91,8 @@ app.use('/api/errorform', Errorformroutes);
 app.use('/api', Middlewareroutes);
 
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../frontend/dist')))
-  app.get('*', (req, res) => res.sendFile(path.resolve(__dirname, 'frontend', 'build', 'index.html')));
+  app.use(express.static(path.join(__dirname, '../frontend/dist')));
+  app.get('*', (req, res) => res.sendFile(path.resolve(__dirname, '../frontend/dist/index.html')));
 }
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

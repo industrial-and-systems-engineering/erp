@@ -10,7 +10,7 @@ router.post('/login', (req, res, next) => {
         
         req.logIn(user, (err) => { 
             if (err) return res.status(500).json({ message: "Internal server error" });
-            res.status(200).json({ message: "User login successful", redirectUrl: "/user" });
+            res.status(200).json({ message: "User login successful", redirectUrl: "/user",usernumber:user.userNumber});
         });
     })(req, res, next);
 });
@@ -50,7 +50,7 @@ router.get('/logout', (req, res) => {
                 return res.status(500).json({ message: "Error clearing session" });
             }
             res.clearCookie('session'); 
-            res.status(200).json({ message: "Logged out successfully", redirectUrl: "/" });
+            res.status(200).json({ message: "Logged out successfully", redirectUrl: "/user" });
         });
     });
 });
