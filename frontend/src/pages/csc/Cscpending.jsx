@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { usePendingFormsStore } from './utils/pendingFroms';
 
 const Tpending = () => {
-    const { pendingForms, fetchPendingForms } = usePendingFormsStore();
+    const { pendingForms, fetchPendingForms, updateFormDetails } = usePendingFormsStore();
     const [selectedForm, setSelectedForm] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [editingProduct, setEditingProduct] = useState(null);
+    const [productChanges, setProductChanges] = useState({});
 
     useEffect(() => {
         const loadForms = async () => {
@@ -27,6 +29,77 @@ const Tpending = () => {
         setSelectedForm(prevForm =>
             prevForm && prevForm._id === form._id ? null : form
         );
+        // Reset editing state when changing forms
+        setEditingProduct(null);
+        setProductChanges({});
+    };
+
+    const startEditing = (product) => {
+        setEditingProduct(product._id);
+        setProductChanges({
+            conditionOfProduct: product.conditionOfProduct || '',
+            itemEnclosed: product.itemEnclosed || '',
+            specialRequest: product.specialRequest || '',
+            decisionRules: product.decisionRules || {
+                noDecision: false,
+                simpleConformative: false,
+                conditionalConformative: false,
+                customerDrivenConformative: false
+            },
+            calibrationPeriodicity: product.calibrationPeriodicity || '',
+            reviewRequest: product.reviewRequest || '',
+            calibrationFacilityAvailable: product.calibrationFacilityAvailable || '',
+            calibrationServiceDoneByExternalAgency: product.calibrationServiceDoneByExternalAgency || '',
+            calibrationMethodUsed: product.calibrationMethodUsed || ''
+        });
+    };
+
+    const cancelEditing = () => {
+        setEditingProduct(null);
+        setProductChanges({});
+    };
+
+    const handleInputChange = (field, value) => {
+        setProductChanges(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const handleCheckboxChange = (rule, checked) => {
+        setProductChanges(prev => ({
+            ...prev,
+            decisionRules: {
+                ...prev.decisionRules,
+                [rule]: checked
+            }
+        }));
+    };
+
+    const saveProductChanges = async (formId, productId) => {
+        try {
+            // This would be an API call to update the product
+            await updateFormDetails(formId, productId, productChanges);
+            
+            // Update the local state with the changes
+            setSelectedForm(prevForm => {
+                if (!prevForm) return null;
+                
+                return {
+                    ...prevForm,
+                    products: prevForm.products.map(prod => 
+                        prod._id === productId ? { ...prod, ...productChanges } : prod
+                    )
+                };
+            });
+            
+            // Exit edit mode
+            setEditingProduct(null);
+            setProductChanges({});
+        } catch (err) {
+            console.error("Failed to update product", err);
+            setError("Failed to update product details");
+        }
     };
 
     if (loading) {
@@ -125,26 +198,218 @@ const Tpending = () => {
                                                         Product #{index + 1} <span className="text-gray-500 text-sm ml-2">ID: {product._id}</span>
                                                     </h4>
 
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    {editingProduct === product._id ? (
+                                                        // Editing mode
                                                         <div>
-                                                            <p><span className="font-medium">Condition:</span> {product.conditionOfProduct || 'N/A'}</p>
-                                                            <p><span className="font-medium">Items Enclosed:</span> {product.itemEnclosed || 'N/A'}</p>
-                                                            <p><span className="font-medium">Special Request:</span> {product.specialRequest || 'None'}</p>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                                                <div className="space-y-3">
+                                                                    <div>
+                                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Condition of Product</label>
+                                                                        <select 
+                                                                            className="w-full border-gray-300 rounded-md shadow-sm p-2"
+                                                                            value={productChanges.conditionOfProduct}
+                                                                            onChange={(e) => handleInputChange('conditionOfProduct', e.target.value)}
+                                                                        >
+                                                                            <option value="">Select condition</option>
+                                                                            <option value="good">Good</option>
+                                                                            <option value="average">Average</option>
+                                                                            <option value="poor">Poor</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    
+                                                                    <div>
+                                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Items Enclosed</label>
+                                                                        <input 
+                                                                            type="text" 
+                                                                            className="w-full border-gray-300 rounded-md shadow-sm p-2"
+                                                                            value={productChanges.itemEnclosed}
+                                                                            onChange={(e) => handleInputChange('itemEnclosed', e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                    
+                                                                    <div>
+                                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Special Request</label>
+                                                                        <textarea 
+                                                                            className="w-full border-gray-300 rounded-md shadow-sm p-2"
+                                                                            value={productChanges.specialRequest}
+                                                                            onChange={(e) => handleInputChange('specialRequest', e.target.value)}
+                                                                            rows="2"
+                                                                        ></textarea>
+                                                                    </div>
+                                                                </div>
+                                                                
+                                                                <div className="space-y-3">
+                                                                    <div>
+                                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Calibration Periodicity</label>
+                                                                        <select 
+                                                                            className="w-full border-gray-300 rounded-md shadow-sm p-2"
+                                                                            value={productChanges.calibrationPeriodicity}
+                                                                            onChange={(e) => handleInputChange('calibrationPeriodicity', e.target.value)}
+                                                                        >
+                                                                            <option value="">Select periodicity</option>
+                                                                            <option value="daily">Daily</option>
+                                                                            <option value="weekly">Weekly</option>
+                                                                            <option value="monthly">Monthly</option>
+                                                                            <option value="quarterly">Quarterly</option>
+                                                                            <option value="yearly">Yearly</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    
+                                                                    <div>
+                                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Review Request</label>
+                                                                        <input 
+                                                                            type="text" 
+                                                                            className="w-full border-gray-300 rounded-md shadow-sm p-2"
+                                                                            value={productChanges.reviewRequest}
+                                                                            onChange={(e) => handleInputChange('reviewRequest', e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                    
+                                                                    <div>
+                                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Calibration Facility</label>
+                                                                        <select 
+                                                                            className="w-full border-gray-300 rounded-md shadow-sm p-2"
+                                                                            value={productChanges.calibrationFacilityAvailable}
+                                                                            onChange={(e) => handleInputChange('calibrationFacilityAvailable', e.target.value)}
+                                                                        >
+                                                                            <option value="">Select facility</option>
+                                                                            <option value="lab">Lab</option>
+                                                                            <option value="onsite">Onsite</option>
+                                                                            <option value="external">External</option>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div className="space-y-3">
+                                                                <div>
+                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">External Calibration</label>
+                                                                    <select 
+                                                                        className="w-full border-gray-300 rounded-md shadow-sm p-2"
+                                                                        value={productChanges.calibrationServiceDoneByExternalAgency}
+                                                                        onChange={(e) => handleInputChange('calibrationServiceDoneByExternalAgency', e.target.value)}
+                                                                    >
+                                                                        <option value="">Select option</option>
+                                                                        <option value="yes">Yes</option>
+                                                                        <option value="no">No</option>
+                                                                    </select>
+                                                                </div>
+                                                                
+                                                                <div>
+                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Calibration Method</label>
+                                                                    <input 
+                                                                        type="text" 
+                                                                        className="w-full border-gray-300 rounded-md shadow-sm p-2"
+                                                                        value={productChanges.calibrationMethodUsed}
+                                                                        onChange={(e) => handleInputChange('calibrationMethodUsed', e.target.value)}
+                                                                    />
+                                                                </div>
+                                                                
+                                                                <div>
+                                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Decision Rules</label>
+                                                                    <div className="space-y-2">
+                                                                        <div className="flex items-center">
+                                                                            <input 
+                                                                                type="checkbox" 
+                                                                                id={`noDecision-${product._id}`}
+                                                                                className="mr-2"
+                                                                                checked={productChanges.decisionRules?.noDecision || false}
+                                                                                onChange={(e) => handleCheckboxChange('noDecision', e.target.checked)}
+                                                                            />
+                                                                            <label htmlFor={`noDecision-${product._id}`}>No Decision</label>
+                                                                        </div>
+                                                                        
+                                                                        <div className="flex items-center">
+                                                                            <input 
+                                                                                type="checkbox" 
+                                                                                id={`simpleConformative-${product._id}`}
+                                                                                className="mr-2"
+                                                                                checked={productChanges.decisionRules?.simpleConformative || false}
+                                                                                onChange={(e) => handleCheckboxChange('simpleConformative', e.target.checked)}
+                                                                            />
+                                                                            <label htmlFor={`simpleConformative-${product._id}`}>Simple Conformative</label>
+                                                                        </div>
+                                                                        
+                                                                        <div className="flex items-center">
+                                                                            <input 
+                                                                                type="checkbox" 
+                                                                                id={`conditionalConformative-${product._id}`}
+                                                                                className="mr-2"
+                                                                                checked={productChanges.decisionRules?.conditionalConformative || false}
+                                                                                onChange={(e) => handleCheckboxChange('conditionalConformative', e.target.checked)}
+                                                                            />
+                                                                            <label htmlFor={`conditionalConformative-${product._id}`}>Conditional Conformative</label>
+                                                                        </div>
+                                                                        
+                                                                        <div className="flex items-center">
+                                                                            <input 
+                                                                                type="checkbox" 
+                                                                                id={`customerDrivenConformative-${product._id}`}
+                                                                                className="mr-2"
+                                                                                checked={productChanges.decisionRules?.customerDrivenConformative || false}
+                                                                                onChange={(e) => handleCheckboxChange('customerDrivenConformative', e.target.checked)}
+                                                                            />
+                                                                            <label htmlFor={`customerDrivenConformative-${product._id}`}>Customer Driven Conformative</label>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div className="mt-4 flex justify-end space-x-3">
+                                                                <button 
+                                                                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg text-sm"
+                                                                    onClick={cancelEditing}
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                                <button 
+                                                                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm"
+                                                                    onClick={() => saveProductChanges(selectedForm._id, product._id)}
+                                                                >
+                                                                    Save Changes
+                                                                </button>
+                                                            </div>
                                                         </div>
+                                                    ) : (
+                                                        // View mode
                                                         <div>
-                                                            <p><span className="font-medium">Calibration Periodicity:</span> {product.calibrationPeriodicity || 'N/A'}</p>
-                                                            <p><span className="font-medium">Review Request:</span> {product.reviewRequest || 'None'}</p>
-                                                            <p><span className="font-medium">Calibration Facility:</span> {product.calibrationFacilityAvailable || 'N/A'}</p>
-                                                            <p><span className="font-medium">External Calibration:</span> {product.calibrationServiceDoneByExternalAgency || 'N/A'}</p>
-                                                            <p><span className="font-medium">Calibration Method:</span> {product.calibrationMethodUsed || 'N/A'}</p>
-                                                        </div>
-                                                    </div>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                <div>
+                                                                    <p><span className="font-medium">Condition:</span> {product.conditionOfProduct || 'N/A'}</p>
+                                                                    <p><span className="font-medium">Items Enclosed:</span> {product.itemEnclosed || 'N/A'}</p>
+                                                                    <p><span className="font-medium">Special Request:</span> {product.specialRequest || 'None'}</p>
+                                                                    
+                                                                    {product.decisionRules && (
+                                                                        <div className="mt-2">
+                                                                            <p className="font-medium">Decision Rules:</p>
+                                                                            <ul className="list-disc pl-5 mt-1 text-sm">
+                                                                                {product.decisionRules.noDecision && <li>No Decision</li>}
+                                                                                {product.decisionRules.simpleConformative && <li>Simple Conformative</li>}
+                                                                                {product.decisionRules.conditionalConformative && <li>Conditional Conformative</li>}
+                                                                                {product.decisionRules.customerDrivenConformative && <li>Customer Driven Conformative</li>}
+                                                                            </ul>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <div>
+                                                                    <p><span className="font-medium">Calibration Periodicity:</span> {product.calibrationPeriodicity || 'N/A'}</p>
+                                                                    <p><span className="font-medium">Review Request:</span> {product.reviewRequest || 'None'}</p>
+                                                                    <p><span className="font-medium">Calibration Facility:</span> {product.calibrationFacilityAvailable || 'N/A'}</p>
+                                                                    <p><span className="font-medium">External Calibration:</span> {product.calibrationServiceDoneByExternalAgency || 'N/A'}</p>
+                                                                    <p><span className="font-medium">Calibration Method:</span> {product.calibrationMethodUsed || 'N/A'}</p>
+                                                                </div>
+                                                            </div>
 
-                                                    <div className="mt-4 flex justify-end">
-                                                        <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm">
-                                                            Update Status
-                                                        </button>
-                                                    </div>
+                                                            <div className="mt-4 flex justify-end">
+                                                                <button 
+                                                                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm"
+                                                                    onClick={() => startEditing(product)}
+                                                                >
+                                                                    Edit Product Details
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
