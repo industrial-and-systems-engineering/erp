@@ -86,6 +86,7 @@ const ServiceRequestFormSchema = new Schema(
     calibrationMethodUsed: { type: String },
     requestStatus: { type: Boolean, default: false },
     URL_NO: { type: String },
+    formUpdated: { type: Boolean, default: false }
   },
   { timestamps: true }
 );

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../../utils/isloggedin.js';
+import { useAuthStore } from '../utils/isloggedin';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 
 const UserNavbar = ({ setFormData }) => 

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
-import TechnicianNavbar from "../../components/navbar/TechnicianNavbar.jsx";
-import { useAuthStore } from "../../utils/isloggedin.js";
-import Footer from "../../components/footer.jsx";
+import { Outlet, useNavigate } from "react-router-dom";
+import TechnicianNavbar from "./components/TechnicianNavbar";
+import Footer from "../../components/Footer";
 
 const TechPage = () => {
   const [formData, setFormData] = useState({username: "",email: "",password: "",usertype: "Technician"});

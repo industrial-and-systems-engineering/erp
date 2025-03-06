@@ -1,5 +1,5 @@
 import React from 'react'
-import LoginpageNavbar from '../../components/navbar/LoginpageNavbar'
+import LoginpageNavbar from './components/LoginpageNavbar'
 import Footer from '../../components/Footer'
 
 const Loginpage = () => {

@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import UserNavbar from "../../components/navbar/UserNavbar.jsx";
+import UserNavbar from "./components/UserNavbar.jsx";
+import { useLocation } from "react-router-dom";
+import { countstore } from "./utils/getcounter.js";
 
 const ErrorDetectorForm = () => {
   const navigate = useNavigate();
   const today = new Date().toISOString().slice(0, 10);
-  
+
   const defaultConditionOfProduct = "technician will enter";
   const defaultItemEnclosed = "labworker will enter";
-  
+
   const [formData, setFormData] = useState({
     srfNo: "kpg/24-25/formno",
     date: today,
@@ -57,6 +59,9 @@ const ErrorDetectorForm = () => {
       decisionRules: decisionRules,
     };
   
+    const nonEmptyRows = tableRows.filter(row =>
+
+    // Filter out empty table rows (all fields empty)
     const nonEmptyRows = tableRows.filter(row =>
       Object.values(row).some(value => value !== "")
     );
@@ -173,7 +178,7 @@ const ErrorDetectorForm = () => {
                 <div className="w-8 h-8 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3">1</div>
                 <h2 className="text-xl font-bold text-gray-800">Customer Information</h2>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 bg-gray-50 p-5 rounded-lg border border-gray-200">
                 {/* SRF Number row */}
                 <div className="col-span-1">
@@ -304,7 +309,7 @@ const ErrorDetectorForm = () => {
                   Optional
                 </div>
               </div>
-              
+
               <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
@@ -359,7 +364,7 @@ const ErrorDetectorForm = () => {
                     </tbody>
                   </table>
                 </div>
-                
+
                 <div className="p-4 bg-gray-100 border-t border-gray-200 flex flex-wrap justify-between items-center gap-4">
                   <button
                     type="button"

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import CTcard from '../../components/EquipmentCard/CTcard';
-import { useCompletedFormsStore } from '../../utils/completedForms';
+import CTcard from './components/CTcard';
+import { useCompletedFormsStore } from './utils/completedForms';
 
 const Tcompleted = () => {
     const { completedForms, fetchCompletedForms } = useCompletedFormsStore();

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
-import UserNavbar from "../../components/navbar/UserNavbar.jsx";
-import { useAuthStore } from "../../utils/isloggedin.js";
-import Footer from "../../components/footer.jsx";
+import { useAuthStore } from "./utils/isloggedin.js";
+import Footer from "../../components/Footer.jsx";
+import UserNavbar from "./components/UserNavbar.jsx";
 
 const UserPage = () => {
   const [formData, setFormData] = useState({

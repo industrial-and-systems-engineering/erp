@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { usePendingFormsStore } from '../../utils/pendingForms';
+import { usePendingFormsStore } from '../utils/pendingForms';
 
 
 const Tcard = ({ equipment, form }) => {
