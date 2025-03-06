@@ -12,6 +12,11 @@ import Tcompleted from './pages/technician/Tcompleted.jsx'
 import UserPage from './pages/user/UserPage.jsx'
 import Usignup from './pages/user/Usignup.jsx'
 import TechPage from './pages/technician/TechPage.jsx'
+import CscPage from './pages/csc/CscPage.jsx'
+import Cscpending from './pages/csc/Cscpending.jsx'
+import Cschomepage from './pages/csc/Cschomepage.jsx'
+import CscCompletedpage from './pages/csc/CscCompletedpage.jsx'
+
 
 const App = () => {
   return (
@@ -32,6 +37,11 @@ const App = () => {
           <Route path="update" element={<Tupdate />} />
         </Route>
 
+        <Route path="/csc" element={<CscPage />}>
+          <Route path="homepage" element={<Cschomepage />} />
+          <Route path="pending" element={<Cscpending />} />
+          <Route path="completed" element={<CscCompletedpage />} />
+        </Route>
 
       </Routes>
     </div>
