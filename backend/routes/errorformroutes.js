@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const passport = require("passport");
 const { srfForms, Product } = require("../models/db");
-//const { isLoggedIn } = require('../middleware');
+const  {isLoggedIn} = require('../middleware1');
 
 function preprocessing(products) {
   for (let i = 0; i < products.length; i++) {
@@ -11,7 +11,7 @@ function preprocessing(products) {
   return products;
 }
 
-router.post("/", async (req, res) => {
+router.post("/",isLoggedIn, async (req, res) => {
   try {
     let { form, products } = req.body;
     console.log("Received form data:", req.body);
@@ -28,14 +28,11 @@ router.post("/", async (req, res) => {
     const newForm = new srfForms({
       ...form,
       user: userId,
-      products: [], // We'll add product IDs later
+      products: [], 
       URL_NO: urlno,
     });
-
-    // Save the products one by one to ensure the pre-save hook runs
     const productIds = [];
     for (const productData of products) {
-      // Make sure the user field is set properly
       const product = new Product({
         ...productData,
         user: userId,

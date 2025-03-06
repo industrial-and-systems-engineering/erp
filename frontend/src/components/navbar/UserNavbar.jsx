@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../utils/isloggedin.js';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 
-const UserNavbar = ({ setFormData }) => {
+const UserNavbar = ({ setFormData }) => 
+    {
     const { isAuthenticated, checkAuth } = useAuthStore();
     const navigate = useNavigate();
 
@@ -17,9 +18,9 @@ const UserNavbar = ({ setFormData }) => {
             checkAuth(false);
 
 
-            setFormData({ username: "", email: "", password: "" });
+            setFormData({ username: "", email: "", password: "",usertype: "customer" });
 
-            navigate("/user"); // Redirect to home after logout
+            navigate("/user"); 
         } catch (error) {
             console.error("Logout error:", error);
         }
@@ -74,7 +75,7 @@ const UserNavbar = ({ setFormData }) => {
                     </div>
                 </div>
 
-                {/* Desktop Menu */}
+               
                 <div className="hidden lg:flex lg:gap-x-12">
                     <Link to="/user" className="text-sm/6 font-semibold ">Home</Link>
                     <Link to="/user/completed" className="text-sm/6 font-semibold ">Completed Products</Link>

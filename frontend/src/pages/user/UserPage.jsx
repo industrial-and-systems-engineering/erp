@@ -9,14 +9,10 @@ const UserPage = () => {
     username: "",
     email: "",
     password: "",
+    usertype: "customer",
   });
-  const[usernumber,setUserNumber]=useState(0);
-  const [loading, setLoading] = useState(true);
-
   const { isAuthenticated, checkAuth } = useAuthStore();
   const navigate = useNavigate();
-  const location = useLocation();
-
   useEffect(() => {
     const verifyAuth = async () => {
       await checkAuth();
@@ -24,17 +20,6 @@ const UserPage = () => {
     };
     verifyAuth();
   }, [checkAuth]);
-
-  useEffect(() => {
-
-    if (!loading) {
-
-      if (!isAuthenticated && location.pathname !== "/user/signup" && location.pathname !== "/user") {
-        alert("You are not authenticated. Please log in.");
-        navigate("/user");
-      }
-    }
-  }, [isAuthenticated, loading, location.pathname, navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -45,17 +30,17 @@ const UserPage = () => {
     try {
       const response = await fetch("/api/user/login", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
-      const data = await response.json();
-      console.log("Response:", data);
-      setUserNumber(data.usernumber);
-
-      if (data.redirectUrl) {
+      if (response.ok) {
+        const data = await response.json();
         await checkAuth();
-        navigate(data.redirectUrl,{ state: { usernumber: data.usernumber } });
+        navigate("/user", { state: { usernumber: data.usernumber } });
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message);
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -64,10 +49,12 @@ const UserPage = () => {
 
   return (
     <>
-      <UserNavbar setFormData={setFormData} />
       <div className="relative isolate px-6 pt-14 lg:px-8 min-h-screen">
         {isAuthenticated ? (
-          <Outlet/>
+          <div>
+            <UserNavbar setFormData={setFormData} />
+            <Outlet />
+          </div>
         ) : (
           <div className="flex justify-center items-center my-30">
             <div className="bg-white p-6 rounded-lg shadow-lg w-1/4 text-center">
@@ -125,7 +112,6 @@ const UserPage = () => {
             </div>
           </div>
         )}
-
       </div>
       <Footer />
     </>

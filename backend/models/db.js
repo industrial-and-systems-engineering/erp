@@ -22,10 +22,6 @@ const ProductSchema = new Schema(
 ProductSchema.pre("save", async function (next) {
   if (this.isNew) {
     try {
-      // if (!this.user) {
-      //   console.log("User ID missing");
-      //   return next(new Error("User ID is required for product creation."));
-      // }
       let userId;
       if (typeof this.user === "string") {
         userId = mongoose.Types.ObjectId(this.user);
@@ -58,8 +54,6 @@ ProductSchema.pre("save", async function (next) {
     next();
   }
 });
-
-// Optional: Create a compound index to ensure productNumber uniqueness per user
 ProductSchema.index({ user: 1, productNumber: 1 }, { unique: true });
 
 const Product = mongoose.model("Product", ProductSchema);
@@ -68,17 +62,14 @@ const ServiceRequestFormSchema = new Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     srfNo: { type: String, required: true },
     date: { type: Date, required: true },
-    probableDate: { type: Date },
-    // Organization details
+    probableDate: { type: Date }, 
     organization: { type: String, required: true },
     address: { type: String, required: true },
     contactPersonName: { type: String, required: true },
     mobileNumber: { type: String, required: true },
     telephoneNumber: { type: String },
     emailId: { type: String, required: true },
-    // Products array
     products: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
-    // Additional details
     conditionOfProduct: { type: String },
     itemEnclosed: { type: String },
     specialRequest: { type: String },

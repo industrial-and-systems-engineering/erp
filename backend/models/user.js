@@ -10,6 +10,10 @@ const UserSchema = new Schema({
     required: true,
     unique: true
   },
+
+  usertype:{
+    type:String
+  },
   userNumber: {
     type: Number,
     unique: true

@@ -53,6 +53,7 @@ export default function LoginpageNavbar() {
                         ))}
                         <Link to="/user" className="text-sm/6 font-semibold">User Log in</Link>
                         <Link to="/technician" className="text-sm/6 font-semibold">Technician Log in</Link>
+                        <Link to="/csc" className="text-sm font-bold p-2">customerservice cell Log in</Link>
                     </div>
                 </div>
 
@@ -68,6 +69,7 @@ export default function LoginpageNavbar() {
                 <div className="hidden lg:flex lg:flex-1 lg:justify-end">
                     <Link to="/user" className="text-sm font-bold p-2">User Log in</Link>
                     <Link to="/technician" className="text-sm font-bold p-2">Technician Log in</Link>
+                    <Link to="/csc" className="text-sm font-bold p-2">customerservice cell Log in</Link>
                 </div>
             </nav>
         </header>

@@ -1,18 +1,25 @@
-import React from 'react'
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
-import { Link, Links } from 'react-router-dom'
-import { Button } from '@headlessui/react'
+import React, { useState, useEffect } from "react";
+import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../utils/isloggedin.js';
 
-const TechnicianNavbar = ({ setFormData, setIsAuthenticated }) => {
+const TechnicianNavbar = ({ setFormData })=> {
 
+  const { isAuthenticated, checkAuth } = useAuthStore();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
   const handleLogout = async () => {
     try {
-      const response = await fetch("/api/technician/logout");
-      if (response.ok) {
-        setIsAuthenticated(false);
-        setFormData({ username: "", email: "", password: "" });
-        navigate("/technician");
-      }
+      await fetch("/api/user/logout", { method: "GET" });
+      checkAuth(false);
+
+
+      setFormData({ username: "", email: "", password: "", usertype: "Technician" });
+
+      navigate("/technician");
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -67,12 +74,15 @@ const TechnicianNavbar = ({ setFormData, setIsAuthenticated }) => {
         </div>
 
         <div className="hidden lg:flex lg:flex-1 lg:justify-end">
-          <Link to="#"
-            onClick={handleLogout}
-            className="text-sm font-semibold  p-2"
-          >
-            Log out
-          </Link>
+          {isAuthenticated && (
+            <Link
+              to="#"
+              onClick={handleLogout}
+              className="text-sm/6 font-semibold  p-2"
+            >
+              Sign Out
+            </Link>
+          )}
         </div>
       </nav>
     </header>
