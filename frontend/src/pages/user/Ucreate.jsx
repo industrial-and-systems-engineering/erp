@@ -59,8 +59,6 @@ const ErrorDetectorForm = () => {
       decisionRules: decisionRules,
     };
   
-    const nonEmptyRows = tableRows.filter(row =>
-
     // Filter out empty table rows (all fields empty)
     const nonEmptyRows = tableRows.filter(row =>
       Object.values(row).some(value => value !== "")
