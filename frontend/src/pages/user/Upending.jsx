@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import Ucard from '../../components/EquipmentCard/Ucard';
+import Ucard from './components/Ucard';
 
 const Ucompleted = () => {
   const [calibratedForms, setCalibratedForms] = useState([]);

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import Ucard from '../../components/EquipmentCard/Ucard.jsx';
+import Ucard from './components/Ucard.jsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import generatePdf from '../../utils/pdfGeneration.js';
+import generatePdf from './utils/pdfGeneration.js';
 const Ucompleted = () => {
   const [calibratedForms, setCalibratedForms] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { usePendingFormsStore } from '../../utils/pendingForms';
+import { usePendingFormsStore } from './utils/pendingFroms';
 
 const Tpending = () => {
     const { pendingForms, fetchPendingForms } = usePendingFormsStore();
@@ -24,7 +24,7 @@ const Tpending = () => {
     }, [fetchPendingForms]);
 
     const toggleFormDetails = (form) => {
-        setSelectedForm(prevForm => 
+        setSelectedForm(prevForm =>
             prevForm && prevForm._id === form._id ? null : form
         );
     };
@@ -44,18 +44,18 @@ const Tpending = () => {
     return (
         <div className="container mx-auto px-4 py-6">
             <h1 className="text-2xl font-bold my-6 mb-4 text-center">Pending SRF Forms</h1>
-            
+
             {pendingForms.length > 0 ? (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-1 bg-gray-50 p-4 rounded-lg shadow">
                         <h2 className="text-lg font-semibold mb-3 pb-2 border-b">SRF Forms</h2>
                         <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
                             {pendingForms.map((form) => (
-                                <div 
-                                    key={form._id} 
+                                <div
+                                    key={form._id}
                                     className={`p-4 rounded-lg shadow-sm cursor-pointer transition-all
-                                        ${selectedForm && selectedForm._id === form._id 
-                                            ? 'bg-blue-100 border-l-4 border-blue-500' 
+                                        ${selectedForm && selectedForm._id === form._id
+                                            ? 'bg-blue-100 border-l-4 border-blue-500'
                                             : 'bg-white hover:bg-gray-50'}`}
                                     onClick={() => toggleFormDetails(form)}
                                 >
@@ -69,8 +69,8 @@ const Tpending = () => {
                                     <p className="text-sm text-gray-600">Products: {form.products?.length || 0}</p>
                                     <button
                                         className={`mt-2 w-full p-2 rounded text-sm font-medium transition-colors text-white
-                                            ${selectedForm && selectedForm._id === form._id 
-                                                ? 'bg-gray-500 hover:bg-gray-600' 
+                                            ${selectedForm && selectedForm._id === form._id
+                                                ? 'bg-gray-500 hover:bg-gray-600'
                                                 : 'bg-blue-500 hover:bg-blue-600'}`}
                                     >
                                         {selectedForm && selectedForm._id === form._id
@@ -81,7 +81,7 @@ const Tpending = () => {
                             ))}
                         </div>
                     </div>
-                    
+
                     <div className="lg:col-span-2">
                         {selectedForm ? (
                             <div className="bg-white p-6 rounded-lg shadow-md">
@@ -92,7 +92,7 @@ const Tpending = () => {
                                             {selectedForm.requestStatus === false ? "Pending" : "Completed"}
                                         </span>
                                     </div>
-                                    
+
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                         <div>
                                             <h3 className="text-lg font-medium mb-2">Customer Details</h3>
@@ -114,7 +114,7 @@ const Tpending = () => {
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div>
                                     <h3 className="text-lg font-medium mb-3">Products</h3>
                                     {selectedForm.products && selectedForm.products.length > 0 ? (
@@ -124,7 +124,7 @@ const Tpending = () => {
                                                     <h4 className="font-medium text-lg border-b pb-2 mb-3">
                                                         Product #{index + 1} <span className="text-gray-500 text-sm ml-2">ID: {product._id}</span>
                                                     </h4>
-                                                    
+
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         <div>
                                                             <p><span className="font-medium">Condition:</span> {product.conditionOfProduct || 'N/A'}</p>
@@ -139,7 +139,7 @@ const Tpending = () => {
                                                             <p><span className="font-medium">Calibration Method:</span> {product.calibrationMethodUsed || 'N/A'}</p>
                                                         </div>
                                                     </div>
-                                                    
+
                                                     <div className="mt-4 flex justify-end">
                                                         <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm">
                                                             Update Status

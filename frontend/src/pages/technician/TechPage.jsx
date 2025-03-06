@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
-import TechnicianNavbar from "../../components/navbar/TechnicianNavbar";
-import Footer from "../../components/footer";
+import TechnicianNavbar from "./components/TechnicianNavbar";
+import Footer from "../../components/Footer";
 
 const TechPage = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);

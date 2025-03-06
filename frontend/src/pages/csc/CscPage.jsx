@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
-import TechnicianNavbar from "../../components/navbar/TechnicianNavbar";
+import TechnicianNavbar from "./components/TechnicianNavbar";
 import Footer from "../../components/footer";
 
 const TechPage = () => {

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
-import UserNavbar from "../../components/navbar/UserNavbar.jsx";
-import { useAuthStore } from "../../utils/isloggedin.js";
+import { useAuthStore } from "./utils/isloggedin.js";
 import Footer from "../../components/footer.jsx";
+import UserNavbar from "./components/UserNavbar.jsx";
 
 const UserPage = () => {
   const [formData, setFormData] = useState({
@@ -10,7 +10,7 @@ const UserPage = () => {
     email: "",
     password: "",
   });
-  const[usernumber,setUserNumber]=useState(0);
+  const [usernumber, setUserNumber] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const { isAuthenticated, checkAuth } = useAuthStore();
@@ -55,7 +55,7 @@ const UserPage = () => {
 
       if (data.redirectUrl) {
         await checkAuth();
-        navigate(data.redirectUrl,{ state: { usernumber: data.usernumber } });
+        navigate(data.redirectUrl, { state: { usernumber: data.usernumber } });
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -67,7 +67,7 @@ const UserPage = () => {
       <UserNavbar setFormData={setFormData} />
       <div className="relative isolate px-6 pt-14 lg:px-8 min-h-screen">
         {isAuthenticated ? (
-          <Outlet/>
+          <Outlet />
         ) : (
           <div className="flex justify-center items-center my-30">
             <div className="bg-white p-6 rounded-lg shadow-lg w-1/4 text-center">

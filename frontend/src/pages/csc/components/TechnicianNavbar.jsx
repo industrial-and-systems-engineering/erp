@@ -1,7 +1,6 @@
 import React from 'react'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 import { Link, Links } from 'react-router-dom'
-import { Button } from '@headlessui/react'
 
 const TechnicianNavbar = ({ setFormData, setIsAuthenticated }) => {
 

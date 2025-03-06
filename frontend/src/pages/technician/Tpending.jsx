@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import Tcard from '../../components/EquipmentCard/Tcard';
-import { usePendingFormsStore } from '../../utils/pendingForms';
+import Tcard from './components/Tcard';
+import { usePendingFormsStore } from './utils/pendingForms';
 
 
 
