@@ -128,23 +128,33 @@ router.put("/update/:pid/:fid", async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
-//   if (!details.calibrationDetails) {
-//     return res
-//       .status(400)
-//       .json({ success: false, message: "Calibration details are required" });
-//   }
 
-//   try {
-//     const updatedProduct = await Product.findByIdAndUpdate(
-//       id,
-//       { calibrationDetails: details.calibrationDetails, isCalibrated: true }, // Allow true/false values
-//       { new: true }
-//     );
+router.put("/updateform/:fid", async (req, res) => {
+  const { fid } = req.params;
+  try {
+    const form = await srfForms.findByIdAndUpdate(
+      fid,
+      {
+        conditionOfProduct: req.body.conditionOfProduct,
+        itemEnclosed: req.body.itemEnclosed,
+        specialRequest: req.body.specialRequest,
+        decisionRules: req.body.decisionRules,
+        calibrationPeriodicity: req.body.calibrationPeriodicity,
+        reviewRequest: req.body.reviewRequest,
+        calibrationFacilityAvailable: req.body.calibrationFacilityAvailable,
+        calibrationServiceDoneByExternalAgency: req.body.calibrationServiceDoneByExternalAgency,
+        calibrationMethodUsed: req.body.calibrationMethodUsed,
+        formUpdated: true,
+      },
+      { new: true }
+    ).populate("products");
 
-//     res.status(200).json({ success: true, data: updatedProduct });
-//   } catch (error) {
-//     res.status(500).json({ success: false, message: error.message });
-//   }
-// });
+    res.status(200).json({ success: true, data: form });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+
 
 module.exports = router;
