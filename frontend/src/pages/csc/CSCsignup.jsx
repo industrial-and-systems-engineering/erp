@@ -40,7 +40,9 @@ function CSCsignup() {
     <div className="h-screen bg-gradient-to-r from-pink-300 to-pink-200 flex flex-col">
       <div className="flex-grow flex justify-center items-center">
         <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-5">Create an Account</h1>
+          <h1 className="text-2xl font-bold text-gray-800 mb-5">
+            Create an Account
+          </h1>
           <form className="space-y-4" onSubmit={handleSubmit}>
             <label className="block text-left text-gray-600 text-sm">
               Username:
@@ -80,7 +82,8 @@ function CSCsignup() {
             </label>
             <button
               type="submit"
-              className="w-full p-3 bg-pink-400 text-white rounded-lg hover:bg-pink-500 transition duration-300">
+              className="w-full p-3 bg-pink-400 text-white rounded-lg hover:bg-pink-500 transition duration-300"
+            >
               Sign Up
             </button>
           </form>

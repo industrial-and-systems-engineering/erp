@@ -20,26 +20,26 @@ const UserSchema = new Schema({
   }
 });
 
-//presave hooks used for doing any operation before saving this scheam to database
-//ypu can access information that comes here using this keyword
-//this.isNew is used to check if the document is new or not
-UserSchema.pre('save', async function (next) {
-  if (this.isNew) {
-    try {
-      const counter = await Counter.findByIdAndUpdate(
-        { _id: "userNumber" },
-        { $inc: { sequence_value: 1 } },
-        { new: true, upsert: true }
-      );
-      this.userNumber = counter.sequence_value;
-      next();
-    } catch (err) {
-      next(err);
-    }
-  } else {
-    next();
-  }
-});
+// //presave hooks used for doing any operation before saving this scheam to database
+// //ypu can access information that comes here using this keyword
+// //this.isNew is used to check if the document is new or not
+// UserSchema.pre('save', async function (next) {
+//   if (this.isNew) {
+//     try {
+//       const counter = await Counter.findByIdAndUpdate(
+//         { _id: "userNumber" },
+//         { $inc: { sequence_value: 1 } },
+//         { new: true, upsert: true }
+//       );
+//       this.userNumber = counter.sequence_value;
+//       next();
+//     } catch (err) {
+//       next(err);
+//     }
+//   } else {
+//     next();
+//   }
+// });
 
 
 UserSchema.plugin(passportLocalMongoose);

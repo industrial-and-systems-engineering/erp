@@ -17,7 +17,7 @@ import Cscpending from './pages/csc/Cscpending.jsx'
 import Cschomepage from './pages/csc/Cschomepage.jsx'
 import CscCompletedpage from './pages/csc/CscCompletedpage.jsx'
 import Tsignup from './pages/technician/Tsignup.jsx'
-import CSCsignup from './pages/customerservicecell/CSCsignup.jsx'
+import CSCsignup from './pages/csc/CSCsignup.jsx'
 
 
 const App = () => {
