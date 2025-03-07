@@ -105,9 +105,7 @@ router.put("/update/:pid/:fid", async (req, res) => {
     const updatedProduct = await Product.findByIdAndUpdate(
       pid,
       {
-        calibrationStatus: req.body.calibrationStatus,
-        calibratedDate: req.body.calibrationDate,
-        remarks: req.body.remarks,
+        ...req.body,
         isCalibrated: true,
       },
       { new: true }

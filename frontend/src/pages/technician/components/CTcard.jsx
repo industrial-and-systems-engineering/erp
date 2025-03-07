@@ -171,6 +171,46 @@ const CTcard = ({ equipment, form }) => {
                             </div>
 
                         </div>
+                        <div className="mt-8"></div>
+                        <h2 className="font-semibold mb-2">Observations:</h2>
+                        <div className="overflow-x-auto">
+                            <table className="w-full border-collapse border-2 border-black">
+                                <thead>
+                                    <tr>
+                                        <th className="border-2 border-black p-2 text-left">Observatio No.</th>
+                                        <th className="border-2 border-black p-2 text-left">Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {equipment.observations.map((obs, index) => (
+                                        <tr key={index}>
+                                            <td className="border border-black p-1">{index + 1}</td>
+                                            <td className="border border-black p-1">{obs}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="mt-8"></div>
+                        <h2 className="font-semibold mb-2">Statistics:</h2>
+                        <div className="overflow-x-auto">
+                            <table className="w-full border-collapse border-2 border-black">
+                                <thead>
+                                    <tr>
+                                        <th className="border-2 border-black p-2 text-left">Mean</th>
+                                        <th className="border-2 border-black p-2 text-left">Std Dev</th>
+                                        <th className="border-2 border-black p-2 text-left">Uncertainty</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td className="border border-black p-1">{equipment.mean}</td>
+                                        <td className="border border-black p-1">{equipment.standardDeviation}</td>
+                                        <td className="border border-black p-1">{equipment.uncertainty}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </form>
                 </div>
             </div>
