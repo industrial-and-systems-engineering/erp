@@ -6,8 +6,8 @@ const Tpending = () => {
     const [selectedForm, setSelectedForm] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [editingProduct, setEditingProduct] = useState(null);
-    const [productChanges, setProductChanges] = useState({});
+    const [isEditing, setIsEditing] = useState(false);
+    const [formChanges, setFormChanges] = useState({});
 
     useEffect(() => {
         const loadForms = async () => {
@@ -30,44 +30,50 @@ const Tpending = () => {
             prevForm && prevForm._id === form._id ? null : form
         );
         // Reset editing state when changing forms
-        setEditingProduct(null);
-        setProductChanges({});
+        setIsEditing(false);
+        setFormChanges({});
     };
 
-    const startEditing = (product) => {
-        setEditingProduct(product._id);
-        setProductChanges({
-            conditionOfProduct: product.conditionOfProduct || '',
-            itemEnclosed: product.itemEnclosed || '',
-            specialRequest: product.specialRequest || '',
-            decisionRules: product.decisionRules || {
+    const startEditing = () => {
+        // Initialize form changes with values from the first product
+        // or with default values if no products exist
+        const initialProduct = selectedForm.products && selectedForm.products.length > 0
+            ? selectedForm.products[0]
+            : {};
+
+        setFormChanges({
+            conditionOfProduct: initialProduct.conditionOfProduct || '',
+            itemEnclosed: initialProduct.itemEnclosed || '',
+            specialRequest: initialProduct.specialRequest || '',
+            decisionRules: initialProduct.decisionRules || {
                 noDecision: false,
                 simpleConformative: false,
                 conditionalConformative: false,
                 customerDrivenConformative: false
             },
-            calibrationPeriodicity: product.calibrationPeriodicity || '',
-            reviewRequest: product.reviewRequest || '',
-            calibrationFacilityAvailable: product.calibrationFacilityAvailable || '',
-            calibrationServiceDoneByExternalAgency: product.calibrationServiceDoneByExternalAgency || '',
-            calibrationMethodUsed: product.calibrationMethodUsed || ''
+            calibrationPeriodicity: initialProduct.calibrationPeriodicity || '',
+            reviewRequest: initialProduct.reviewRequest || '',
+            calibrationFacilityAvailable: initialProduct.calibrationFacilityAvailable || '',
+            calibrationServiceDoneByExternalAgency: initialProduct.calibrationServiceDoneByExternalAgency || '',
+            calibrationMethodUsed: initialProduct.calibrationMethodUsed || ''
         });
+        setIsEditing(true);
     };
 
     const cancelEditing = () => {
-        setEditingProduct(null);
-        setProductChanges({});
+        setIsEditing(false);
+        setFormChanges({});
     };
 
     const handleInputChange = (field, value) => {
-        setProductChanges(prev => ({
+        setFormChanges(prev => ({
             ...prev,
             [field]: value
         }));
     };
 
     const handleCheckboxChange = (rule, checked) => {
-        setProductChanges(prev => ({
+        setFormChanges(prev => ({
             ...prev,
             decisionRules: {
                 ...prev.decisionRules,
@@ -76,10 +82,14 @@ const Tpending = () => {
         }));
     };
 
-    const saveProductChanges = async (formId, productId) => {
+    const saveFormChanges = async () => {
         try {
-            // This would be an API call to update the product
-            await updateFormDetails(formId, productId, productChanges);
+            // This would update all products in the form with the same values
+            if (selectedForm && selectedForm.products) {
+                for (const product of selectedForm.products) {
+                    await updateFormDetails(selectedForm._id, product._id, formChanges);
+                }
+            }
             
             // Update the local state with the changes
             setSelectedForm(prevForm => {
@@ -87,18 +97,16 @@ const Tpending = () => {
                 
                 return {
                     ...prevForm,
-                    products: prevForm.products.map(prod => 
-                        prod._id === productId ? { ...prod, ...productChanges } : prod
-                    )
+                    products: prevForm.products.map(prod => ({ ...prod, ...formChanges }))
                 };
             });
             
             // Exit edit mode
-            setEditingProduct(null);
-            setProductChanges({});
+            setIsEditing(false);
+            setFormChanges({});
         } catch (err) {
-            console.error("Failed to update product", err);
-            setError("Failed to update product details");
+            console.error("Failed to update form", err);
+            setError("Failed to update form details");
         }
     };
 
@@ -189,232 +197,260 @@ const Tpending = () => {
                                 </div>
 
                                 <div>
-                                    <h3 className="text-lg font-medium mb-3">Products</h3>
-                                    {selectedForm.products && selectedForm.products.length > 0 ? (
-                                        <div className="space-y-4">
-                                            {selectedForm.products.map((product, index) => (
-                                                <div key={product._id} className="border rounded-lg p-4 bg-gray-50">
-                                                    <h4 className="font-medium text-lg border-b pb-2 mb-3">
-                                                        Product #{index + 1} <span className="text-gray-500 text-sm ml-2">ID: {product._id}</span>
-                                                    </h4>
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h3 className="text-lg font-medium">Products ({selectedForm.products?.length || 0})</h3>
+                                        {!isEditing && (
+                                            <button 
+                                                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm"
+                                                onClick={startEditing}
+                                            >
+                                                Edit Form Details
+                                            </button>
+                                        )}
+                                    </div>
 
-                                                    {editingProduct === product._id ? (
-                                                        // Editing mode
-                                                        <div>
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                                                <div className="space-y-3">
-                                                                    <div>
-                                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Condition of Product</label>
-                                                                        <select 
-                                                                            className="w-full border-gray-300 rounded-md shadow-sm p-2"
-                                                                            value={productChanges.conditionOfProduct}
-                                                                            onChange={(e) => handleInputChange('conditionOfProduct', e.target.value)}
-                                                                        >
-                                                                            <option value="">Select condition</option>
-                                                                            <option value="good">Good</option>
-                                                                            <option value="average">Average</option>
-                                                                            <option value="poor">Poor</option>
-                                                                        </select>
-                                                                    </div>
-                                                                    
-                                                                    <div>
-                                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Items Enclosed</label>
-                                                                        <input 
-                                                                            type="text" 
-                                                                            className="w-full border-gray-300 rounded-md shadow-sm p-2"
-                                                                            value={productChanges.itemEnclosed}
-                                                                            onChange={(e) => handleInputChange('itemEnclosed', e.target.value)}
-                                                                        />
-                                                                    </div>
-                                                                    
-                                                                    <div>
-                                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Special Request</label>
-                                                                        <textarea 
-                                                                            className="w-full border-gray-300 rounded-md shadow-sm p-2"
-                                                                            value={productChanges.specialRequest}
-                                                                            onChange={(e) => handleInputChange('specialRequest', e.target.value)}
-                                                                            rows="2"
-                                                                        ></textarea>
-                                                                    </div>
-                                                                </div>
-                                                                
-                                                                <div className="space-y-3">
-                                                                    <div>
-                                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Calibration Periodicity</label>
-                                                                        <select 
-                                                                            className="w-full border-gray-300 rounded-md shadow-sm p-2"
-                                                                            value={productChanges.calibrationPeriodicity}
-                                                                            onChange={(e) => handleInputChange('calibrationPeriodicity', e.target.value)}
-                                                                        >
-                                                                            <option value="">Select periodicity</option>
-                                                                            <option value="daily">Daily</option>
-                                                                            <option value="weekly">Weekly</option>
-                                                                            <option value="monthly">Monthly</option>
-                                                                            <option value="quarterly">Quarterly</option>
-                                                                            <option value="yearly">Yearly</option>
-                                                                        </select>
-                                                                    </div>
-                                                                    
-                                                                    <div>
-                                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Review Request</label>
-                                                                        <input 
-                                                                            type="text" 
-                                                                            className="w-full border-gray-300 rounded-md shadow-sm p-2"
-                                                                            value={productChanges.reviewRequest}
-                                                                            onChange={(e) => handleInputChange('reviewRequest', e.target.value)}
-                                                                        />
-                                                                    </div>
-                                                                    
-                                                                    <div>
-                                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Calibration Facility</label>
-                                                                        <select 
-                                                                            className="w-full border-gray-300 rounded-md shadow-sm p-2"
-                                                                            value={productChanges.calibrationFacilityAvailable}
-                                                                            onChange={(e) => handleInputChange('calibrationFacilityAvailable', e.target.value)}
-                                                                        >
-                                                                            <option value="">Select facility</option>
-                                                                            <option value="lab">Lab</option>
-                                                                            <option value="onsite">Onsite</option>
-                                                                            <option value="external">External</option>
-                                                                        </select>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            
-                                                            <div className="space-y-3">
-                                                                <div>
-                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">External Calibration</label>
-                                                                    <select 
-                                                                        className="w-full border-gray-300 rounded-md shadow-sm p-2"
-                                                                        value={productChanges.calibrationServiceDoneByExternalAgency}
-                                                                        onChange={(e) => handleInputChange('calibrationServiceDoneByExternalAgency', e.target.value)}
-                                                                    >
-                                                                        <option value="">Select option</option>
-                                                                        <option value="yes">Yes</option>
-                                                                        <option value="no">No</option>
-                                                                    </select>
-                                                                </div>
-                                                                
-                                                                <div>
-                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Calibration Method</label>
-                                                                    <input 
-                                                                        type="text" 
-                                                                        className="w-full border-gray-300 rounded-md shadow-sm p-2"
-                                                                        value={productChanges.calibrationMethodUsed}
-                                                                        onChange={(e) => handleInputChange('calibrationMethodUsed', e.target.value)}
-                                                                    />
-                                                                </div>
-                                                                
-                                                                <div>
-                                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Decision Rules</label>
-                                                                    <div className="space-y-2">
-                                                                        <div className="flex items-center">
-                                                                            <input 
-                                                                                type="checkbox" 
-                                                                                id={`noDecision-${product._id}`}
-                                                                                className="mr-2"
-                                                                                checked={productChanges.decisionRules?.noDecision || false}
-                                                                                onChange={(e) => handleCheckboxChange('noDecision', e.target.checked)}
-                                                                            />
-                                                                            <label htmlFor={`noDecision-${product._id}`}>No Decision</label>
-                                                                        </div>
-                                                                        
-                                                                        <div className="flex items-center">
-                                                                            <input 
-                                                                                type="checkbox" 
-                                                                                id={`simpleConformative-${product._id}`}
-                                                                                className="mr-2"
-                                                                                checked={productChanges.decisionRules?.simpleConformative || false}
-                                                                                onChange={(e) => handleCheckboxChange('simpleConformative', e.target.checked)}
-                                                                            />
-                                                                            <label htmlFor={`simpleConformative-${product._id}`}>Simple Conformative</label>
-                                                                        </div>
-                                                                        
-                                                                        <div className="flex items-center">
-                                                                            <input 
-                                                                                type="checkbox" 
-                                                                                id={`conditionalConformative-${product._id}`}
-                                                                                className="mr-2"
-                                                                                checked={productChanges.decisionRules?.conditionalConformative || false}
-                                                                                onChange={(e) => handleCheckboxChange('conditionalConformative', e.target.checked)}
-                                                                            />
-                                                                            <label htmlFor={`conditionalConformative-${product._id}`}>Conditional Conformative</label>
-                                                                        </div>
-                                                                        
-                                                                        <div className="flex items-center">
-                                                                            <input 
-                                                                                type="checkbox" 
-                                                                                id={`customerDrivenConformative-${product._id}`}
-                                                                                className="mr-2"
-                                                                                checked={productChanges.decisionRules?.customerDrivenConformative || false}
-                                                                                onChange={(e) => handleCheckboxChange('customerDrivenConformative', e.target.checked)}
-                                                                            />
-                                                                            <label htmlFor={`customerDrivenConformative-${product._id}`}>Customer Driven Conformative</label>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            
-                                                            <div className="mt-4 flex justify-end space-x-3">
-                                                                <button 
-                                                                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg text-sm"
-                                                                    onClick={cancelEditing}
-                                                                >
-                                                                    Cancel
-                                                                </button>
-                                                                <button 
-                                                                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm"
-                                                                    onClick={() => saveProductChanges(selectedForm._id, product._id)}
-                                                                >
-                                                                    Save Changes
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        // View mode
-                                                        <div>
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                <div>
-                                                                    <p><span className="font-medium">Condition:</span> {product.conditionOfProduct || 'N/A'}</p>
-                                                                    <p><span className="font-medium">Items Enclosed:</span> {product.itemEnclosed || 'N/A'}</p>
-                                                                    <p><span className="font-medium">Special Request:</span> {product.specialRequest || 'None'}</p>
-                                                                    
-                                                                    {product.decisionRules && (
-                                                                        <div className="mt-2">
-                                                                            <p className="font-medium">Decision Rules:</p>
-                                                                            <ul className="list-disc pl-5 mt-1 text-sm">
-                                                                                {product.decisionRules.noDecision && <li>No Decision</li>}
-                                                                                {product.decisionRules.simpleConformative && <li>Simple Conformative</li>}
-                                                                                {product.decisionRules.conditionalConformative && <li>Conditional Conformative</li>}
-                                                                                {product.decisionRules.customerDrivenConformative && <li>Customer Driven Conformative</li>}
-                                                                            </ul>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                                <div>
-                                                                    <p><span className="font-medium">Calibration Periodicity:</span> {product.calibrationPeriodicity || 'N/A'}</p>
-                                                                    <p><span className="font-medium">Review Request:</span> {product.reviewRequest || 'None'}</p>
-                                                                    <p><span className="font-medium">Calibration Facility:</span> {product.calibrationFacilityAvailable || 'N/A'}</p>
-                                                                    <p><span className="font-medium">External Calibration:</span> {product.calibrationServiceDoneByExternalAgency || 'N/A'}</p>
-                                                                    <p><span className="font-medium">Calibration Method:</span> {product.calibrationMethodUsed || 'N/A'}</p>
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="mt-4 flex justify-end">
-                                                                <button 
-                                                                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm"
-                                                                    onClick={() => startEditing(product)}
-                                                                >
-                                                                    Edit Product Details
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    )}
+                                    {isEditing ? (
+                                        // Editing mode for all products in the form
+                                        <div className="border rounded-lg p-4 bg-gray-50">
+                                            <h4 className="font-medium text-lg border-b pb-2 mb-3">
+                                                Edit Form Details <span className="text-gray-500 text-sm ml-2">(Will apply to all products)</span>
+                                            </h4>
+                                            
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                                <div className="space-y-3">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Condition of Product</label>
+                                                        <select 
+                                                            className="w-full border-gray-300 rounded-md shadow-sm p-2"
+                                                            value={formChanges.conditionOfProduct}
+                                                            onChange={(e) => handleInputChange('conditionOfProduct', e.target.value)}
+                                                        >
+                                                            <option value="">Select condition</option>
+                                                            <option value="good">Good</option>
+                                                            <option value="average">Average</option>
+                                                            <option value="poor">Poor</option>
+                                                        </select>
+                                                    </div>
+                                                    
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Items Enclosed</label>
+                                                        <input 
+                                                            type="text" 
+                                                            className="w-full border-gray-300 rounded-md shadow-sm p-2"
+                                                            value={formChanges.itemEnclosed}
+                                                            onChange={(e) => handleInputChange('itemEnclosed', e.target.value)}
+                                                        />
+                                                    </div>
+                                                    
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Special Request</label>
+                                                        <textarea 
+                                                            className="w-full border-gray-300 rounded-md shadow-sm p-2"
+                                                            value={formChanges.specialRequest}
+                                                            onChange={(e) => handleInputChange('specialRequest', e.target.value)}
+                                                            rows="2"
+                                                        ></textarea>
+                                                    </div>
                                                 </div>
-                                            ))}
+                                                
+                                                <div className="space-y-3">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Calibration Periodicity</label>
+                                                        <select 
+                                                            className="w-full border-gray-300 rounded-md shadow-sm p-2"
+                                                            value={formChanges.calibrationPeriodicity}
+                                                            onChange={(e) => handleInputChange('calibrationPeriodicity', e.target.value)}
+                                                        >
+                                                            <option value="">Select periodicity</option>
+                                                            <option value="daily">Daily</option>
+                                                            <option value="weekly">Weekly</option>
+                                                            <option value="monthly">Monthly</option>
+                                                            <option value="quarterly">Quarterly</option>
+                                                            <option value="yearly">Yearly</option>
+                                                        </select>
+                                                    </div>
+                                                    
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Review Request</label>
+                                                        <input 
+                                                            type="text" 
+                                                            className="w-full border-gray-300 rounded-md shadow-sm p-2"
+                                                            value={formChanges.reviewRequest}
+                                                            onChange={(e) => handleInputChange('reviewRequest', e.target.value)}
+                                                        />
+                                                    </div>
+                                                    
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Calibration Facility</label>
+                                                        <select 
+                                                            className="w-full border-gray-300 rounded-md shadow-sm p-2"
+                                                            value={formChanges.calibrationFacilityAvailable}
+                                                            onChange={(e) => handleInputChange('calibrationFacilityAvailable', e.target.value)}
+                                                        >
+                                                            <option value="">Select facility</option>
+                                                            <option value="lab">Lab</option>
+                                                            <option value="onsite">Onsite</option>
+                                                            <option value="external">External</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">External Calibration</label>
+                                                    <select 
+                                                        className="w-full border-gray-300 rounded-md shadow-sm p-2"
+                                                        value={formChanges.calibrationServiceDoneByExternalAgency}
+                                                        onChange={(e) => handleInputChange('calibrationServiceDoneByExternalAgency', e.target.value)}
+                                                    >
+                                                        <option value="">Select option</option>
+                                                        <option value="yes">Yes</option>
+                                                        <option value="no">No</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Calibration Method</label>
+                                                    <input 
+                                                        type="text" 
+                                                        className="w-full border-gray-300 rounded-md shadow-sm p-2"
+                                                        value={formChanges.calibrationMethodUsed}
+                                                        onChange={(e) => handleInputChange('calibrationMethodUsed', e.target.value)}
+                                                    />
+                                                </div>
+                                                
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Decision Rules</label>
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                id="noDecision"
+                                                                className="mr-2"
+                                                                checked={formChanges.decisionRules?.noDecision || false}
+                                                                onChange={(e) => handleCheckboxChange('noDecision', e.target.checked)}
+                                                            />
+                                                            <label htmlFor="noDecision">No Decision</label>
+                                                        </div>
+                                                        
+                                                        <div className="flex items-center">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                id="simpleConformative"
+                                                                className="mr-2"
+                                                                checked={formChanges.decisionRules?.simpleConformative || false}
+                                                                onChange={(e) => handleCheckboxChange('simpleConformative', e.target.checked)}
+                                                            />
+                                                            <label htmlFor="simpleConformative">Simple Conformative</label>
+                                                        </div>
+                                                        
+                                                        <div className="flex items-center">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                id="conditionalConformative"
+                                                                className="mr-2"
+                                                                checked={formChanges.decisionRules?.conditionalConformative || false}
+                                                                onChange={(e) => handleCheckboxChange('conditionalConformative', e.target.checked)}
+                                                            />
+                                                            <label htmlFor="conditionalConformative">Conditional Conformative</label>
+                                                        </div>
+                                                        
+                                                        <div className="flex items-center">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                id="customerDrivenConformative"
+                                                                className="mr-2"
+                                                                checked={formChanges.decisionRules?.customerDrivenConformative || false}
+                                                                onChange={(e) => handleCheckboxChange('customerDrivenConformative', e.target.checked)}
+                                                            />
+                                                            <label htmlFor="customerDrivenConformative">Customer Driven Conformative</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="mt-4 flex justify-end space-x-3">
+                                                <button 
+                                                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg text-sm"
+                                                    onClick={cancelEditing}
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button 
+                                                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm"
+                                                    onClick={saveFormChanges}
+                                                >
+                                                    Save Changes
+                                                </button>
+                                            </div>
                                         </div>
                                     ) : (
-                                        <p className="text-gray-500 italic">No products found in this form.</p>
+                                        // Display all products in the form
+                                        <div>
+                                            {selectedForm.products && selectedForm.products.length > 0 ? (
+                                                <div className="space-y-4">
+                                                    {/* Form level details summary */}
+                                                    <div className="border rounded-lg p-4 bg-gray-50">
+                                                        <h4 className="font-medium text-lg border-b pb-2 mb-3">
+                                                            Form Details
+                                                        </h4>
+
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <div>
+                                                                <p><span className="font-medium">Condition:</span> {selectedForm.products[0].conditionOfProduct || 'N/A'}</p>
+                                                                <p><span className="font-medium">Items Enclosed:</span> {selectedForm.products[0].itemEnclosed || 'N/A'}</p>
+                                                                <p><span className="font-medium">Special Request:</span> {selectedForm.products[0].specialRequest || 'None'}</p>
+                                                                
+                                                                {selectedForm.products[0].decisionRules && (
+                                                                    <div className="mt-2">
+                                                                        <p className="font-medium">Decision Rules:</p>
+                                                                        <ul className="list-disc pl-5 mt-1 text-sm">
+                                                                            {selectedForm.products[0].decisionRules.noDecision && <li>No Decision</li>}
+                                                                            {selectedForm.products[0].decisionRules.simpleConformative && <li>Simple Conformative</li>}
+                                                                            {selectedForm.products[0].decisionRules.conditionalConformative && <li>Conditional Conformative</li>}
+                                                                            {selectedForm.products[0].decisionRules.customerDrivenConformative && <li>Customer Driven Conformative</li>}
+                                                                        </ul>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div>
+                                                                <p><span className="font-medium">Calibration Periodicity:</span> {selectedForm.products[0].calibrationPeriodicity || 'N/A'}</p>
+                                                                <p><span className="font-medium">Review Request:</span> {selectedForm.products[0].reviewRequest || 'None'}</p>
+                                                                <p><span className="font-medium">Calibration Facility:</span> {selectedForm.products[0].calibrationFacilityAvailable || 'N/A'}</p>
+                                                                <p><span className="font-medium">External Calibration:</span> {selectedForm.products[0].calibrationServiceDoneByExternalAgency || 'N/A'}</p>
+                                                                <p><span className="font-medium">Calibration Method:</span> {selectedForm.products[0].calibrationMethodUsed || 'N/A'}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Products summary */}
+                                                    <h4 className="font-medium text-lg mt-4">Products List</h4>
+                                                    <div className="overflow-x-auto">
+                                                        <table className="min-w-full border-collapse border border-gray-200">
+                                                            <thead>
+                                                                <tr className="bg-gray-50">
+                                                                    <th className="border border-gray-200 px-4 py-2 text-left">ID</th>
+                                                                    <th className="border border-gray-200 px-4 py-2 text-left">Name</th>
+                                                                    <th className="border border-gray-200 px-4 py-2 text-left">Model/Make</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {selectedForm.products.map((product, index) => (
+                                                                    <tr key={product._id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                                                        <td className="border border-gray-200 px-4 py-2">{product._id}</td>
+                                                                        <td className="border border-gray-200 px-4 py-2">{product.name || 'N/A'}</td>
+                                                                        <td className="border border-gray-200 px-4 py-2">{product.model || 'N/A'}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <p className="text-gray-500 italic">No products found in this form.</p>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>
