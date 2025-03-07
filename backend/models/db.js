@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const Counter = require("./counter");
+const Decimal128 = mongoose.Types.Decimal128;
 const User = require("./user");
 const ProductSchema = new Schema(
   {
@@ -16,6 +17,12 @@ const ProductSchema = new Schema(
     calibratedDate: { type: Date },
     remarks: { type: String },
     isCalibrated: { type: Boolean, default: false },
+    observation: {
+      a: { type: Decimal128 }, b: { type: Decimal128 }, c: { type: Decimal128 }, d: { type: Decimal128 }, e: { type: Decimal128 }
+    },
+    mean: { type: Decimal128 },
+    standardDeviation: { type: Decimal128 },
+    uncertainty: { type: Decimal128 },
   },
   { timestamps: true }
 );
@@ -62,7 +69,7 @@ const ServiceRequestFormSchema = new Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     srfNo: { type: String, required: true },
     date: { type: Date, required: true },
-    probableDate: { type: Date }, 
+    probableDate: { type: Date },
     organization: { type: String, required: true },
     address: { type: String, required: true },
     contactPersonName: { type: String, required: true },
