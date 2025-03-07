@@ -16,6 +16,12 @@ const ProductSchema = new Schema(
     calibratedDate: { type: Date },
     remarks: { type: String },
     isCalibrated: { type: Boolean, default: false },
+    observation: {
+      a: { type: Float32Array }, b: { type: Float32Array }, c: { type: Float32Array }, d: { type: Float32Array }, e: { type: Float32Array }
+    },
+    mean: { type: Float32Array },
+    standardDeviation: { type: Float32Array },
+    uncertainty: { type: Float32Array },
   },
   { timestamps: true }
 );
