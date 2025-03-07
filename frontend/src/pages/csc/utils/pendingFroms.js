@@ -86,7 +86,7 @@ export const usePendingFormsStore = create((set) => ({
         }
     },
 
-    updateFormDetails: async (formId, details) => {
+    updateFormDetails: async (formId, productId, details) => {
         try {
             // Ensure formId is defined
             if (!formId) {
@@ -126,28 +126,18 @@ export const usePendingFormsStore = create((set) => ({
             }
 
             const data = await response.json();
-            console.log("Update response:", data);
-
-            // Update local state with the updated form data
             set((state) => {
-                const updatedForms = state.pendingForms.map((form) => {
+                const updatedForms = state.pendingForms.reduce((acc, form) => {
                     if (form._id === formId) {
-                        // Find the product to update
-                        const updatedProducts = form.products.map(product => {
-                            if (product._id === details.productId) {
-                                return { ...product, ...details };
-                            }
-                            return product;
-                        });
-
-                        return {
+                        acc.push({
                             ...form,
-                            products: updatedProducts
-                        };
+                            ...details,
+                        });
+                    } else {
+                        acc.push(form);
                     }
-                    return form;
-                });
-
+                    return acc;
+                }, []);
                 return { pendingForms: updatedForms };
             });
 
