@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const passport = require('passport');
-
-
 router.get('/isloggedin', (req, res) => {
     if (req.isAuthenticated()) {
         return res.status(200).json({ isLoggedIn: true, username: req.user.username });
@@ -18,6 +16,6 @@ router.get('/getcount', (req, res) => {
     }
     return res.status(200).json({ usernumber: req.user.userNumber });
   });
-  
+
 
 module.exports=router;

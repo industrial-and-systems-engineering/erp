@@ -6,23 +6,13 @@ import { countstore } from "./utils/getcounter.js";
 
 const ErrorDetectorForm = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { UserNumber, checkcount } = countstore();
-
-  useEffect(() => {
-    const verifycnt = async () => {
-      await checkcount();
-    };
-    verifycnt();
-  }, [checkcount]);
-
   const today = new Date().toISOString().slice(0, 10);
 
   const defaultConditionOfProduct = "technician will enter";
   const defaultItemEnclosed = "labworker will enter";
 
   const [formData, setFormData] = useState({
-    srfNo: `kpg/24-25/${UserNumber}`,
+    srfNo: "kpg/24-25/formno",
     date: today,
     probableDate: today,
     organization: "",
@@ -40,22 +30,12 @@ const ErrorDetectorForm = () => {
     calibrationServiceDoneByExternalAgency: "",
     calibrationMethodUsed: "",
   });
-
-  useEffect(() => {
-    setFormData((prevData) => ({
-      ...prevData,
-      srfNo: `kpg/24-25/${UserNumber}`,
-    }));
-  }, [UserNumber]);
-
   const [decisionRules, setDecisionRules] = useState({
     noDecision: false,
     simpleConformative: false,
     conditionalConformative: false,
     customerDrivenConformative: false,
   });
-
-  // Modified emptyRow without jobNo field
   const emptyRow = {
     instrumentDescription: "",
     serialNo: "",
@@ -71,56 +51,57 @@ const ErrorDetectorForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
     const formattedFormData = {
       ...formData,
       date: formData.date ? new Date(formData.date).toISOString() : "",
       probableDate: formData.probableDate ? new Date(formData.probableDate).toISOString() : "",
       decisionRules: decisionRules,
     };
-
+  
     // Filter out empty table rows (all fields empty)
     const nonEmptyRows = tableRows.filter(row =>
       Object.values(row).some(value => value !== "")
     );
 
-    // Check if trying to create more than the allowed max of 15 products
     if (nonEmptyRows.length > 15) {
       alert(`You can only create a maximum of 15 products per user. Currently trying to create ${nonEmptyRows.length}.`);
       return;
     }
-
-    // Format the products data without generating job numbers
-    const formattedProducts = nonEmptyRows.map(row => {
-      return {
-        ...row,
-        calibratedDate: row.calibratedDate ? new Date(row.calibratedDate).toISOString() : null,
-      };
-    });
-
+    const formattedProducts = nonEmptyRows.map(row => ({
+      ...row,
+      calibratedDate: row.calibratedDate ? new Date(row.calibratedDate).toISOString() : null,
+    }));
+  
     const requestData = {
       form: formattedFormData,
       products: formattedProducts,
     };
-
+  
     console.log("Submitting form data:", JSON.stringify(requestData, null, 2));
-
+  
     fetch("/api/errorform", {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestData),
     })
       .then((res) => {
+        if (res.status === 401) {
+          alert("Your session has expired or you are not authorized. Please log in again.");
+          navigate("/user"); 
+          return null;
+        }
         if (!res.ok) {
           throw new Error(`HTTP error! Status: ${res.status}`);
         }
         return res.json();
       })
       .then((data) => {
+        if (!data) return; 
         console.log("Response from backend:", data);
-
-        // Reset form state (keeping the default values for srfNo, date and probableDate)
         setFormData((prevData) => ({
           ...prevData,
           organization: "",
@@ -138,16 +119,16 @@ const ErrorDetectorForm = () => {
           calibrationServiceDoneByExternalAgency: "",
           calibrationMethodUsed: "",
         }));
-
+  
         setDecisionRules({
           noDecision: false,
           simpleConformative: false,
           conditionalConformative: false,
           customerDrivenConformative: false,
         });
-
+  
         setTableRows([{ ...emptyRow }]);
-
+  
         if (data.redirectURL) {
           navigate(data.redirectURL);
         } else {
@@ -159,14 +140,11 @@ const ErrorDetectorForm = () => {
         alert("Error submitting form. Please try again.");
       });
   };
-
-  // Helper function to handle input changes for editable fields
+  
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
-
-  // Helper function to handle checkbox changes
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
     setDecisionRules({ ...decisionRules, [name]: checked });

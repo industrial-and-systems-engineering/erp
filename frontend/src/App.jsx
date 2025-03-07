@@ -16,6 +16,8 @@ import CscPage from './pages/csc/CscPage.jsx'
 import Cscpending from './pages/csc/Cscpending.jsx'
 import Cschomepage from './pages/csc/Cschomepage.jsx'
 import CscCompletedpage from './pages/csc/CscCompletedpage.jsx'
+import Tsignup from './pages/technician/Tsignup.jsx'
+import CSCsignup from './pages/customerservicecell/CSCsignup.jsx'
 
 
 const App = () => {
@@ -23,29 +25,34 @@ const App = () => {
     <div>
       <Routes>
         <Route path="*" element={<Loginpage />} />
-        <Route path="/user" element={<UserPage />} >
+
+
+        <Route path="/user" element={<UserPage />}>
           <Route path="" element={<Uhomepage />} />
           <Route path="completed" element={<Ucompleted />} />
           <Route path="pending" element={<Upending />} />
           <Route path="create" element={<Ucreate />} />
         </Route>
-        <Route path="signup" element={<Usignup />} />
+        <Route path="/signup" element={<Usignup />} />
+
+
         <Route path="/technician" element={<TechPage />}>
           <Route path="homepage" element={<Thomepage />} />
           <Route path="completed" element={<Tcompleted />} />
           <Route path="pending" element={<Tpending />} />
           <Route path="update" element={<Tupdate />} />
         </Route>
+        <Route path="/technician/signup" element={<Tsignup />} />
 
         <Route path="/csc" element={<CscPage />}>
           <Route path="homepage" element={<Cschomepage />} />
           <Route path="pending" element={<Cscpending />} />
           <Route path="completed" element={<CscCompletedpage />} />
         </Route>
-
+        <Route path="/csc/signup" element={<CSCsignup />} />
       </Routes>
     </div>
-  )
-}
+  );
+};
 
-export default App
+export default App;

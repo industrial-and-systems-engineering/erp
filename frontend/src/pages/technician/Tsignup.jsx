@@ -1,17 +1,20 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-function Usignup() {
+function Tsignup() {
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     password: "",
-    usertype: "customer",
+    usertype: "Technician",
   });
+
   const navigate = useNavigate();
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -20,9 +23,10 @@ function Usignup() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
+
       const data = await response.json();
       if (response.ok) {
-        navigate("/user");
+        navigate("/technician");
       } else {
         alert(`Error: ${data.message}`);
       }
@@ -86,4 +90,4 @@ function Usignup() {
   );
 }
 
-export default Usignup;
+export default Tsignup;
