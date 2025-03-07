@@ -6,7 +6,7 @@ const Tcard = ({ equipment, form, formOpen }) => {
     const { updateForm } = usePendingFormsStore();
     const [result, setResult] = useState({
         calibrationStatus: equipment.calibrationStatus || '',
-        calibrationDate: equipment.calibrationDate ? new Date(equipment.calibrationDate).toLocaleDateString() : '',
+        calibrationDate: equipment.calibrationDate || new Date(equipment.calibrationDate).toLocaleDateString(),
         remarks: equipment.remarks || '',
     });
     const [obsData, setObsData] = useState({
@@ -252,10 +252,10 @@ const Tcard = ({ equipment, form, formOpen }) => {
                         <div className="mt-4">
                             <button
                                 type="button"
-                                onClick={() => setShowObservation(true)}
-                                className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-700"
+                                onClick={() => setShowObservation(!showObservation)}
+                                className={`py-2 px-4 rounded ${showObservation ? 'bg-red-500 hover:bg-red-700' : 'bg-green-500 hover:bg-green-700'} text-white`}
                             >
-                                Add Observation
+                                {showObservation ? 'Hide Observation' : 'Add Observation'}
                             </button>
                         </div>
 

@@ -107,6 +107,7 @@ router.put("/update/:pid/:fid", async (req, res) => {
       {
         ...req.body,
         isCalibrated: true,
+        calibratedDate: req.body.calibrationDate ? new Date(req.body.calibrationDate) : null,
       },
       { new: true }
     );
