@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../../utils/isloggedin.js';
+import { useAuthStore } from '../../../utils/isloggedin.js';
 
-const TechnicianNavbar = ({ setFormData })=> {
+const TechnicianNavbar = ({ setFormData }) => {
 
   const { isAuthenticated, checkAuth } = useAuthStore();
   const navigate = useNavigate();

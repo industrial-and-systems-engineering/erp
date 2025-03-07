@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { useAuthStore } from "./utils/isloggedin.js";
+import { useAuthStore } from "../../utils/isloggedin.js";
 import Footer from "../../components/Footer.jsx";
 import UserNavbar from "./components/UserNavbar.jsx";
 
 const UserPage = () => {
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     username: "",
     email: "",

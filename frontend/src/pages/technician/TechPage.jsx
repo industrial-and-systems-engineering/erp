@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate,Link } from "react-router-dom";
 import TechnicianNavbar from "./components/TechnicianNavbar";
 import Footer from "../../components/Footer";
+import { useAuthStore } from "../../utils/isloggedin.js";
 
 const TechPage = () => {
-  const [formData, setFormData] = useState({username: "",email: "",password: "",usertype: "Technician"});
+   const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState({ username: "", email: "", password: "", usertype: "Technician" });
   const { isAuthenticated, checkAuth } = useAuthStore();
   const navigate = useNavigate();
   useEffect(() => {
@@ -31,7 +33,6 @@ const TechPage = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setUserNumber(data.usernumber);
         await checkAuth();
         navigate("/technician/homepage", { state: { usernumber: data.usernumber } });
       } else {

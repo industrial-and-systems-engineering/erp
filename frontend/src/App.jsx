@@ -16,6 +16,8 @@ import CscPage from './pages/csc/CscPage.jsx'
 import Cscpending from './pages/csc/Cscpending.jsx'
 import Cschomepage from './pages/csc/Cschomepage.jsx'
 import CscCompletedpage from './pages/csc/CscCompletedpage.jsx'
+import Tsignup from './pages/technician/Tsignup.jsx'
+import CSCsignup from './pages/customerservicecell/CSCsignup.jsx'
 
 
 const App = () => {
@@ -23,8 +25,8 @@ const App = () => {
     <div>
       <Routes>
         <Route path="*" element={<Loginpage />} />
-        
-       
+
+
         <Route path="/user" element={<UserPage />}>
           <Route path="" element={<Uhomepage />} />
           <Route path="completed" element={<Ucompleted />} />
@@ -33,7 +35,7 @@ const App = () => {
         </Route>
         <Route path="/signup" element={<Usignup />} />
 
-      
+
         <Route path="/technician" element={<TechPage />}>
           <Route path="homepage" element={<Thomepage />} />
           <Route path="completed" element={<Tcompleted />} />
@@ -46,7 +48,7 @@ const App = () => {
           <Route path="homepage" element={<Cschomepage />} />
           <Route path="pending" element={<Cscpending />} />
           <Route path="completed" element={<CscCompletedpage />} />
-        </Route>        
+        </Route>
         <Route path="/csc/signup" element={<CSCsignup />} />
       </Routes>
     </div>
