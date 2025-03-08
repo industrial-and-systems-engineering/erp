@@ -1,44 +1,48 @@
 import React, { useEffect, useState } from 'react';
 import { usePendingFormsStore } from '../utils/pendingForms';
+import Observation from './Observation';
 
-
-const Tcard = ({ equipment, form }) => {
-
+const Tcard = ({ equipment, form, formOpen }) => {
     const { updateForm } = usePendingFormsStore();
     const [result, setResult] = useState({
-        calibrationStatus: equipment.calibrationStatus,
-        calibrationDate: new Date(equipment.calibrationDate).toLocaleDateString(),
-        remarks: equipment.remarks,
+        calibrationStatus: equipment.calibrationStatus || '',
+        calibrationDate: equipment.calibrationDate || new Date(equipment.calibrationDate).toLocaleDateString(),
+        remarks: equipment.remarks || '',
     });
+    const [obsData, setObsData] = useState({
+        mean: equipment.mean, stdDev: equipment.standardDeviation, uncertainty: equipment.uncertainty, observations: equipment.observations,
+    });
+
+    const [showObservation, setShowObservation] = useState(false);
     const [formData, setFormData] = useState({
-        ulrNo: form.URL_NO,
-        jobNo: equipment.jobNo,
-        jobCardIssueDate: new Date(form.createdAt).toLocaleDateString(),
-        srfNo: form.srfNo,
-        srfDate: new Date(form.createdAt).toLocaleDateString(),
-        itemName: equipment.instrumentDescription,
-        makeModel: equipment.instrumentDescription,
-        serialNo: equipment.serialNo,
-        targetDate: new Date(form.probableDate).toLocaleDateString(),
-        parameters: equipment.parameter,
-        ranges: equipment.ranges,
-        accuracy: equipment.accuracy,
+        ulrNo: form.URL_NO || '',
+        jobNo: equipment.jobNo || '',
+        jobCardIssueDate: form.createdAt ? new Date(form.createdAt).toLocaleDateString() : '',
+        srfNo: form.srfNo || '',
+        srfDate: form.createdAt ? new Date(form.createdAt).toLocaleDateString() : '',
+        itemName: equipment.instrumentDescription || '',
+        makeModel: equipment.instrumentDescription || '',
+        serialNo: equipment.serialNo || '',
+        targetDate: form.probableDate ? new Date(form.probableDate).toLocaleDateString() : '',
+        parameters: equipment.parameter || '',
+        ranges: equipment.ranges || '',
+        accuracy: equipment.accuracy || '',
     });
-    // Update formData when equipment or form changes.
+
     useEffect(() => {
         setFormData({
-            ulrNo: form.ULR_NO,
-            jobNo: equipment.jobNo,
-            jobCardIssueDate: new Date(form.createdAt).toLocaleDateString(),
-            srfNo: form.srfNo,
-            srfDate: new Date(form.createdAt).toLocaleDateString(),
-            itemName: equipment.instrumentDescription,
-            makeModel: equipment.instrumentDescription,
-            serialNo: equipment.serialNo,
-            targetDate: new Date(form.probableDate).toLocaleDateString(),
-            parameters: equipment.parameter,
-            ranges: equipment.ranges,
-            accuracy: equipment.accuracy,
+            ulrNo: form.URL_NO || '',
+            jobNo: equipment.jobNo || '',
+            jobCardIssueDate: form.createdAt ? new Date(form.createdAt).toLocaleDateString() : '',
+            srfNo: form.srfNo || '',
+            srfDate: form.createdAt ? new Date(form.createdAt).toLocaleDateString() : '',
+            itemName: equipment.instrumentDescription || '',
+            makeModel: equipment.instrumentDescription || '',
+            serialNo: equipment.serialNo || '',
+            targetDate: form.probableDate ? new Date(form.probableDate).toLocaleDateString() : '',
+            parameters: equipment.parameter || '',
+            ranges: equipment.ranges || '',
+            accuracy: equipment.accuracy || '',
         });
     }, [equipment, form]);
 
@@ -51,12 +55,12 @@ const Tcard = ({ equipment, form }) => {
     };
 
     const handleUpdateClick = async () => {
-        const response = await updateForm(form._id, equipment._id, result);
+        const response = await updateForm(form._id, equipment._id, { ...result, ...obsData });
 
         if (response.success) {
             alert("Form updated successfully");
-        }
-        else {
+            formOpen(null);
+        } else {
             alert("Failed to update form: " + response.message);
         }
     };
@@ -66,14 +70,14 @@ const Tcard = ({ equipment, form }) => {
             <div className="bg-gray-100 min-h-screen p-8">
                 <div className="max-w-4xl mx-auto bg-white shadow-md rounded p-6">
                     {/* Header Section */}
-                    <div className="mb-6  text-center">
+                    <div className="mb-6 text-center">
                         <div className="grid-cols-2 border-t border-l border-r py-4">
                             <h1 className="text-3xl font-bold basis-2xl">ERROR DETECTOR</h1>
                         </div>
 
                         <div className="grid grid-cols-2">
-                            <h2 className="text-lg font-medium  border px-0.5">Format No : ED/FM/33</h2>
-                            <h2 className="text-lg font-medium  border px-0.5">Job Card</h2>
+                            <h2 className="text-lg font-medium border px-0.5">Format No : ED/FM/33</h2>
+                            <h2 className="text-lg font-medium border px-0.5">Job Card</h2>
                         </div>
                     </div>
 
@@ -119,7 +123,6 @@ const Tcard = ({ equipment, form }) => {
                         </div>
 
                         {/* SRF Details */}
-
                         <div className="flex justify-between flex-wrap">
                             <p className="mb-2">
                                 <span className="font-semibold">SRF No. :</span>
@@ -142,7 +145,6 @@ const Tcard = ({ equipment, form }) => {
                                 />
                             </p>
                         </div>
-
 
                         {/* Item Description Section */}
                         <div className="mb-6">
@@ -212,7 +214,7 @@ const Tcard = ({ equipment, form }) => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr >
+                                    <tr>
                                         <td className="border border-black p-1">{formData.serialNo}</td>
                                         <td className="border border-black p-1">{formData.parameters}</td>
                                         <td className="border border-black p-1">{formData.ranges}</td>
@@ -242,24 +244,36 @@ const Tcard = ({ equipment, form }) => {
                                             />
                                         </td>
                                     </tr>
-
                                 </tbody>
                             </table>
-
                         </div>
+
+                        {/* Add Observation Section */}
+                        <div className="mt-4">
+                            <button
+                                type="button"
+                                onClick={() => setShowObservation(!showObservation)}
+                                className={`py-2 px-4 rounded ${showObservation ? 'bg-red-500 hover:bg-red-700' : 'bg-green-500 hover:bg-green-700'} text-white`}
+                            >
+                                {showObservation ? 'Hide Observation' : 'Add Observation'}
+                            </button>
+                        </div>
+
+                        {showObservation && (
+                            <Observation product={equipment} setObsData={setObsData} />
+                        )}
 
                         {/* Submit and Issued By Section */}
                         <div className="flex justify-between items-center mt-8">
-
                             <div className="text-center">
                                 <p className="font-semibold">Issued by</p>
                                 <div className="mt-8 border-t border-gray-400 w-40 ml-auto"></div>
                             </div>
                             {!equipment.isCalibrated ? (
                                 <div>
-                                    <div className='mt-2 flex justify-end'>
+                                    <div className="mt-2 flex justify-end">
                                         <button
-                                            type='button'
+                                            type="button"
                                             onClick={handleUpdateClick}
                                             className="mt-2 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700"
                                         >
@@ -267,7 +281,7 @@ const Tcard = ({ equipment, form }) => {
                                         </button>
                                     </div>
                                 </div>
-                            ) : (null)}
+                            ) : null}
                         </div>
                     </form>
                 </div>

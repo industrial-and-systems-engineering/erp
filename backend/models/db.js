@@ -19,12 +19,10 @@ const ProductSchema = new Schema(
     calibratedDate: { type: Date },
     remarks: { type: String },
     isCalibrated: { type: Boolean, default: false },
-    observation: {
-      a: { type: Decimal128 }, b: { type: Decimal128 }, c: { type: Decimal128 }, d: { type: Decimal128 }, e: { type: Decimal128 }
-    },
-    mean: { type: Decimal128 },
-    standardDeviation: { type: Decimal128 },
-    uncertainty: { type: Decimal128 },
+    observations: { type: [String], default: () => Array(5).fill("0") },
+    mean: { type: String, default: "0" },
+    standardDeviation: { type: String, default: "0" },
+    uncertainty: { type: String, default: "0" },
   },
   { timestamps: true }
 );

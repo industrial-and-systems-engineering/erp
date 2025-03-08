@@ -33,13 +33,12 @@ export const usePendingFormsStore = create((set) => ({
             }
             const data = await response.json();
             const updatedPendingForm = data.data;
-            console.log(updatedPendingForm);
+            const { fetchCompletedForms } = useCompletedFormsStore.getState();
+            fetchCompletedForms();
 
             set((state) => {
-                console.log("Before update:", state.pendingForms);
                 const updatedForms = state.pendingForms.reduce((acc, form) => {
                     if (form._id === fid) {
-                        console.log("Updating form:", form._id, "removing product:", pid);
                         const remainingProducts = form.products.filter((product) => product._id !== pid);
                         if (remainingProducts.length > 0) {
                             acc.push({
@@ -52,8 +51,6 @@ export const usePendingFormsStore = create((set) => ({
                     }
                     return acc;
                 }, []);
-
-                console.log("After update:", updatedForms);
                 return { pendingForms: updatedForms };
             });
             return { success: true, message: "PendingForms updated successfully" };

@@ -46,7 +46,7 @@ const Tpending = () => {
                     <div className="col-span-2">
                         {selectedEquipment && selectedForm && (
                             <div className="mt-4 p-4 rounded-lg shadow-md w-full">
-                                <Tcard equipment={selectedEquipment} form={selectedForm} />
+                                <Tcard equipment={selectedEquipment} form={selectedForm} formOpen={setSelectedEquipment} />
                             </div>
                         )}
                     </div>
