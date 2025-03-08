@@ -19,7 +19,7 @@ const TechnicianNavbar = ({ setFormData }) => {
 
       setFormData({ username: "", email: "", password: "", usertype: "Technician" });
 
-      navigate("/technician");
+      navigate("/");
     } catch (error) {
       console.error("Logout error:", error);
     }

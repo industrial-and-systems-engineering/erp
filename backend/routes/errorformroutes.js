@@ -11,33 +11,30 @@ function preprocessing(products) {
   return products;
 }
 
-router.post("/",isLoggedIn, async (req, res) => {
+router.post("/", isLoggedIn, async (req, res) => {
   try {
     let { form, products } = req.body;
-    console.log("Received form data:", req.body);
-
-    if (!form || !products) {
-      return res
-        .status(400)
-        .json({ success: false, message: "All fields are required" });
-    }
-
+    if (!form || !products) {return res.status(400).json({ success: false, message: "All fields are required" }) ;}
     const userId = req.user.id;
-    const userNumber = req.user.userNumber;
-    const urlno = `CC373125${userNumber}F`;
     const newForm = new srfForms({
       ...form,
       user: userId,
-      products: [], 
-      URL_NO: urlno,
+      products: [],
+      URL_NO: 'hello',
     });
+    const savedForm = await newForm.save();
+    if (savedForm.formNumber) {
+      savedForm.URL_NO = `CC373125${savedForm.formNumber}`;
+      await savedForm.save();
+    }
     const productIds = [];
     for (const productData of products) {
       const product = new Product({
         ...productData,
         user: userId,
+        form: savedForm._id,
       });
-
+      
       try {
         const savedProduct = await product.save();
         productIds.push(savedProduct._id);
@@ -49,12 +46,12 @@ router.post("/",isLoggedIn, async (req, res) => {
         });
       }
     }
-    newForm.products = productIds;
-    await newForm.save();
-
+    savedForm.products = productIds;
+    await savedForm.save();
+    
     return res
       .status(201)
-      .json({ success: true, data: newForm, redirectURL: "/user" });
+      .json({ success: true, data: savedForm, redirectURL: "/user" });
   } catch (error) {
     console.error("Error saving form data:", error);
     return res
@@ -62,7 +59,6 @@ router.post("/",isLoggedIn, async (req, res) => {
       .json({ success: false, error: "Internal Server Error" });
   }
 });
-
 router.get("/completed", async (req, res) => {
   try {
     const userId = req.user.id;

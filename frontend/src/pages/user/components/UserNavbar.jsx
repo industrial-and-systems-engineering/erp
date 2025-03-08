@@ -19,7 +19,7 @@ const UserNavbar = ({ setFormData }) => {
 
             setFormData({ username: "", email: "", password: "", usertype: "customer" });
 
-            navigate("/user");
+            navigate("/");
         } catch (error) {
             console.error("Logout error:", error);
         }

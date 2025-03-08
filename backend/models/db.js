@@ -3,9 +3,11 @@ const Schema = mongoose.Schema;
 const Counter = require("./counter");
 const Decimal128 = mongoose.Types.Decimal128;
 const User = require("./user");
+const FORM_COUNTER_ID = "global_form_counter";
 const ProductSchema = new Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    form: { type: mongoose.Schema.Types.ObjectId, ref: "srfForms", required: true },
     productNumber: { type: Number },
     jobNo: { type: String },
     instrumentDescription: { type: String, required: true },
@@ -29,28 +31,23 @@ const ProductSchema = new Schema(
 ProductSchema.pre("save", async function (next) {
   if (this.isNew) {
     try {
-      let userId;
-      if (typeof this.user === "string") {
-        userId = mongoose.Types.ObjectId(this.user);
-      } else {
-        userId = this.user;
+      const form = await mongoose.model("srfForms").findById(this.form);
+      
+      if (!form) {
+        console.log("Form not found");
+        return next(new Error("Form not found"));
       }
-      const user = await mongoose.model("User").findById(userId);
-
-      if (!user || !user.userNumber) {
-        console.log("User or userNumber missing", user);
-        return next(new Error("UserNumber is missing for the user."));
-      }
-      const counterId = `productNumber_${userId}`;
-
-      const counter = await Counter.findOneAndUpdate(
-        { _id: counterId },
+      const productCounterId = `productNumber_form_${form._id}`;
+      const productCounter = await Counter.findOneAndUpdate(
+        { _id: productCounterId },
         { $inc: { sequence_value: 1 } },
         { new: true, upsert: true }
       );
-      this.productNumber = counter.sequence_value;
-      this.jobNo = `${user.userNumber}-${this.productNumber}`;
+
+      this.productNumber = productCounter.sequence_value;
+      this.jobNo = `${form.formNumber}-P${this.productNumber}`;
       console.log("Generated jobNo:", this.jobNo);
+      
       next();
     } catch (err) {
       console.error("Error in pre-save hook:", err);
@@ -61,13 +58,14 @@ ProductSchema.pre("save", async function (next) {
     next();
   }
 });
-ProductSchema.index({ user: 1, productNumber: 1 }, { unique: true });
+ProductSchema.index({ form: 1, productNumber: 1 }, { unique: true });
 
 const Product = mongoose.model("Product", ProductSchema);
 const ServiceRequestFormSchema = new Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     srfNo: { type: String, required: true },
+    formNumber: { type: Number },
     date: { type: Date, required: true },
     probableDate: { type: Date },
     organization: { type: String, required: true },
@@ -97,6 +95,30 @@ const ServiceRequestFormSchema = new Schema(
   },
   { timestamps: true }
 );
+
+ServiceRequestFormSchema.pre("save", async function (next) {
+  if (this.isNew) {
+    try {
+      const formCounter = await Counter.findOneAndUpdate(
+        { _id: FORM_COUNTER_ID },
+        { $inc: { sequence_value: 1 } },
+        { new: true, upsert: true }
+      );
+      
+      this.formNumber = formCounter.sequence_value;
+      this.srfNo = `kgp/24-25/${this.formNumber}`;
+     // console.log("Generated srfNo:", this.srfNo);
+      next();
+    } catch (err) {
+      console.error("Error in pre-save hook:", err);
+      next(err);
+    }
+  } else {
+    next();
+  }
+});
+ServiceRequestFormSchema.index({ formNumber: 1 }, { unique: true });
+ServiceRequestFormSchema.index({ srfNo: 1 }, { unique: true });
 
 const srfForms = mongoose.model("srfForms", ServiceRequestFormSchema);
 

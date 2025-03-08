@@ -5,18 +5,14 @@ const passportLocalMongoose = require('passport-local-mongoose');
 const Counter = require('./counter.js'); // Import the counter model
 
 const UserSchema = new Schema({
+
   email: {
     type: String,
     required: true,
     unique: true
   },
-
-  usertype:{
+   usertype:{
     type:String
-  },
-  userNumber: {
-    type: Number,
-    unique: true
   }
 });
 
