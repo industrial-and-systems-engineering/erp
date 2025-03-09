@@ -71,8 +71,11 @@ const { srfForms, Product } = require("../models/db");
 router.get("/pending", async (req, res) => {
   try {
     const forms = await srfForms
-      .find({ requestStatus: false })
-      .populate("products");
+      .find({ requestStatus: false})
+      .populate({
+        path: "products",
+        match: { isCalibrated: false }
+      });
     return res.status(200).json({ success: true, data: forms });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

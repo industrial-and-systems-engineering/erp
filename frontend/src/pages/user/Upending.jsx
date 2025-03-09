@@ -16,7 +16,7 @@ const Ucompleted = () => {
         }
         const data = await response.json();
         if (data.success) {
-          console.log("Fetched calibrated forms data:", data); // Log the data structure
+          console.log("Fetched calibrated forms data:", data);
         }
         setCalibratedForms(data.data);
       } catch (error) {

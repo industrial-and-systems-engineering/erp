@@ -61,38 +61,44 @@ router.post("/", isLoggedIn, async (req, res) => {
 });
 router.get("/completed", async (req, res) => {
   try {
-    const userId = req.user.id;
-    const completedForms = await srfForms
-      .find({
-        user: userId,
-        requestStatus: true,
-      })
-      .populate("products");
+    const userId = req.user._id;
+    const PartiallyCompletedForms = await srfForms
+    .find({ user: userId,requestStatus: false })
+    .populate({
+      path: "products",
+      match: { isCalibrated: true }
+    });
+  const completedForms = await srfForms
+    .find({  user: userId,requestStatus: true })
+    .populate("products");
 
-    return res.status(200).json({ success: true, data: completedForms });
+  const forms = [...PartiallyCompletedForms, ...completedForms];
+
+    return res.status(200).json({ success: true, data: forms});
   } catch (error) {
     console.error("Error fetching completed error forms:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
 
-router.get("/pending", async (req, res) => {
-  try {
-    const userId = req.user.id;
+router.get("/pending", async (req, res) => { 
+  try { 
+    const userId = req.user._id;
     const pendingForms = await srfForms
-      .find({
-        user: userId,
-        requestStatus: false,
+      .find({ 
+        user: userId, 
+        requestStatus: false, 
       })
-      .populate("products");
-
-    return res.status(200).json({ success: true, data: pendingForms });
-  } catch (error) {
-    console.error("Error fetching pending error forms:", error);
-    res.status(500).json({ success: false, message: "Internal server error" });
-  }
+      .populate({
+        path: "products",
+        match: { isCalibrated: false }
+      }); 
+    return res.status(200).json({ success: true, data: pendingForms }); 
+  } catch (error) { 
+    console.error("Error fetching pending error forms:", error); 
+    res.status(500).json({ success: false, message: "Internal server error" }); 
+  } 
 });
-
 // router.get("/calibrated", async (req, res) => {
 //   try {
 //     const userId = req.user.id;

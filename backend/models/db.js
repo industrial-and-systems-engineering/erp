@@ -105,7 +105,6 @@ ServiceRequestFormSchema.pre("save", async function (next) {
       
       this.formNumber = formCounter.sequence_value;
       this.srfNo = `kgp/24-25/${this.formNumber}`;
-     // console.log("Generated srfNo:", this.srfNo);
       next();
     } catch (err) {
       console.error("Error in pre-save hook:", err);
