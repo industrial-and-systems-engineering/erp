@@ -71,7 +71,7 @@ const { srfForms, Product } = require("../models/db");
 router.get("/pending", async (req, res) => {
   try {
     const forms = await srfForms
-      .find({ requestStatus: false})
+      .find({ requestStatus: false })
       .populate({
         path: "products",
         match: { isCalibrated: false }

@@ -1,8 +1,6 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const Counter = require("./counter");
-const Decimal128 = mongoose.Types.Decimal128;
-const User = require("./user");
 const FORM_COUNTER_ID = "global_form_counter";
 const ProductSchema = new Schema(
   {
@@ -19,10 +17,24 @@ const ProductSchema = new Schema(
     calibratedDate: { type: Date },
     remarks: { type: String },
     isCalibrated: { type: Boolean, default: false },
-    observations: { type: [String], default: () => Array(5).fill("0") },
-    mean: { type: String, default: "0" },
-    standardDeviation: { type: String, default: "0" },
-    uncertainty: { type: String, default: "0" },
+    readings: {
+      type: [{
+        rName: { type: String, default: "0" },
+        rUnit: { type: String, default: "0" },
+        ducDetails: { type: String, default: "0" },
+        dateOfMeasument: { type: Date, default: Date.now() },
+        masterAccuracy: { type: String, default: "0" },
+        masterCertUncertainty: { type: String, default: "0" },
+        ducResolution: { type: String, default: "0" },
+        masterResolution: { type: String, default: "0" },
+        observations: { type: [String], default: [] },
+        mean: { type: String, default: "0" },
+        standardDeviation: { type: String, default: "0" },
+        uncertainty: { type: String, default: "0" },
+        stdUncertainty: { type: String, default: "0" },
+        stdUncertaintyPercentage: { type: String, default: "0" },
+      }],
+    }
   },
   { timestamps: true }
 );
@@ -30,7 +42,7 @@ ProductSchema.pre("save", async function (next) {
   if (this.isNew) {
     try {
       const form = await mongoose.model("srfForms").findById(this.form);
-      
+
       if (!form) {
         console.log("Form not found");
         return next(new Error("Form not found"));
@@ -45,7 +57,7 @@ ProductSchema.pre("save", async function (next) {
       this.productNumber = productCounter.sequence_value;
       this.jobNo = `${form.formNumber}-P${this.productNumber}`;
       console.log("Generated jobNo:", this.jobNo);
-      
+
       next();
     } catch (err) {
       console.error("Error in pre-save hook:", err);
@@ -102,7 +114,7 @@ ServiceRequestFormSchema.pre("save", async function (next) {
         { $inc: { sequence_value: 1 } },
         { new: true, upsert: true }
       );
-      
+
       this.formNumber = formCounter.sequence_value;
       this.srfNo = `kgp/24-25/${this.formNumber}`;
       next();

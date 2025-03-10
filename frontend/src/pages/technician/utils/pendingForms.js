@@ -31,28 +31,8 @@ export const usePendingFormsStore = create((set) => ({
                     message: errorData.message || "Failed to update",
                 };
             }
-            const data = await response.json();
-            const updatedPendingForm = data.data;
             const { fetchCompletedForms } = useCompletedFormsStore.getState();
             fetchCompletedForms();
-
-            set((state) => {
-                const updatedForms = state.pendingForms.reduce((acc, form) => {
-                    if (form._id === fid) {
-                        const remainingProducts = form.products.filter((product) => product._id !== pid);
-                        if (remainingProducts.length > 0) {
-                            acc.push({
-                                ...form,
-                                products: remainingProducts,
-                            });
-                        }
-                    } else {
-                        acc.push(form);
-                    }
-                    return acc;
-                }, []);
-                return { pendingForms: updatedForms };
-            });
             return { success: true, message: "PendingForms updated successfully" };
         } catch (error) {
             return {
