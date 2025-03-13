@@ -28,11 +28,26 @@ const ProductSchema = new Schema(
         ducResolution: { type: String, default: "0" },
         masterResolution: { type: String, default: "0" },
         observations: { type: [String], default: [] },
+        //type-a
         mean: { type: String, default: "0" },
         standardDeviation: { type: String, default: "0" },
         uncertainty: { type: String, default: "0" },
         stdUncertainty: { type: String, default: "0" },
         stdUncertaintyPercentage: { type: String, default: "0" },
+        //type-b
+        u1: { type: String },
+        u2: { type: String },
+        u3: { type: String },
+        //u5
+        stability: { type: String },
+        u5: { type: String },
+        uc: { type: String },
+        eDof: { type: String },
+        kAt95CL: { type: String },
+        ue: { type: String },
+        uePercentage: { type: String },
+        uePercentageFilled: { type: String },
+        result: { type: String },
       }],
     }
   },

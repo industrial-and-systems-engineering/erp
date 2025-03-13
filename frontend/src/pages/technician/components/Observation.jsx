@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { useState } from 'react';
 
-const Observation = ({ product, addNew, save, close }) => {
+const Observation = ({ product, save, close }) => {
     // Form data
     const [formData, setFormData] = useState({
-        ducDetails: "Enter DUC details",
+        ducDetails: "Digital Voltmeter AC",
         dateOfMeasurement: new Date().toLocaleDateString(),
         masterAccuracy: "Enter master accuracy",
         masterCertUncertainty: "Enter master cert. uncertainty",
@@ -13,11 +13,26 @@ const Observation = ({ product, addNew, save, close }) => {
         rName: "Enter reading parameter",
         rUnit: "Enter unit",
         observations: [],
+        //type-a
         mean: "0",
         standartDeviation: "0",
         uncertainty: "0",
         stdUncertainty: "0",
-        stdUncertaintyPercent: "0"
+        stdUncertaintyPercent: "0",
+        //type-b
+        u1: "0",
+        u2: "0",
+        u3: "0",
+        //u5
+        stability: "0",
+        u5: "0",
+        uc: "0",
+        eDof: "0",
+        kAt95CL: "2",
+        ue: "0",
+        uePercentage: "0",
+        uePercentageFilled: "0",
+        result: "0",
     });
 
     // Calculated values
@@ -48,6 +63,52 @@ const Observation = ({ product, addNew, save, close }) => {
         return ((uncertainty * 100) / mean).toFixed(10);
     };
 
+    const calculateU1 = () => {
+        const masterCertUncertainty = formData.masterCertUncertainty;
+        const k = 2;
+        return (masterCertUncertainty / k).toFixed(4);
+    };
+    const calculateU2 = () => {
+        const ducResolution = formData.ducResolution;
+        return ((ducResolution / 1.732050808) / 2).toFixed(4);
+    };
+    const calculateU3 = () => {
+        const masterAccuracy = formData.masterAccuracy;
+        return (masterAccuracy / 1.732050808).toFixed(4);
+    };
+    const calculateU5 = () => {
+        const stability = formData.stability;
+        return (stability / 1.732050808).toFixed(4);
+    };
+    const calculateUC = () => {
+        const u1 = calculateU1();
+        const u2 = calculateU2();
+        const u3 = calculateU3();
+        const u5 = calculateU5();
+        const stdUncertainty = calculateStdUncertainty();
+        return (Math.sqrt(Math.pow(stdUncertainty, 2) + Math.pow(u1, 2) + Math.pow(u2, 2) + Math.pow(u3, 2) + Math.pow(u5, 2))).toFixed(10);
+    };
+    const calculateEDof = () => {
+        const stdUncertainty = calculateStdUncertainty();
+        const CombinedUncertainty = calculateUC();
+        return (4 * (Math.pow(CombinedUncertainty, 4) / Math.pow(stdUncertainty, 4))).toFixed(1);
+    };
+
+    const calculateUE = () => {
+        const uc = calculateUC();
+        const kAt95CL = 2;
+        return (uc * kAt95CL).toFixed(1);
+    };
+    const calculateUEPercentage = () => {
+        const mean = calculateMean();
+        const ue = calculateUE();
+        return ((ue * 100) / mean).toFixed(10);
+    };
+    const calculateResult = () => {
+        const mean = calculateMean();
+        const ue = calculateUE();
+        return (`${mean} ± ${ue}`);
+    };
     // Update form data with calculated values
     useEffect(() => {
         setFormData(prevFormData => ({
@@ -55,7 +116,16 @@ const Observation = ({ product, addNew, save, close }) => {
             mean: calculateMean(),
             standartDeviation: calculateStdDev(),
             stdUncertainty: calculateStdUncertainty(),
-            stdUncertaintyPercent: calculateStdUncertaintyPercent()
+            stdUncertaintyPercent: calculateStdUncertaintyPercent(),
+            u1: calculateU1(),
+            u2: calculateU2(),
+            u3: calculateU3(),
+            u5: calculateU5(),
+            uc: calculateUC(),
+            eDof: calculateEDof(),
+            ue: calculateUE(),
+            uePercentage: calculateUEPercentage(),
+            result: calculateResult()
         }));
     }, [formData.observations]);
 
@@ -310,7 +380,7 @@ const Observation = ({ product, addNew, save, close }) => {
                             </div>
                         </div>
                         <div className="p-4 text-right border-t border-b border-gray-200 bg-white font-medium">
-                            {calculateMean()} <span className="text-gray-500 text-sm">{formData.unit}</span>
+                            {calculateMean()} <span className="text-gray-500 text-sm">{formData.rUnit}</span>
                         </div>
                     </div>
 
@@ -322,14 +392,14 @@ const Observation = ({ product, addNew, save, close }) => {
                             </div>
                         </div>
                         <div className="p-4 text-right border-b border-gray-200 bg-white font-medium">
-                            {calculateStdDev()} <span className="text-gray-500 text-sm">{formData.unit}</span>
+                            {calculateStdDev()} <span className="text-gray-500 text-sm">{formData.rUnit}</span>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2">
                         <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-b border-r border-gray-200">Std Uncertainty Ur (S/√n) =</div>
                         <div className="p-4 text-right border-b border-gray-200 bg-white font-medium">
-                            {calculateStdUncertainty()} <span className="text-gray-500 text-sm">{formData.unit}</span>
+                            {calculateStdUncertainty()} <span className="text-gray-500 text-sm">{formData.rUnit}</span>
                         </div>
                     </div>
 
@@ -348,14 +418,191 @@ const Observation = ({ product, addNew, save, close }) => {
                         <div className="p-4 text-right border-b border-gray-200 bg-white font-medium">{formData.observations.length - 1}</div>
                     </div>
                 </div>
+
+                {/* Type - B uncertainity*/}
+                <div className="bg-purple-100 p-4 font-semibold text-purple-700 border-b border-gray-200">Type-B Uncertainty</div>
+                <div className="mt-6 bg-gray-50">
+                    <div className="border-b border-gray-200 py-2">
+                        <h2 className="text-lg font-semibold text-gray-800 text-center">U1</h2>
+                        <div className="grid grid-cols-2">
+                            <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-t border-b border-r border-gray-200 flex items-center">
+                                <div>
+                                    Uncertainty in Masters Certificate
+                                </div>
+                            </div>
+                            <div className="p-4 text-right border-t border-b border-gray-200 bg-white font-medium">
+                                {formData.masterCertUncertainty} <span className="text-gray-500 text-sm">{formData.rUnit}</span>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2">
+                            <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-t border-b border-r border-gray-200 flex items-center">
+                                <div>
+                                    Coverage factor (k) =
+                                </div>
+                            </div>
+                            <div className="p-4 text-right border-t border-b border-gray-200 bg-white font-medium">
+                                {2} <span className="text-gray-500 text-sm">{formData.rUnit}</span>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2">
+                            <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-b border-r border-gray-200 flex items-center">
+                                <div>
+                                    Standard Uncertainty  U1 (Uc/K)
+                                </div>
+                            </div>
+                            <div className="p-4 text-right border-b border-gray-200 bg-white font-medium">
+                                {calculateU1()} <span className="text-gray-500 text-sm">{formData.rUnit}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="border-b border-gray-200 py-2">
+                        <h2 className="text-lg font-semibold text-gray-800 text-center">U2</h2>
+                        <div className="grid grid-cols-2">
+                            <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-t border-b border-r border-gray-200 flex items-center">
+                                <div>
+                                    Resolution of DUC
+                                </div>
+                            </div>
+                            <div className="p-4 text-right border-t border-b border-gray-200 bg-white font-medium">
+                                {formData.ducResolution} <span className="text-gray-500 text-sm">{formData.rUnit}</span>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2">
+                            <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-t border-b border-r border-gray-200 flex items-center">
+                                <div>
+                                    Uncertainty U2
+                                </div>
+                            </div>
+                            <div className="p-4 text-right border-t border-b border-gray-200 bg-white font-medium">
+                                {calculateU2()} <span className="text-gray-500 text-sm">{formData.rUnit}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="border-b border-gray-200 py-2">
+                        <h2 className="text-lg font-semibold text-gray-800 text-center">U3</h2>
+                        <div className="grid grid-cols-2">
+                            <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-t border-b border-r border-gray-200 flex items-center">
+                                <div>
+                                    Accuracy of master
+                                </div>
+                            </div>
+                            <div className="p-4 text-right border-t border-b border-gray-200 bg-white font-medium">
+                                {formData.masterAccuracy} <span className="text-gray-500 text-sm">{formData.rUnit}</span>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2">
+                            <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-t border-b border-r border-gray-200 flex items-center">
+                                <div>
+                                    Uncertainty U3
+                                </div>
+                            </div>
+                            <div className="p-4 text-right border-t border-b border-gray-200 bg-white font-medium">
+                                {calculateU3()} <span className="text-gray-500 text-sm">{formData.rUnit}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="border-b border-gray-200 py-2">
+                        <h2 className="text-lg font-semibold text-gray-800 text-center">U5</h2>
+                        <div className="grid grid-cols-2">
+                            <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-t border-b border-r border-gray-200 flex items-center">
+                                <div>
+                                    Stability
+                                </div>
+                            </div >
+                            <div className="bg-yellow-50 p-4 text-right border-b border-gray-200">
+                                <input
+                                    type="text"
+                                    name="stability"
+                                    value={formData.stability}
+                                    onChange={handleInputChange}
+                                    className="w-full p-2 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2">
+                            <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-t border-b border-r border-gray-200 flex items-center">
+                                <div>
+                                    Uncertainty U5
+                                </div>
+                            </div>
+                            <div className="p-4 text-right border-t border-b border-gray-200 bg-white font-medium">
+                                {calculateU5()} <span className="text-gray-500 text-sm">{formData.rUnit}</span>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div className="grid grid-cols-2">
+                        <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-t border-b border-r border-gray-200 flex items-center">
+                            <div>
+                                Combined Uncertainty UC
+                            </div>
+                        </div>
+                        <div className="p-4 text-right border-t border-b border-gray-200 bg-white font-medium">
+                            {calculateUC()} <span className="text-gray-500 text-sm">{formData.rUnit}</span>
+                        </div>
+                    </div>
+
+
+                    <div className="grid grid-cols-2">
+                        <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-b border-r border-gray-200">Effective Degrees of Freedom</div>
+                        <div className="p-4 text-right border-b border-gray-200 bg-white font-medium">
+                            {calculateEDof()} <span className="text-gray-500 text-sm">{formData.rUnit}</span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2">
+                        <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-b border-r border-gray-200">So, K at 95.5% confidence level=</div>
+                        {(calculateEDof() > 30) ? <div className="p-4 text-right border-b border-gray-200 bg-white font-medium">2</div> :
+                            <div className="bg-yellow-50 p-4 text-right border-b border-gray-200">
+                                <input
+                                    type="text"
+                                    name="kAt95CL"
+                                    value={formData.kAt95CL}
+                                    onChange={handleInputChange}
+                                    className="w-full p-2 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition"
+                                />
+                            </div>}
+                    </div>
+                    <div className="border-b border-gray-200 py-2">
+                        <div className="grid grid-cols-3">
+                            <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-b border-r border-gray-200">Expanded Uncertainty</div>
+                            <div className="p-4 text-right border-b border-gray-200 bg-white font-medium">{calculateUE()}</div>
+                            <div className="p-4 text-right border-b border-l border-gray-200 bg-white font-medium">{calculateUEPercentage()}%</div>
+                        </div>
+
+                        <div className="grid grid-cols-3">
+                            <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-b border-r border-gray-200">Ue= Combined Uncertainty*K </div>
+                            <div className="p-4 text-right border-b border-gray-200 bg-white font-medium">{calculateUE()}</div>
+                            <div className="bg-yellow-50 p-4 text-right border-b border-gray-200">
+                                <input
+                                    type="text"
+                                    name="uePercentageFilled"
+                                    value={formData.uePercentageFilled}
+                                    onChange={handleInputChange}
+                                    className="w-full p-2 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2">
+                        <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-b border-r border-gray-200">Result </div>
+                        <div className="p-4 text-right border-b border-gray-200 bg-white font-medium">{formData.result}</div>
+                    </div>
+
+                </div>
             </div>
-            {/* <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200"> */}
-            {/* <h2 className="font-bold mb-3 text-gray-700">Current Form State:</h2>
+            {/* <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                <h2 className="font-bold mb-3 text-gray-700">Current Form State:</h2>
                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <pre className="text-xs overflow-auto max-h-64 text-gray-700">
                         {JSON.stringify(formData, null, 2)}
                     </pre>
-                </div> */}
+                </div>
+            </div> */}
             <div className="flex justify-end mt-4">
                 <button
                     onClick={() => { save(formData) }}

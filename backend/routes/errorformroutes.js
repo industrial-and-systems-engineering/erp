@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const passport = require("passport");
 const { srfForms, Product } = require("../models/db");
-const  {isLoggedIn} = require('../middleware1');
+const { isLoggedIn } = require('../middleware1');
 
 function preprocessing(products) {
   for (let i = 0; i < products.length; i++) {
@@ -14,7 +14,7 @@ function preprocessing(products) {
 router.post("/", isLoggedIn, async (req, res) => {
   try {
     let { form, products } = req.body;
-    if (!form || !products) {return res.status(400).json({ success: false, message: "All fields are required" }) ;}
+    if (!form || !products) { return res.status(400).json({ success: false, message: "All fields are required" }); }
     const userId = req.user.id;
     const newForm = new srfForms({
       ...form,
@@ -34,7 +34,7 @@ router.post("/", isLoggedIn, async (req, res) => {
         user: userId,
         form: savedForm._id,
       });
-      
+
       try {
         const savedProduct = await product.save();
         productIds.push(savedProduct._id);
@@ -48,7 +48,7 @@ router.post("/", isLoggedIn, async (req, res) => {
     }
     savedForm.products = productIds;
     await savedForm.save();
-    
+
     return res
       .status(201)
       .json({ success: true, data: savedForm, redirectURL: "/user" });
@@ -63,41 +63,41 @@ router.get("/completed", async (req, res) => {
   try {
     const userId = req.user._id;
     const PartiallyCompletedForms = await srfForms
-    .find({ user: userId,requestStatus: false })
-    .populate({
-      path: "products",
-      match: { isCalibrated: true }
-    });
-  const completedForms = await srfForms
-    .find({  user: userId,requestStatus: true })
-    .populate("products");
+      .find({ user: userId, requestStatus: false })
+      .populate({
+        path: "products",
+        match: { isCalibrated: true }
+      });
+    const completedForms = await srfForms
+      .find({ user: userId, requestStatus: true })
+      .populate("products");
 
-  const forms = [...PartiallyCompletedForms, ...completedForms];
+    const forms = [...PartiallyCompletedForms, ...completedForms];
 
-    return res.status(200).json({ success: true, data: forms});
+    return res.status(200).json({ success: true, data: forms });
   } catch (error) {
     console.error("Error fetching completed error forms:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
 
-router.get("/pending", async (req, res) => { 
-  try { 
+router.get("/pending", async (req, res) => {
+  try {
     const userId = req.user._id;
     const pendingForms = await srfForms
-      .find({ 
-        user: userId, 
-        requestStatus: false, 
+      .find({
+        user: userId,
+        requestStatus: false,
       })
       .populate({
         path: "products",
         match: { isCalibrated: false }
-      }); 
-    return res.status(200).json({ success: true, data: pendingForms }); 
-  } catch (error) { 
-    console.error("Error fetching pending error forms:", error); 
-    res.status(500).json({ success: false, message: "Internal server error" }); 
-  } 
+      });
+    return res.status(200).json({ success: true, data: pendingForms });
+  } catch (error) {
+    console.error("Error fetching pending error forms:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
 });
 // router.get("/calibrated", async (req, res) => {
 //   try {

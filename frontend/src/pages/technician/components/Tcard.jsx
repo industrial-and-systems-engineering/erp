@@ -271,8 +271,16 @@ const Tcard = ({ equipment, form, formOpen }) => {
                     </div>
                     {Readings.map((reading, index) => (
                         <div key={index} className="mt-4">
-                            <h1 className="font-semibold">Reading {index + 1}</h1>
-
+                            <div className="flex justify-between items-center">
+                                <h1 className="font-semibold">Reading {index + 1}</h1>
+                                <button
+                                    type="button"
+                                    onClick={() => { }}
+                                    className="bg-yellow-500 text-white py-1 px-2 rounded hover:bg-yellow-700"
+                                >
+                                    Edit
+                                </button>
+                            </div>
                         </div>
                     ))}
                     {/* Submit and Issued By Section */}
