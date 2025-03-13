@@ -4,35 +4,35 @@ import { useState } from 'react';
 const Observation = ({ product, save, close }) => {
     // Form data
     const [formData, setFormData] = useState({
-        ducDetails: "Digital Voltmeter AC",
+        ducDetails: "",
         dateOfMeasurement: new Date().toLocaleDateString(),
-        masterAccuracy: "Enter master accuracy",
-        masterCertUncertainty: "Enter master cert. uncertainty",
-        ducResolution: "Enter DUC resolution",
-        masterResolution: "Enter master resolution",
-        rName: "Enter reading parameter",
-        rUnit: "Enter unit",
+        masterAccuracy: "",
+        masterCertUncertainty: "",
+        ducResolution: "",
+        masterResolution: "",
+        rName: "",
+        rUnit: "",
         observations: [],
         //type-a
-        mean: "0",
-        standartDeviation: "0",
-        uncertainty: "0",
-        stdUncertainty: "0",
-        stdUncertaintyPercent: "0",
+        mean: "",
+        standartDeviation: "",
+        uncertainty: "",
+        stdUncertainty: "",
+        stdUncertaintyPercent: "",
         //type-b
-        u1: "0",
-        u2: "0",
-        u3: "0",
+        u1: "",
+        u2: "",
+        u3: "",
         //u5
-        stability: "0",
-        u5: "0",
-        uc: "0",
-        eDof: "0",
-        kAt95CL: "2",
-        ue: "0",
-        uePercentage: "0",
-        uePercentageFilled: "0",
-        result: "0",
+        stability: "",
+        u5: "",
+        uc: "",
+        eDof: "",
+        kAt95CL: "",
+        ue: "",
+        uePercentage: "",
+        uePercentageFilled: "",
+        result: "",
     });
 
     // Calculated values
@@ -197,6 +197,7 @@ const Observation = ({ product, save, close }) => {
                             type="text"
                             name="ducDetails"
                             value={formData.ducDetails}
+                            placeholder='Enter DUC details'
                             onChange={handleInputChange}
                             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition"
                         />
@@ -224,7 +225,6 @@ const Observation = ({ product, save, close }) => {
                             <input
                                 type="text"
                                 name="rName"
-                                value={formData.rName}
                                 onChange={handleInputChange}
                                 className="w-full p-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition"
                                 placeholder="Enter voltage value"
@@ -235,6 +235,7 @@ const Observation = ({ product, save, close }) => {
                                 value={formData.rUnit}
                                 onChange={handleInputChange}
                                 className="w-full p-2 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition"
+                                placeholder="Enter unit"
                             />
                         </div>
                     </div>
@@ -249,45 +250,49 @@ const Observation = ({ product, save, close }) => {
                             value={formData.dateOfMeasurement}
                             onChange={handleInputChange}
                             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition"
+                            placeholder='Enter Date of Measurement'
                         />
                     </div>
                 </div>
 
                 <div className="grid grid-cols-2">
                     <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-b border-r border-gray-200">Master Accuracy</div>
-                    <div className="bg-yellow-50 p-4 text-right border-b border-gray-200">
+                    <div className="bg-yellow-50 p-4 border-b border-gray-200">
                         <input
                             type="text"
                             name="masterAccuracy"
                             value={formData.masterAccuracy}
                             onChange={handleInputChange}
-                            className="w-full p-2 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition"
+                            className="w-full p-2 border border-gray-300 rounded-lgfocus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition"
+                            placeholder='Enter Master Accuracy'
                         />
                     </div>
                 </div>
 
                 <div className="grid grid-cols-2">
                     <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-b border-r border-gray-200">Master cert. uncertainty</div>
-                    <div className="bg-yellow-50 p-4 text-right border-b border-gray-200">
+                    <div className="bg-yellow-50 p-4  border-b border-gray-200">
                         <input
                             type="text"
                             name="masterCertUncertainty"
                             value={formData.masterCertUncertainty}
                             onChange={handleInputChange}
-                            className="w-full p-2 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition"
+                            className="w-full p-2 border border-gray-300 rounded-lg  focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition"
+                            placeholder='Enter Master cert. uncertainty'
                         />
                     </div>
                 </div>
 
                 <div className="grid grid-cols-2">
                     <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-b border-r border-gray-200">DUC Resolution</div>
-                    <div className="bg-yellow-50 p-4 text-right border-b border-gray-200">
+                    <div className="bg-yellow-50 p-4  border-b border-gray-200">
                         <input
                             type="text"
                             name="ducResolution"
                             value={formData.ducResolution}
                             onChange={handleInputChange}
-                            className="w-full p-2 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition"
+                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition"
+                            placeholder='Enter DUC Resolution'
                         />
                     </div>
                 </div>
@@ -301,6 +306,7 @@ const Observation = ({ product, save, close }) => {
                             value={formData.masterResolution}
                             onChange={handleInputChange}
                             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition"
+                            placeholder='Enter Master resolution'
                         />
                     </div>
                 </div>
@@ -348,6 +354,7 @@ const Observation = ({ product, save, close }) => {
                                     value={obs}
                                     onChange={(e) => handleObservationChange(index, e.target.value)}
                                     className="w-full p-2 border border-gray-300 rounded-lg text-right text-red-500 focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition"
+                                    placeholder='Enter observation'
                                 />
                                 <button
                                     onClick={() => removeObservation(index)}
@@ -519,6 +526,7 @@ const Observation = ({ product, save, close }) => {
                                     value={formData.stability}
                                     onChange={handleInputChange}
                                     className="w-full p-2 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition"
+                                    placeholder='Enter Stability'
                                 />
                             </div>
                         </div>
@@ -564,6 +572,7 @@ const Observation = ({ product, save, close }) => {
                                     value={formData.kAt95CL}
                                     onChange={handleInputChange}
                                     className="w-full p-2 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition"
+                                    placeholder='Enter K at 95.5% confidence level'
                                 />
                             </div>}
                     </div>
