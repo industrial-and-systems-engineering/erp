@@ -2,14 +2,19 @@ import { create } from "zustand";
 
 export const useCompletedFormsStore = create((set) => ({
     completedForms: [],
-    setCompletedForms: (completedForms) =>
-        set({ completedForms }),
+    setCompletedForms: (forms) => set({ completedForms: forms }),
 
     fetchCompletedForms: async() => {
-        const response = await fetch("/api/technician/completed");
-        const equipments = await response.json();
-        const data = equipments.data;
-        set((state) => ({ completedForms: [...data] }));
+        try {
+            const response = await fetch("/api/technician/completed");
+            if (!response.ok) {
+                throw new Error("Failed to fetch completed forms");
+            }
+            const result = await response.json();
+            set({ completedForms: result.data });
+        } catch (error) {
+            console.error("Error fetching completed forms:", error);
+            throw error;
+        }
     },
-
 }));

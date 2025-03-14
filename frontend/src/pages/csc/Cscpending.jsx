@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { usePendingFormsStore } from "./utils/pendingFroms";
 
 const Tpending = () => {
-  const { pendingForms, fetchPendingForms, updateFormDetails } =
+  const { pendingForms, fetchPendingForms, updateFormDetails, markFormCompleted } =
     usePendingFormsStore();
   const [selectedForm, setSelectedForm] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -10,6 +10,8 @@ const Tpending = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [formChanges, setFormChanges] = useState({});
   const [jobcardSelected, selectJobcard] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
   useEffect(() => {
     const loadForms = async () => {
       try {
@@ -23,7 +25,17 @@ const Tpending = () => {
       }
     };
     loadForms();
-  }, [pendingForms]);
+  }, [fetchPendingForms]);
+
+  // Clear success message after 3 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage("");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   const toggleFormDetails = (form) => {
     console.log(pendingForms);
@@ -42,7 +54,12 @@ const Tpending = () => {
       conditionOfProduct: selectedForm.conditionOfProduct,
       itemEnclosed: selectedForm.itemEnclosed,
       specialRequest: selectedForm.specialRequest,
-      decisionRules: selectedForm.decisionRules,
+      decisionRules: selectedForm.decisionRules || {
+        noDecision: false,
+        simpleConformative: false,
+        conditionalConformative: false,
+        customerDrivenConformative: false
+      },
       calibrationPeriodicity: selectedForm.calibrationPeriodicity,
       reviewRequest: selectedForm.reviewRequest,
       calibrationFacilityAvailable: selectedForm.calibrationFacilityAvailable,
@@ -77,36 +94,49 @@ const Tpending = () => {
 
   const saveFormChanges = async () => {
     try {
-      // This would update all products in the form with the same values
-      if (selectedForm && selectedForm.products) {
-        for (const product of selectedForm.products) {
-          const response = await updateFormDetails(
-            selectedForm._id,
-            product._id,
-            formChanges
-          );
-        }
+      // Prepare the updated details with formUpdated set to true.
+      const updatedDetails = { ...formChanges, formUpdated: true };
+  
+      // Call updateFormDetails with only the form ID (no need to loop through products)
+      const response = await updateFormDetails(selectedForm._id, updatedDetails);
+      if (!response.success) {
+        throw new Error(response.message);
       }
-
-      // Update the local state with the changes
+  
+      // Optionally update local state
       setSelectedForm((prevForm) => {
         if (!prevForm) return null;
-
-        return {
-          ...prevForm,
-          products: prevForm.products.map((prod) => ({
-            ...prod,
-            ...formChanges,
-          })),
-        };
+        return { ...prevForm, ...updatedDetails };
       });
-
-      // Exit edit mode
+  
+      // Exit edit mode, clear changes and show success
       setIsEditing(false);
       setFormChanges({});
+      setSuccessMessage("Form details updated and removed from pending list");
     } catch (err) {
       console.error("Failed to update form", err);
       setError("Failed to update form details");
+    }
+  };
+  
+
+
+
+  const handleMarkAsCompleted = async () => {
+    if (!selectedForm) return;
+
+    try {
+      const result = await markFormCompleted(selectedForm._id, selectedForm);
+      
+      if (result.success) {
+        setSuccessMessage("Form marked as completed and moved to completed forms");
+        setSelectedForm(null);
+      } else {
+        setError(result.message || "Failed to mark form as completed");
+      }
+    } catch (err) {
+      console.error("Error marking form as completed", err);
+      setError("An unexpected error occurred");
     }
   };
 
@@ -131,6 +161,12 @@ const Tpending = () => {
       <h1 className="text-2xl font-bold my-6 mb-4 text-center">
         Pending SRF Forms
       </h1>
+
+      {successMessage && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mx-auto max-w-4xl my-4">
+          <p>{successMessage}</p>
+        </div>
+      )}
 
       {pendingForms.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -261,12 +297,20 @@ const Tpending = () => {
                       Products ({selectedForm.products?.length || 0})
                     </h3>
                     {!isEditing && (
-                      <button
-                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm"
-                        onClick={startEditing}
-                      >
-                        Edit Form Details
-                      </button>
+                      <div className="space-x-2">
+                        <button
+                          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm"
+                          onClick={startEditing}
+                        >
+                          Edit Form Details
+                        </button>
+                        <button
+                          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm"
+                          onClick={handleMarkAsCompleted}
+                        >
+                          Mark as Completed
+                        </button>
+                      </div>
                     )}
                   </div>
 
@@ -288,7 +332,7 @@ const Tpending = () => {
                             </label>
                             <select
                               className="w-full border-gray-300 rounded-md shadow-sm p-2"
-                              value={formChanges.conditionOfProduct}
+                              value={formChanges.conditionOfProduct || ""}
                               onChange={(e) =>
                                 handleInputChange(
                                   "conditionOfProduct",
@@ -310,7 +354,7 @@ const Tpending = () => {
                             <input
                               type="text"
                               className="w-full border-gray-300 rounded-md shadow-sm p-2"
-                              value={formChanges.itemEnclosed}
+                              value={formChanges.itemEnclosed || ""}
                               onChange={(e) =>
                                 handleInputChange(
                                   "itemEnclosed",
@@ -326,7 +370,7 @@ const Tpending = () => {
                             </label>
                             <textarea
                               className="w-full border-gray-300 rounded-md shadow-sm p-2"
-                              value={formChanges.specialRequest}
+                              value={formChanges.specialRequest || ""}
                               onChange={(e) =>
                                 handleInputChange(
                                   "specialRequest",
@@ -345,7 +389,7 @@ const Tpending = () => {
                             </label>
                             <select
                               className="w-full border-gray-300 rounded-md shadow-sm p-2"
-                              value={formChanges.calibrationPeriodicity}
+                              value={formChanges.calibrationPeriodicity || ""}
                               onChange={(e) =>
                                 handleInputChange(
                                   "calibrationPeriodicity",

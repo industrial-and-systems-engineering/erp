@@ -5,7 +5,7 @@ export const usePendingFormsStore = create((set) => ({
     pendingForms: [],
     setPendingForms: (pendingForms) => set({ pendingForms }),
 
-    fetchPendingForms: async () => {
+    fetchPendingForms: async() => {
         try {
             const response = await fetch("/api/technician/pending");
 
@@ -22,7 +22,7 @@ export const usePendingFormsStore = create((set) => ({
         }
     },
 
-    updateForm: async (fid, pid, details) => {
+    updateForm: async(fid, pid, details) => {
         console.log("updateForm called with fid:", fid, "pid:", pid, "details:", details);
         try {
             const response = await fetch(`/api/technician/update/${pid}/${fid}`, {
@@ -86,17 +86,15 @@ export const usePendingFormsStore = create((set) => ({
         }
     },
 
-    updateFormDetails: async (formId, productId, details) => {
+
+
+    updateFormDetails: async(formId, details) => {
         try {
-            // Ensure formId is defined
             if (!formId) {
-                return {
-                    success: false,
-                    message: "Form ID is required",
-                };
+                return { success: false, message: "Form ID is required" };
             }
 
-            console.log("Updating form details:", formId, details);
+            console.log("Updating form details for formId:", formId, details);
 
             const response = await fetch(`/api/technician/updateform/${formId}`, {
                 method: "PUT",
@@ -106,18 +104,15 @@ export const usePendingFormsStore = create((set) => ({
                 body: JSON.stringify(details),
             });
 
-            // Handle non-JSON responses more gracefully
             if (!response.ok) {
                 const errorText = await response.text();
                 try {
-                    // Try to parse as JSON
                     const errorData = JSON.parse(errorText);
                     return {
                         success: false,
                         message: errorData.message || `Failed to update (${response.status})`,
                     };
-                } catch (parseError) {
-                    // If it's not JSON, return the text or status
+                } catch {
                     return {
                         success: false,
                         message: `Server error (${response.status})`,
@@ -126,27 +121,93 @@ export const usePendingFormsStore = create((set) => ({
             }
 
             const data = await response.json();
+
+            // Remove the form from pendingForms if formUpdated is true.
+            if (data.data.formUpdated) {
+                set((state) => ({
+                    pendingForms: state.pendingForms.filter((form) => form._id !== formId)
+                }));
+            } else {
+                // Otherwise, update the form details in the list.
+                set((state) => ({
+                    pendingForms: state.pendingForms.map((form) =>
+                        form._id === formId ? {...form, ...details } : form
+                    )
+                }));
+            }
+
+            return { success: true, message: "Form updated successfully" };
+        } catch (error) {
+            console.error("Error updating form details:", error);
+            return { success: false, message: error.message || "An unexpected error occurred" };
+        }
+    },
+
+
+
+    markFormCompleted: async(formId, formData) => {
+        try {
+            if (!formId) {
+                return {
+                    success: false,
+                    message: "Form ID is required",
+                };
+            }
+
+            // Include formUpdated: true in the data being sent
+            const dataToUpdate = {
+                ...formData,
+                formUpdated: true
+            };
+
+            const response = await fetch(`/api/technician/completeform/${formId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(dataToUpdate),
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                try {
+                    const errorData = JSON.parse(errorText);
+                    return {
+                        success: false,
+                        message: errorData.message || `Failed to mark as completed (${response.status})`,
+                    };
+                } catch (parseError) {
+                    return {
+                        success: false,
+                        message: `Server error (${response.status})`,
+                    };
+                }
+            }
+
+            const data = await response.json();
+
+            // Remove the form from pending forms
             set((state) => {
-                const updatedForms = state.pendingForms.reduce((acc, form) => {
-                    if (form._id === formId) {
-                        acc.push({
-                            ...form,
-                            ...details,
-                        });
-                    } else {
-                        acc.push(form);
-                    }
-                    return acc;
-                }, []);
+                const updatedForms = state.pendingForms.filter(form => form._id !== formId);
                 return { pendingForms: updatedForms };
             });
 
+            // Try to update the completed forms store if available
+            try {
+                const completedFormsStore = useCompletedFormsStore.getState();
+                if (completedFormsStore && completedFormsStore.addCompletedForm) {
+                    completedFormsStore.addCompletedForm(data.data);
+                }
+            } catch (e) {
+                console.warn("Could not update completed forms store:", e);
+            }
+
             return {
                 success: true,
-                message: "Form updated successfully"
+                message: "Form marked as completed successfully"
             };
         } catch (error) {
-            console.error("Error updating form details:", error);
+            console.error("Error marking form as completed:", error);
             return {
                 success: false,
                 message: error.message || "An unexpected error occurred",
