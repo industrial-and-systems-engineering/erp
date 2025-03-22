@@ -1,14 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import UserNavbar from "./components/UserNavbar.jsx";
 import { useLocation } from "react-router-dom";
+import SignatureCanvas from 'react-signature-canvas';
 
 const ErrorDetectorForm = () => {
   const navigate = useNavigate();
   const today = new Date().toISOString().slice(0, 10);
+  const sigCanvas = useRef({});
 
   const defaultConditionOfProduct = "technician will enter";
   const defaultItemEnclosed = "labworker will enter";
+  const availableMethods = [
+    "ED/SOP/E-001(A) - Calibration of Ammeter",
+    "ED/SOP/E-002(S) - Calibration of Megger/DC Voltage/Resistance",
+    "ED/SOP/E-003(S) - Temperature Controller/Indicator/Recorder - Thermocouple & RTD",
+    "ED/SOP/E-004(S) - Calibration of Voltmeter",
+    "ED/SOP/E-005(S) - Measurement of AC/DC Voltage, Current, and DC Resistance",
+    "ED/SOP/E-006(S) - Temperature Calibrator/Source/Process Source - Thermocouples & RTD"
+  ];
 
   const [formData, setFormData] = useState({
     srfNo: "kpg/24-25/formno",
@@ -21,20 +31,27 @@ const ErrorDetectorForm = () => {
     telephoneNumber: "",
     emailId: "",
     conditionOfProduct: defaultConditionOfProduct,
-    itemEnclosed: defaultItemEnclosed,
+    itemEnclosed: "",
     specialRequest: "",
     calibrationPeriodicity: "",
     reviewRequest: "",
     calibrationFacilityAvailable: "",
     calibrationServiceDoneByExternalAgency: "",
     calibrationMethodUsed: "",
+    eSignature: "",
+    signerName: "",
   });
+
   const [decisionRules, setDecisionRules] = useState({
     noDecision: false,
     simpleConformative: false,
     conditionalConformative: false,
     customerDrivenConformative: false,
   });
+
+  const [signatureData, setSignatureData] = useState(null);
+  const [isSignatureEmpty, setIsSignatureEmpty] = useState(true);
+
   const emptyRow = {
     instrumentDescription: "",
     serialNo: "",
@@ -44,41 +61,65 @@ const ErrorDetectorForm = () => {
     calibrationStatus: "",
     calibratedDate: "",
     remarks: "",
+    methodUsed: "",
   };
 
   const [tableRows, setTableRows] = useState([{ ...emptyRow }]);
 
+  const clearSignature = () => {
+    sigCanvas.current.clear();
+    setSignatureData(null);
+    setIsSignatureEmpty(true);
+  };
+
+  const handleSignatureEnd = () => {
+    setSignatureData(sigCanvas.current.toDataURL());
+    setIsSignatureEmpty(false);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
+    if (isSignatureEmpty) {
+      alert("Please provide your signature");
+      return;
+    }
+
     const formattedFormData = {
       ...formData,
+      eSignature: signatureData,
       date: formData.date ? new Date(formData.date).toISOString() : "",
-      probableDate: formData.probableDate ? new Date(formData.probableDate).toISOString() : "",
+      probableDate: formData.probableDate
+        ? new Date(formData.probableDate).toISOString()
+        : "",
       decisionRules: decisionRules,
     };
-  
-    // Filter out empty table rows (all fields empty)
-    const nonEmptyRows = tableRows.filter(row =>
-      Object.values(row).some(value => value !== "")
+
+    const nonEmptyRows = tableRows.filter((row) =>
+      Object.values(row).some((value) => value !== "")
     );
 
     if (nonEmptyRows.length > 15) {
-      alert(`You can only create a maximum of 15 products per user. Currently trying to create ${nonEmptyRows.length}.`);
+      alert(
+        `You can only create a maximum of 15 products per user. Currently trying to create ${nonEmptyRows.length}.`
+      );
       return;
     }
-    const formattedProducts = nonEmptyRows.map(row => ({
+
+    const formattedProducts = nonEmptyRows.map((row) => ({
       ...row,
-      calibratedDate: row.calibratedDate ? new Date(row.calibratedDate).toISOString() : null,
+      calibratedDate: row.calibratedDate
+        ? new Date(row.calibratedDate).toISOString()
+        : null,
     }));
-  
+
     const requestData = {
       form: formattedFormData,
       products: formattedProducts,
     };
-  
+
     console.log("Submitting form data:", JSON.stringify(requestData, null, 2));
-  
+
     fetch("/api/errorform", {
       method: "POST",
       credentials: "include",
@@ -89,8 +130,10 @@ const ErrorDetectorForm = () => {
     })
       .then((res) => {
         if (res.status === 401) {
-          alert("Your session has expired or you are not authorized. Please log in again.");
-          navigate("/user"); 
+          alert(
+            "Your session has expired or you are not authorized. Please log in again."
+          );
+          navigate("/user");
           return null;
         }
         if (!res.ok) {
@@ -99,8 +142,9 @@ const ErrorDetectorForm = () => {
         return res.json();
       })
       .then((data) => {
-        if (!data) return; 
-        console.log("Response from backend:", data);
+        if (!data) return;
+        
+        // Reset form
         setFormData((prevData) => ({
           ...prevData,
           organization: "",
@@ -117,17 +161,20 @@ const ErrorDetectorForm = () => {
           calibrationFacilityAvailable: "",
           calibrationServiceDoneByExternalAgency: "",
           calibrationMethodUsed: "",
+          eSignature: "",
+          signerName: "",
         }));
-  
+
         setDecisionRules({
           noDecision: false,
           simpleConformative: false,
           conditionalConformative: false,
           customerDrivenConformative: false,
         });
-  
+
         setTableRows([{ ...emptyRow }]);
-  
+        clearSignature();
+
         if (data.redirectURL) {
           navigate(data.redirectURL);
         } else {
@@ -139,11 +186,12 @@ const ErrorDetectorForm = () => {
         alert("Error submitting form. Please try again.");
       });
   };
-  
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
+
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
     setDecisionRules({ ...decisionRules, [name]: checked });
@@ -162,7 +210,9 @@ const ErrorDetectorForm = () => {
                 <p className="text-blue-100 mt-1">Equipment Calibration Services</p>
               </div>
               <div className="text-right">
-                <p className="text-sm">Form No: <span className="font-mono">{formData.srfNo}</span></p>
+                <p className="text-sm">
+                  Form No: <span className="font-mono">{formData.srfNo}</span>
+                </p>
                 <p className="text-sm mt-1">Date: {today}</p>
               </div>
             </div>
@@ -172,14 +222,20 @@ const ErrorDetectorForm = () => {
             {/* Section 1: Basic Information */}
             <div className="mb-8">
               <div className="flex items-center mb-4">
-                <div className="w-8 h-8 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3">1</div>
-                <h2 className="text-xl font-bold text-gray-800">Customer Information</h2>
+                <div className="w-8 h-8 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3">
+                  1
+                </div>
+                <h2 className="text-xl font-bold text-gray-800">
+                  Customer Information
+                </h2>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 bg-gray-50 p-5 rounded-lg border border-gray-200">
                 {/* SRF Number row */}
                 <div className="col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">SRF Number</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    SRF Number
+                  </label>
                   <input
                     type="text"
                     name="srfNo"
@@ -191,7 +247,9 @@ const ErrorDetectorForm = () => {
 
                 {/* Date row */}
                 <div className="col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date
+                  </label>
                   <input
                     type="text"
                     name="date"
@@ -203,7 +261,9 @@ const ErrorDetectorForm = () => {
 
                 {/* Probable Date row */}
                 <div className="col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Probable Completion Date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Probable Completion Date
+                  </label>
                   <input
                     type="date"
                     name="probableDate"
@@ -215,7 +275,9 @@ const ErrorDetectorForm = () => {
 
                 {/* Organization */}
                 <div className="col-span-1 md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Organization <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Organization <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     name="organization"
@@ -228,7 +290,9 @@ const ErrorDetectorForm = () => {
 
                 {/* Address */}
                 <div className="col-span-1 md:col-span-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Address <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Address <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     name="address"
@@ -241,7 +305,9 @@ const ErrorDetectorForm = () => {
 
                 {/* Contact Person */}
                 <div className="col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Contact Person <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Contact Person <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     name="contactPersonName"
@@ -254,7 +320,9 @@ const ErrorDetectorForm = () => {
 
                 {/* Mobile Number */}
                 <div className="col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Mobile Number <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     name="mobileNumber"
@@ -268,7 +336,9 @@ const ErrorDetectorForm = () => {
 
                 {/* Telephone Number */}
                 <div className="col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Telephone Number</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Telephone Number
+                  </label>
                   <input
                     type="text"
                     name="telephoneNumber"
@@ -281,7 +351,9 @@ const ErrorDetectorForm = () => {
 
                 {/* Email ID */}
                 <div className="col-span-1 md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email ID <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email ID <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="email"
                     name="emailId"
@@ -299,8 +371,12 @@ const ErrorDetectorForm = () => {
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
-                  <div className="w-8 h-8 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3">2</div>
-                  <h2 className="text-xl font-bold text-gray-800">Product Description</h2>
+                  <div className="w-8 h-8 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3">
+                    2
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-800">
+                    Product Description
+                  </h2>
                 </div>
                 <div className="bg-yellow-100 text-yellow-800 text-sm font-medium py-1 px-3 rounded-full">
                   Optional
@@ -312,50 +388,221 @@ const ErrorDetectorForm = () => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead>
                       <tr className="bg-blue-700 text-white">
-                        <th className="px-3 py-3 text-xs font-medium text-left">Instrument Description</th>
-                        <th className="px-3 py-3 text-xs font-medium text-left">Serial No</th>
-                        <th className="px-3 py-3 text-xs font-medium text-left">Parameter</th>
-                        <th className="px-3 py-3 text-xs font-medium text-left">Ranges</th>
-                        <th className="px-3 py-3 text-xs font-medium text-left">Accuracy</th>
-                        <th className="px-3 py-3 text-xs font-medium text-left">Calibration Status</th>
-                        <th className="px-3 py-3 text-xs font-medium text-left">Calibrated Date</th>
-                        <th className="px-3 py-3 text-xs font-medium text-left">Remarks</th>
+                        <th className="px-3 py-3 text-xs font-medium text-left">
+                          Instrument Description
+                        </th>
+                        <th className="px-3 py-3 text-xs font-medium text-left">
+                          Serial No
+                        </th>
+                        <th className="px-3 py-3 text-xs font-medium text-left">
+                          Parameter
+                        </th>
+                        <th className="px-3 py-3 text-xs font-medium text-left">
+                          Ranges
+                        </th>
+                        <th className="px-3 py-3 text-xs font-medium text-left">
+                          Accuracy
+                        </th>
+                        <th className="px-3 py-3 text-xs font-medium text-left">
+                          Calibration Status
+                        </th>
+                        <th className="px-3 py-3 text-xs font-medium text-left">
+                          Calibrated Date
+                        </th>
+                        <th className="px-3 py-3 text-xs font-medium text-left">
+                          Remarks
+                        </th>
+                        {/* NEW COLUMN for Method Used */}
+                        <th className="px-3 py-3 text-xs font-medium text-left">
+                          Method Used
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {tableRows.map((row, index) => (
-                        <tr key={index} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                          {Object.keys(emptyRow).map((key) => (
-                            <td key={key} className="px-2 py-2">
-                              {key === "calibratedDate" ? (
-                                <input
-                                  type="date"
-                                  value={row[key]}
-                                  onChange={(e) =>
-                                    setTableRows((prevRows) =>
-                                      prevRows.map((r, i) =>
-                                        i === index ? { ...r, [key]: e.target.value } : r
-                                      )
-                                    )
-                                  }
-                                  className="w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                />
-                              ) : (
-                                <input
-                                  type="text"
-                                  value={row[key]}
-                                  onChange={(e) =>
-                                    setTableRows((prevRows) =>
-                                      prevRows.map((r, i) =>
-                                        i === index ? { ...r, [key]: e.target.value } : r
-                                      )
-                                    )
-                                  }
-                                  className="w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                />
-                              )}
-                            </td>
-                          ))}
+                        <tr
+                          key={index}
+                          className={
+                            index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                          }
+                        >
+                          {/* Instrument Description */}
+                          <td className="px-2 py-2">
+                            <input
+                              type="text"
+                              value={row.instrumentDescription}
+                              onChange={(e) =>
+                                setTableRows((prevRows) =>
+                                  prevRows.map((r, i) =>
+                                    i === index
+                                      ? {
+                                          ...r,
+                                          instrumentDescription:
+                                            e.target.value,
+                                        }
+                                      : r
+                                  )
+                                )
+                              }
+                              className="w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </td>
+
+                          {/* Serial No */}
+                          <td className="px-2 py-2">
+                            <input
+                              type="text"
+                              value={row.serialNo}
+                              onChange={(e) =>
+                                setTableRows((prevRows) =>
+                                  prevRows.map((r, i) =>
+                                    i === index
+                                      ? { ...r, serialNo: e.target.value }
+                                      : r
+                                  )
+                                )
+                              }
+                              className="w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </td>
+
+                          {/* Parameter */}
+                          <td className="px-2 py-2">
+                            <input
+                              type="text"
+                              value={row.parameter}
+                              onChange={(e) =>
+                                setTableRows((prevRows) =>
+                                  prevRows.map((r, i) =>
+                                    i === index
+                                      ? { ...r, parameter: e.target.value }
+                                      : r
+                                  )
+                                )
+                              }
+                              className="w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </td>
+
+                          {/* Ranges */}
+                          <td className="px-2 py-2">
+                            <input
+                              type="text"
+                              value={row.ranges}
+                              onChange={(e) =>
+                                setTableRows((prevRows) =>
+                                  prevRows.map((r, i) =>
+                                    i === index
+                                      ? { ...r, ranges: e.target.value }
+                                      : r
+                                  )
+                                )
+                              }
+                              className="w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </td>
+
+                          {/* Accuracy */}
+                          <td className="px-2 py-2">
+                            <input
+                              type="text"
+                              value={row.accuracy}
+                              onChange={(e) =>
+                                setTableRows((prevRows) =>
+                                  prevRows.map((r, i) =>
+                                    i === index
+                                      ? { ...r, accuracy: e.target.value }
+                                      : r
+                                  )
+                                )
+                              }
+                              className="w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </td>
+
+                          {/* Calibration Status */}
+                          <td className="px-2 py-2">
+                            <input
+                              type="text"
+                              value={row.calibrationStatus}
+                              onChange={(e) =>
+                                setTableRows((prevRows) =>
+                                  prevRows.map((r, i) =>
+                                    i === index
+                                      ? {
+                                          ...r,
+                                          calibrationStatus: e.target.value,
+                                        }
+                                      : r
+                                  )
+                                )
+                              }
+                              className="w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </td>
+
+                          {/* Calibrated Date */}
+                          <td className="px-2 py-2">
+                            <input
+                              type="date"
+                              value={row.calibratedDate}
+                              onChange={(e) =>
+                                setTableRows((prevRows) =>
+                                  prevRows.map((r, i) =>
+                                    i === index
+                                      ? {
+                                          ...r,
+                                          calibratedDate: e.target.value,
+                                        }
+                                      : r
+                                  )
+                                )
+                              }
+                              className="w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </td>
+
+                          {/* Remarks */}
+                          <td className="px-2 py-2">
+                            <input
+                              type="text"
+                              value={row.remarks}
+                              onChange={(e) =>
+                                setTableRows((prevRows) =>
+                                  prevRows.map((r, i) =>
+                                    i === index
+                                      ? { ...r, remarks: e.target.value }
+                                      : r
+                                  )
+                                )
+                              }
+                              className="w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </td>
+
+                          {/* NEW: Method Used */}
+                          <td className="px-2 py-2">
+                            <select
+                              value={row.methodUsed}
+                              onChange={(e) =>
+                                setTableRows((prevRows) =>
+                                  prevRows.map((r, i) =>
+                                    i === index
+                                      ? { ...r, methodUsed: e.target.value }
+                                      : r
+                                  )
+                                )
+                              }
+                              className="w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                              <option value="">-- Select Method --</option>
+                              {availableMethods.map((method, mIndex) => (
+                                <option key={mIndex} value={method}>
+                                  {method}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -374,13 +621,23 @@ const ErrorDetectorForm = () => {
                     }}
                     className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 mr-1"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                     Add Row
                   </button>
                   <div className="text-sm text-gray-600 italic">
-                    <span className="font-medium">Note:</span> Job numbers will be assigned automatically. (Max 15 products per user)
+                    <span className="font-medium">Note:</span> Job numbers will
+                    be assigned automatically. (Max 15 products per user)
                   </div>
                 </div>
               </div>
@@ -393,8 +650,12 @@ const ErrorDetectorForm = () => {
                 {/* Condition of Product */}
                 <div className="bg-gray-50 rounded-lg border border-gray-200 p-5">
                   <div className="flex items-center mb-3">
-                    <div className="w-7 h-7 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3 text-sm">3</div>
-                    <h3 className="text-lg font-semibold text-gray-800">Condition of Product</h3>
+                    <div className="w-7 h-7 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3 text-sm">
+                      3
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Condition of Product
+                    </h3>
                   </div>
                   <textarea
                     name="conditionOfProduct"
@@ -403,30 +664,43 @@ const ErrorDetectorForm = () => {
                     className="w-full p-3 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
                     rows="2"
                   ></textarea>
-                  <p className="text-xs text-gray-500 mt-1 italic">To be filled by technician</p>
+                  <p className="text-xs text-gray-500 mt-1 italic">
+                    To be filled by technician
+                  </p>
                 </div>
 
                 {/* Item Enclosed */}
                 <div className="bg-gray-50 rounded-lg border border-gray-200 p-5">
                   <div className="flex items-center mb-3">
-                    <div className="w-7 h-7 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3 text-sm">4</div>
-                    <h3 className="text-lg font-semibold text-gray-800">Item Enclosed</h3>
+                    <div className="w-7 h-7 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3 text-sm">
+                      4
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Item Enclosed
+                    </h3>
                   </div>
                   <textarea
-                    name="itemEnclosed"
-                    value={formData.itemEnclosed}
-                    disabled
-                    className="w-full p-3 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
-                    rows="2"
+                     type="text"
+                     name="itemEnclosed"
+                     value={formData.itemEnclosed}
+                     onChange={handleInputChange}
+                     className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                     placeholder="e.g., No,Yes"
                   ></textarea>
-                  <p className="text-xs text-gray-500 mt-1 italic">To be filled by lab worker</p>
+                  {/* <p className="text-xs text-gray-500 mt-1 italic">
+                    To be filled by lab worker
+                  </p> */}
                 </div>
 
                 {/* Special Request */}
                 <div className="bg-gray-50 rounded-lg border border-gray-200 p-5">
                   <div className="flex items-center mb-3">
-                    <div className="w-7 h-7 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3 text-sm">5</div>
-                    <h3 className="text-lg font-semibold text-gray-800">Special Request</h3>
+                    <div className="w-7 h-7 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3 text-sm">
+                      5
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Special Request
+                    </h3>
                   </div>
                   <textarea
                     name="specialRequest"
@@ -444,8 +718,12 @@ const ErrorDetectorForm = () => {
                 {/* Decision Rules */}
                 <div className="bg-gray-50 rounded-lg border border-gray-200 p-5">
                   <div className="flex items-center mb-3">
-                    <div className="w-7 h-7 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3 text-sm">6</div>
-                    <h3 className="text-lg font-semibold text-gray-800">Decision Rules</h3>
+                    <div className="w-7 h-7 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3 text-sm">
+                      6
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Decision Rules
+                    </h3>
                   </div>
                   <div className="space-y-2 bg-gray-100 p-3 rounded-md">
                     <label className="flex items-center gap-2 text-gray-600">
@@ -456,7 +734,9 @@ const ErrorDetectorForm = () => {
                         disabled
                         className="w-4 h-4 text-blue-600"
                       />
-                      <span className="text-sm">No decision on conformative statement</span>
+                      <span className="text-sm">
+                        No decision on conformative statement
+                      </span>
                     </label>
                     <label className="flex items-center gap-2 text-gray-600">
                       <input
@@ -466,7 +746,9 @@ const ErrorDetectorForm = () => {
                         disabled
                         className="w-4 h-4 text-blue-600"
                       />
-                      <span className="text-sm">Simple conformative decision</span>
+                      <span className="text-sm">
+                        Simple conformative decision
+                      </span>
                     </label>
                     <label className="flex items-center gap-2 text-gray-600">
                       <input
@@ -476,7 +758,9 @@ const ErrorDetectorForm = () => {
                         disabled
                         className="w-4 h-4 text-blue-600"
                       />
-                      <span className="text-sm">Conditional conformative decision</span>
+                      <span className="text-sm">
+                        Conditional conformative decision
+                      </span>
                     </label>
                     <label className="flex items-center gap-2 text-gray-600">
                       <input
@@ -486,17 +770,25 @@ const ErrorDetectorForm = () => {
                         disabled
                         className="w-4 h-4 text-blue-600"
                       />
-                      <span className="text-sm">Customer-driven conformative decision</span>
+                      <span className="text-sm">
+                        Customer-driven conformative decision
+                      </span>
                     </label>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1 italic">This will be determined by lab staff</p>
+                  <p className="text-xs text-gray-500 mt-1 italic">
+                    This will be determined by lab staff
+                  </p>
                 </div>
 
                 {/* Calibration Periodicity */}
                 <div className="bg-gray-50 rounded-lg border border-gray-200 p-5">
                   <div className="flex items-center mb-3">
-                    <div className="w-7 h-7 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3 text-sm">7</div>
-                    <h3 className="text-lg font-semibold text-gray-800">Calibration Periodicity</h3>
+                    <div className="w-7 h-7 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3 text-sm">
+                      7
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Calibration Periodicity
+                    </h3>
                   </div>
                   <input
                     type="text"
@@ -511,8 +803,12 @@ const ErrorDetectorForm = () => {
                 {/* Review Request */}
                 <div className="bg-gray-50 rounded-lg border border-gray-200 p-5">
                   <div className="flex items-center mb-3">
-                    <div className="w-7 h-7 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3 text-sm">8</div>
-                    <h3 className="text-lg font-semibold text-gray-800">Review Request</h3>
+                    <div className="w-7 h-7 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3 text-sm">
+                      8
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Review Request
+                    </h3>
                   </div>
                   <input
                     type="text"
@@ -521,7 +817,9 @@ const ErrorDetectorForm = () => {
                     disabled
                     className="w-full p-3 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
                   />
-                  <p className="text-xs text-gray-500 mt-1 italic">For internal use only</p>
+                  <p className="text-xs text-gray-500 mt-1 italic">
+                    For internal use only
+                  </p>
                 </div>
               </div>
             </div>
@@ -530,8 +828,12 @@ const ErrorDetectorForm = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <div className="bg-gray-50 rounded-lg border border-gray-200 p-5">
                 <div className="flex items-center mb-3">
-                  <div className="w-7 h-7 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3 text-sm">9</div>
-                  <h3 className="text-lg font-semibold text-gray-800">Calibration Facility Available</h3>
+                  <div className="w-7 h-7 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3 text-sm">
+                    9
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Calibration Facility Available
+                  </h3>
                 </div>
                 <input
                   type="text"
@@ -540,13 +842,19 @@ const ErrorDetectorForm = () => {
                   disabled
                   className="w-full p-3 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
                 />
-                <p className="text-xs text-gray-500 mt-1 italic">For internal use only</p>
+                <p className="text-xs text-gray-500 mt-1 italic">
+                  For internal use only
+                </p>
               </div>
 
               <div className="bg-gray-50 rounded-lg border border-gray-200 p-5">
                 <div className="flex items-center mb-3">
-                  <div className="w-7 h-7 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3 text-sm">10</div>
-                  <h3 className="text-lg font-semibold text-gray-800">External Calibration Service</h3>
+                  <div className="w-7 h-7 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3 text-sm">
+                    10
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    External Calibration Service
+                  </h3>
                 </div>
                 <input
                   type="text"
@@ -555,13 +863,19 @@ const ErrorDetectorForm = () => {
                   disabled
                   className="w-full p-3 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
                 />
-                <p className="text-xs text-gray-500 mt-1 italic">For internal use only</p>
+                <p className="text-xs text-gray-500 mt-1 italic">
+                  For internal use only
+                </p>
               </div>
 
               <div className="bg-gray-50 rounded-lg border border-gray-200 p-5">
                 <div className="flex items-center mb-3">
-                  <div className="w-7 h-7 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3 text-sm">11</div>
-                  <h3 className="text-lg font-semibold text-gray-800">Calibration Method Used</h3>
+                  <div className="w-7 h-7 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3 text-sm">
+                    11
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Calibration Method Used
+                  </h3>
                 </div>
                 <input
                   type="text"
@@ -570,23 +884,93 @@ const ErrorDetectorForm = () => {
                   disabled
                   className="w-full p-3 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
                 />
-                <p className="text-xs text-gray-500 mt-1 italic">For internal use only</p>
+                <p className="text-xs text-gray-500 mt-1 italic">
+                  For internal use only
+                </p>
               </div>
+
+               {/* Add E-Signature Section */}
+            <div className="mb-8">
+              <div className="flex items-center mb-4">
+                <div className="w-8 h-8 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3">
+                  12
+                </div>
+                <h2 className="text-xl font-bold text-gray-800">E-Signature</h2>
+              </div>
+
+              <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Signer's Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="signerName"
+                    value={formData.signerName}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                    placeholder="Enter name as it will appear on signature"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Draw Your Signature <span className="text-red-500">*</span>
+                  </label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg relative">
+                    <SignatureCanvas
+                      ref={sigCanvas}
+                      penColor="black"
+                      canvasProps={{
+                        className: "w-full h-48 bg-white rounded-lg",
+                      }}
+                      onEnd={handleSignatureEnd}
+                    />
+                    <button
+                      type="button"
+                      onClick={clearSignature}
+                      className="absolute top-2 right-2 px-3 py-1 bg-red-500 text-white rounded-md text-sm hover:bg-red-600"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  {isSignatureEmpty && (
+                    <p className="text-red-500 text-sm mt-1">Signature is required</p>
+                  )}
+                </div>
+              </div>
+            </div>
             </div>
 
             {/* Submission Section */}
             <div className="border-t border-gray-200 pt-6 mt-8">
               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="text-gray-600 text-sm">
-                  <p>By submitting this form, I confirm that all information provided is accurate and complete.</p>
-                  <p>Fields marked with <span className="text-red-500">*</span> are required.</p>
+                  <p>
+                    By submitting this form, I confirm that all information
+                    provided is accurate and complete.
+                  </p>
+                  <p>
+                    Fields marked with <span className="text-red-500">*</span>{" "}
+                    are required.
+                  </p>
                 </div>
                 <button
                   type="submit"
                   className="px-8 py-3 bg-blue-700 hover:bg-blue-800 text-white text-lg font-semibold rounded-md transition-colors shadow-lg flex items-center"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                   Submit Form
                 </button>

@@ -13,6 +13,7 @@ const ProductSchema = new Schema(
     parameter: { type: String, required: true },
     ranges: { type: String, required: true },
     accuracy: { type: String, required: true },
+    methodUsed: { type: String, required: true },
     calibrationStatus: { type: String },
     calibratedDate: { type: Date },
     remarks: { type: String },
@@ -116,7 +117,10 @@ const ServiceRequestFormSchema = new Schema(
     calibrationMethodUsed: { type: String },
     requestStatus: { type: Boolean, default: false },
     URL_NO: { type: String },
-    formUpdated: { type: Boolean, default: false }
+    formUpdated: { type: Boolean, default: false },
+    eSignature: { type: String, required: true },
+    signerName: { type: String, required: true },
+    signedAt: { type: Date, default: Date.now },
   },
   { timestamps: true }
 );
