@@ -28,6 +28,7 @@ const ProductSchema = new Schema(
         ducResolution: { type: String, default: "0" },
         masterResolution: { type: String, default: "0" },
         observations: { type: [String], default: [] },
+        ducValueSet: { type: String },
         //type-a
         mean: { type: String, default: "0" },
         standardDeviation: { type: String, default: "0" },

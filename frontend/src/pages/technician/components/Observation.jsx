@@ -10,6 +10,7 @@ const Observation = ({ product, save, close }) => {
         masterCertUncertainty: "",
         ducResolution: "",
         masterResolution: "",
+        ducValueSet: "",
         rName: "",
         rUnit: "",
         observations: [],
@@ -254,7 +255,19 @@ const Observation = ({ product, save, close }) => {
                         />
                     </div>
                 </div>
-
+                <div className="grid grid-cols-2">
+                    <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-b border-r border-gray-200">DUC Value Set</div>
+                    <div className="bg-yellow-50 p-4 border-b border-gray-200">
+                        <input
+                            type="text"
+                            name="ducValueSet"
+                            value={formData.ducValueSet}
+                            onChange={handleInputChange}
+                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition"
+                            placeholder='Enter Date of DUC value Set'
+                        />
+                    </div>
+                </div>
                 <div className="grid grid-cols-2">
                     <div className="bg-indigo-50 p-4 font-medium text-indigo-700 border-b border-r border-gray-200">Master Accuracy</div>
                     <div className="bg-yellow-50 p-4 border-b border-gray-200">
