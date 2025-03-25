@@ -30,22 +30,23 @@ const CTcard = ({ equipment, form }) => {
                         <div>
                             <div className="flex justify-between flex-wrap">
                                 <p className="mb-2">
-                                    <span className="font-semibold">
-                                        ULR No : {form.URL_NO}
+                                    <span className="font-semibold">ULR No :</span>
+                                    <span className="ml-2 border-b border-gray-300">
+                                        {form.URL_NO || 'N/A'}
                                     </span>
                                 </p>
                             </div>
                             <div className="flex justify-between flex-wrap">
                                 <p className="mb-2">
                                     <span className="font-semibold">Job no:</span>
-                                    <span className="ml-2 w-20 border-b border-gray-300">
-                                        {equipment.jobNo}
+                                    <span className="ml-2 border-b border-gray-300">
+                                        {equipment.jobNo || 'N/A'}
                                     </span>
                                 </p>
                                 <p className="mt-2">
                                     <span className="font-semibold">Job Card Issue Date:</span>
                                     <span className="ml-2 border-b border-gray-300">
-                                        {formatDate(form.date)}
+                                        {formatDate(form.createdAt)}
                                     </span>
                                 </p>
                             </div>
@@ -56,13 +57,13 @@ const CTcard = ({ equipment, form }) => {
                             <p className="mb-2">
                                 <span className="font-semibold">SRF No. :</span>
                                 <span className="ml-2 border-b border-gray-300">
-                                    {form.srfNo}
+                                    {form.srfNo || 'N/A'}
                                 </span>
                             </p>
                             <p className="mb-2">
                                 <span className="font-semibold">Date:</span>
                                 <span className="ml-2 border-b border-gray-300">
-                                    {formatDate(form.date)}
+                                    {formatDate(form.createdAt)}
                                 </span>
                             </p>
                         </div>
@@ -74,7 +75,7 @@ const CTcard = ({ equipment, form }) => {
                                 <p className="mb-2">
                                     <span className="font-semibold">Name:</span>
                                     <span className="ml-2 border-b border-gray-300">
-                                        {equipment.instrumentDescription}
+                                        {equipment.instrumentDescription || 'N/A'}
                                     </span>
                                 </p>
                             </div>
@@ -82,7 +83,7 @@ const CTcard = ({ equipment, form }) => {
                                 <p className="mb-2">
                                     <span className="font-semibold">Make / Model:</span>
                                     <span className="ml-2 border-b border-gray-300">
-                                        {/* If you have a make/model field, insert it here */}
+                                        {equipment.make || 'N/A'}
                                     </span>
                                 </p>
                             </div>
@@ -90,7 +91,7 @@ const CTcard = ({ equipment, form }) => {
                                 <p className="mb-2">
                                     <span className="font-semibold">Sr.No.:</span>
                                     <span className="ml-2 border-b border-gray-300">
-                                        {equipment.serialNo}
+                                        {equipment.serialNo || 'N/A'}
                                     </span>
                                 </p>
                             </div>
@@ -137,45 +138,46 @@ const CTcard = ({ equipment, form }) => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td className="border border-black p-1">
-                                            {equipment.serialNo}
-                                        </td>
-                                        <td className="border border-black p-1">
-                                            {equipment.parameter}
-                                        </td>
-                                        <td className="border border-black p-1">
-                                            {equipment.ranges}
-                                        </td>
-                                        <td className="border border-black p-1">
-                                            {equipment.accuracy}
-                                        </td>
-                                        <td className="border border-black p-1">
-                                            {equipment.calibrationStatus}
-                                        </td>
-                                        <td className="border border-black p-1">
-                                            {formatDate(equipment.calibratedDate)}
-                                        </td>
-                                        <td className="border border-black p-1">
-                                            {equipment.remarks}
-                                        </td>
-                                    </tr>
+                                    {equipment.parameters &&
+                                        equipment.parameters.map((param, index) => (
+                                            <tr key={index}>
+                                                <td className="border border-black p-1">
+                                                    {index + 1}
+                                                </td>
+                                                <td className="border border-black p-1">
+                                                    {param.parameter || 'N/A'}
+                                                </td>
+                                                <td className="border border-black p-1">
+                                                    {param.ranges || 'N/A'}
+                                                </td>
+                                                <td className="border border-black p-1">
+                                                    {param.accuracy || 'N/A'}
+                                                </td>
+                                                <td className="border border-black p-1">
+                                                    {param.calibrationStatus || 'N/A'}
+                                                </td>
+                                                <td className="border border-black p-1">
+                                                    {formatDate(param.calibratedDate)}
+                                                </td>
+                                                <td className="border border-black p-1">
+                                                    {param.remarks || 'N/A'}
+                                                </td>
+                                            </tr>
+                                        ))}
                                 </tbody>
                             </table>
                         </div>
                         <div className="flex justify-between items-center mt-8">
-
                             <div className="text-center">
                                 <p className="font-semibold">Issued by</p>
                                 <div className="mt-8 border-t border-gray-400 w-40 ml-auto"></div>
                             </div>
-
                         </div>
                         <div className="mt-8"></div>
                         <h2 className="font-semibold mb-2">Readings:</h2>
                         <div className="overflow-x-auto">
                             <pre className="text-xs overflow-auto max-h-64 text-gray-700">
-                                {JSON.stringify(equipment.readings, null, 2)}
+                                {JSON.stringify(equipment.parameters, null, 2)}
                             </pre>
                         </div>
                     </form>

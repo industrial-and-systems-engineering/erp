@@ -25,7 +25,7 @@ const Tpending = () => {
             <h1 className="text-2xl font-bold my-10 mb-4 text-center">Pending Equipments</h1>
 
             {pendingForms.length > 0 ? (
-                <div className="space-y-2 w-full grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2 w-full grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="bg-white p-4 col-span-1">
                         {pendingForms.map((form) => (
                             form.products.map((product) => (
@@ -43,7 +43,7 @@ const Tpending = () => {
                                 </div>
                             ))))}
                     </div>
-                    <div className="col-span-2">
+                    <div className="col-span-3 w-full">
                         {selectedEquipment && selectedForm && (
                             <div className="mt-4 p-4 rounded-lg shadow-md w-full">
                                 <Tcard equipment={selectedEquipment} form={selectedForm} formOpen={setSelectedEquipment} />

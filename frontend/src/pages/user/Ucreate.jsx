@@ -54,14 +54,19 @@ const ErrorDetectorForm = () => {
 
   const emptyRow = {
     instrumentDescription: "",
+    make: "",
     serialNo: "",
-    parameter: "",
-    ranges: "",
-    accuracy: "",
-    calibrationStatus: "",
-    calibratedDate: "",
-    remarks: "",
-    methodUsed: "",
+    parameters: [
+      {
+        parameter: "",
+        ranges: "",
+        accuracy: "",
+        methodUsed: "",
+        calibrationStatus: "",
+        calibratedDate: "",
+        remarks: "",
+      },
+    ],
   };
 
   const [tableRows, setTableRows] = useState([{ ...emptyRow }]);
@@ -96,7 +101,9 @@ const ErrorDetectorForm = () => {
     };
 
     const nonEmptyRows = tableRows.filter((row) =>
-      Object.values(row).some((value) => value !== "")
+      row.parameters[0].instrumentDescription &&
+      row.parameters[0].serialNo &&
+      row.parameters[0].methodUsed
     );
 
     if (nonEmptyRows.length > 15) {
@@ -108,11 +115,14 @@ const ErrorDetectorForm = () => {
 
     const formattedProducts = nonEmptyRows.map((row) => ({
       ...row,
+      instrumentDescription: row.parameters[0].instrumentDescription,
+      serialNo: row.parameters[0].serialNo,
+      methodUsed: row.parameters[0].methodUsed,
       calibratedDate: row.calibratedDate
         ? new Date(row.calibratedDate).toISOString()
         : null,
     }));
-
+    // console.log(formattedProducts);
     const requestData = {
       form: formattedFormData,
       products: formattedProducts,
@@ -143,7 +153,7 @@ const ErrorDetectorForm = () => {
       })
       .then((data) => {
         if (!data) return;
-        
+
         // Reset form
         setFormData((prevData) => ({
           ...prevData,
@@ -174,12 +184,8 @@ const ErrorDetectorForm = () => {
 
         setTableRows([{ ...emptyRow }]);
         clearSignature();
+        alert("Form submitted successfully!");
 
-        if (data.redirectURL) {
-          navigate(data.redirectURL);
-        } else {
-          alert("Form submitted successfully!");
-        }
       })
       .catch((err) => {
         console.error("Error submitting form:", err);
@@ -392,6 +398,9 @@ const ErrorDetectorForm = () => {
                           Instrument Description
                         </th>
                         <th className="px-3 py-3 text-xs font-medium text-left">
+                          Make
+                        </th>
+                        <th className="px-3 py-3 text-xs font-medium text-left">
                           Serial No
                         </th>
                         <th className="px-3 py-3 text-xs font-medium text-left">
@@ -402,15 +411,6 @@ const ErrorDetectorForm = () => {
                         </th>
                         <th className="px-3 py-3 text-xs font-medium text-left">
                           Accuracy
-                        </th>
-                        <th className="px-3 py-3 text-xs font-medium text-left">
-                          Calibration Status
-                        </th>
-                        <th className="px-3 py-3 text-xs font-medium text-left">
-                          Calibrated Date
-                        </th>
-                        <th className="px-3 py-3 text-xs font-medium text-left">
-                          Remarks
                         </th>
                         {/* NEW COLUMN for Method Used */}
                         <th className="px-3 py-3 text-xs font-medium text-left">
@@ -430,20 +430,38 @@ const ErrorDetectorForm = () => {
                           <td className="px-2 py-2">
                             <input
                               type="text"
-                              value={row.instrumentDescription}
+                              value={row.parameters?.[0]?.instrumentDescription || ""}
                               onChange={(e) =>
                                 setTableRows((prevRows) =>
                                   prevRows.map((r, i) =>
                                     i === index
                                       ? {
-                                          ...r,
-                                          instrumentDescription:
-                                            e.target.value,
-                                        }
+                                        ...r,
+                                        parameters: [
+                                          {
+                                            ...r.parameters[0],
+                                            instrumentDescription: e.target.value,
+                                          },
+                                        ],
+                                      }
                                       : r
                                   )
                                 )
                               }
+                              className="w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </td>
+                          {/* make */}
+                          <td className="px-2 py-2">
+                            <input
+                              type="text"
+                              value={row.make || ""}
+                              onChange={(e) =>
+                                setTableRows((prevRows) =>
+                                  prevRows.map((r, i) =>
+                                    i === index
+                                      ? { ...r, make: e.target.value, } : r
+                                  ))}
                               className="w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                             />
                           </td>
@@ -452,12 +470,20 @@ const ErrorDetectorForm = () => {
                           <td className="px-2 py-2">
                             <input
                               type="text"
-                              value={row.serialNo}
+                              value={row.parameters?.[0]?.serialNo || ""}
                               onChange={(e) =>
                                 setTableRows((prevRows) =>
                                   prevRows.map((r, i) =>
                                     i === index
-                                      ? { ...r, serialNo: e.target.value }
+                                      ? {
+                                        ...r,
+                                        parameters: [
+                                          {
+                                            ...r.parameters[0],
+                                            serialNo: e.target.value
+                                          }
+                                        ]
+                                      }
                                       : r
                                   )
                                 )
@@ -470,12 +496,20 @@ const ErrorDetectorForm = () => {
                           <td className="px-2 py-2">
                             <input
                               type="text"
-                              value={row.parameter}
+                              value={row.parameters?.[0]?.parameter || ""}
                               onChange={(e) =>
                                 setTableRows((prevRows) =>
                                   prevRows.map((r, i) =>
                                     i === index
-                                      ? { ...r, parameter: e.target.value }
+                                      ? {
+                                        ...r,
+                                        parameters: [
+                                          {
+                                            ...r.parameters[0],
+                                            parameter: e.target.value,
+                                          },
+                                        ],
+                                      }
                                       : r
                                   )
                                 )
@@ -488,12 +522,20 @@ const ErrorDetectorForm = () => {
                           <td className="px-2 py-2">
                             <input
                               type="text"
-                              value={row.ranges}
+                              value={row.parameters?.[0]?.ranges || ""}
                               onChange={(e) =>
                                 setTableRows((prevRows) =>
                                   prevRows.map((r, i) =>
                                     i === index
-                                      ? { ...r, ranges: e.target.value }
+                                      ? {
+                                        ...r,
+                                        parameters: [
+                                          {
+                                            ...r.parameters[0],
+                                            ranges: e.target.value
+                                          }
+                                        ]
+                                      }
                                       : r
                                   )
                                 )
@@ -506,72 +548,12 @@ const ErrorDetectorForm = () => {
                           <td className="px-2 py-2">
                             <input
                               type="text"
-                              value={row.accuracy}
+                              value={row.parameters?.[0]?.accuracy || ""}
                               onChange={(e) =>
                                 setTableRows((prevRows) =>
                                   prevRows.map((r, i) =>
                                     i === index
-                                      ? { ...r, accuracy: e.target.value }
-                                      : r
-                                  )
-                                )
-                              }
-                              className="w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </td>
-
-                          {/* Calibration Status */}
-                          <td className="px-2 py-2">
-                            <input
-                              type="text"
-                              value={row.calibrationStatus}
-                              onChange={(e) =>
-                                setTableRows((prevRows) =>
-                                  prevRows.map((r, i) =>
-                                    i === index
-                                      ? {
-                                          ...r,
-                                          calibrationStatus: e.target.value,
-                                        }
-                                      : r
-                                  )
-                                )
-                              }
-                              className="w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </td>
-
-                          {/* Calibrated Date */}
-                          <td className="px-2 py-2">
-                            <input
-                              type="date"
-                              value={row.calibratedDate}
-                              onChange={(e) =>
-                                setTableRows((prevRows) =>
-                                  prevRows.map((r, i) =>
-                                    i === index
-                                      ? {
-                                          ...r,
-                                          calibratedDate: e.target.value,
-                                        }
-                                      : r
-                                  )
-                                )
-                              }
-                              className="w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </td>
-
-                          {/* Remarks */}
-                          <td className="px-2 py-2">
-                            <input
-                              type="text"
-                              value={row.remarks}
-                              onChange={(e) =>
-                                setTableRows((prevRows) =>
-                                  prevRows.map((r, i) =>
-                                    i === index
-                                      ? { ...r, remarks: e.target.value }
+                                      ? { ...r, parameters: [{ ...r.parameters[0], accuracy: e.target.value }] }
                                       : r
                                   )
                                 )
@@ -588,7 +570,15 @@ const ErrorDetectorForm = () => {
                                 setTableRows((prevRows) =>
                                   prevRows.map((r, i) =>
                                     i === index
-                                      ? { ...r, methodUsed: e.target.value }
+                                      ? {
+                                        ...r,
+                                        parameters: [
+                                          {
+                                            ...r.parameters[0],
+                                            methodUsed: e.target.value,
+                                          },
+                                        ],
+                                      }
                                       : r
                                   )
                                 )
@@ -680,12 +670,12 @@ const ErrorDetectorForm = () => {
                     </h3>
                   </div>
                   <textarea
-                     type="text"
-                     name="itemEnclosed"
-                     value={formData.itemEnclosed}
-                     onChange={handleInputChange}
-                     className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                     placeholder="e.g., No,Yes"
+                    type="text"
+                    name="itemEnclosed"
+                    value={formData.itemEnclosed}
+                    onChange={handleInputChange}
+                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., No,Yes"
                   ></textarea>
                   {/* <p className="text-xs text-gray-500 mt-1 italic">
                     To be filled by lab worker
@@ -889,58 +879,58 @@ const ErrorDetectorForm = () => {
                 </p>
               </div>
 
-               {/* Add E-Signature Section */}
-            <div className="mb-8">
-              <div className="flex items-center mb-4">
-                <div className="w-8 h-8 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3">
-                  12
-                </div>
-                <h2 className="text-xl font-bold text-gray-800">E-Signature</h2>
-              </div>
-
-              <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Signer's Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="signerName"
-                    value={formData.signerName}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                    placeholder="Enter name as it will appear on signature"
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Draw Your Signature <span className="text-red-500">*</span>
-                  </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg relative">
-                    <SignatureCanvas
-                      ref={sigCanvas}
-                      penColor="black"
-                      canvasProps={{
-                        className: "w-full h-48 bg-white rounded-lg",
-                      }}
-                      onEnd={handleSignatureEnd}
-                    />
-                    <button
-                      type="button"
-                      onClick={clearSignature}
-                      className="absolute top-2 right-2 px-3 py-1 bg-red-500 text-white rounded-md text-sm hover:bg-red-600"
-                    >
-                      Clear
-                    </button>
+              {/* Add E-Signature Section */}
+              <div className="mb-8">
+                <div className="flex items-center mb-4">
+                  <div className="w-8 h-8 rounded-full bg-blue-700 text-white flex items-center justify-center font-bold mr-3">
+                    12
                   </div>
-                  {isSignatureEmpty && (
-                    <p className="text-red-500 text-sm mt-1">Signature is required</p>
-                  )}
+                  <h2 className="text-xl font-bold text-gray-800">E-Signature</h2>
+                </div>
+
+                <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Signer's Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="signerName"
+                      value={formData.signerName}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required
+                      placeholder="Enter name as it will appear on signature"
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Draw Your Signature <span className="text-red-500">*</span>
+                    </label>
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg relative">
+                      <SignatureCanvas
+                        ref={sigCanvas}
+                        penColor="black"
+                        canvasProps={{
+                          className: "w-full h-48 bg-white rounded-lg",
+                        }}
+                        onEnd={handleSignatureEnd}
+                      />
+                      <button
+                        type="button"
+                        onClick={clearSignature}
+                        className="absolute top-2 right-2 px-3 py-1 bg-red-500 text-white rounded-md text-sm hover:bg-red-600"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    {isSignatureEmpty && (
+                      <p className="text-red-500 text-sm mt-1">Signature is required</p>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
             </div>
 
             {/* Submission Section */}

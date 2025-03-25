@@ -30,7 +30,6 @@ const Tcompleted = () => {
                                 <div key={product._id} className="bg-white p-4 grid grid-cols-2 boarder-2 rounded-lg shadow-md">
                                     <p className="text-gray-700">Job No.: {product.jobNo}</p>
                                     <button
-                                        key={product._id}
                                         className="bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-700"
                                         onClick={() => toggleEquipmentDetails(product, form)}
                                     >

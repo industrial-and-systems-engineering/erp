@@ -1,23 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { usePendingFormsStore } from '../utils/pendingForms';
 import Observation from './Observation';
+import CalDataSheet from './CalDataSheet';
+
 
 const Tcard = ({ equipment, form, formOpen }) => {
     const { updateForm, fetchPendingForms } = usePendingFormsStore();
-    // form update state
-    const [result, setResult] = useState({
-        calibrationStatus: equipment.calibrationStatus || '',
-        calibrationDate: equipment.calibrationDate || new Date(equipment.calibrationDate).toLocaleDateString(),
-        remarks: equipment.remarks || '',
-    });
-    // selected reading state
-    const [selectedReading, setSelectedReading] = useState();
-    // Local state to store new observations
-    const [Readings, setReadings] = useState([]);
-    // State to manage the content of the pop-up input
-    const [newObservation, setNewObservation] = useState({});
+    const [newData, setNewData] = useState({});
+    // State to store the parameters data
+    const [parameters, setParameters] = useState([...equipment.parameters]);
     // State to show/hide the pop-up/modal for new observation
-    const [showObservationModal, setShowObservationModal] = useState(false);
+    const [showCalDataSheet, setCalDataSheetStatus] = useState(false);
 
     const [formData, setFormData] = useState({
         ulrNo: form.URL_NO || '',
@@ -29,11 +22,9 @@ const Tcard = ({ equipment, form, formOpen }) => {
         makeModel: equipment.instrumentDescription || '',
         serialNo: equipment.serialNo || '',
         targetDate: form.probableDate ? new Date(form.probableDate).toLocaleDateString() : '',
-        parameters: equipment.parameter || '',
-        ranges: equipment.ranges || '',
-        accuracy: equipment.accuracy || '',
+        parameters: equipment.parameters || [],
     });
-
+    console.log(parameters);
     useEffect(() => {
         setFormData({
             ulrNo: form.URL_NO || '',
@@ -45,9 +36,7 @@ const Tcard = ({ equipment, form, formOpen }) => {
             makeModel: equipment.instrumentDescription || '',
             serialNo: equipment.serialNo || '',
             targetDate: form.probableDate ? new Date(form.probableDate).toLocaleDateString() : '',
-            parameters: equipment.parameter || '',
-            ranges: equipment.ranges || '',
-            accuracy: equipment.accuracy || '',
+            parameters: equipment.parameters || [],
         });
     }, [equipment, form]);
 
@@ -58,9 +47,16 @@ const Tcard = ({ equipment, form, formOpen }) => {
             [name]: value,
         }));
     };
-
+    const handleParameterChange = (e, index) => {
+        const { name, value } = e.target;
+        setParameters((prevParams) => {
+            const newParams = [...prevParams];
+            newParams[index][name] = value;
+            return newParams;
+        });
+    };
+    // Update the form with the new parameters data
     const handleUpdateClick = async () => {
-        const newData = { ...result, readings: Readings };
         const response = await updateForm(form._id, equipment._id, newData);
         // console.log(newData);
         if (response.success) {
@@ -73,12 +69,12 @@ const Tcard = ({ equipment, form, formOpen }) => {
     };
     // Save the new observation to the list (frontend only)
     const handleSaveNewObservation = (readingData) => {
-        setReadings((prev) => [...prev, readingData]);
-        setShowObservationModal(false);
+        setNewData(readingData);
+        setCalDataSheetStatus(false);
     };
 
     return (
-        <div>{!showObservationModal ? (<div className="bg-gray-100 min-h-screen p-8">
+        <div>{!showCalDataSheet ? (<div className="bg-gray-100 min-h-screen p-8">
             <div className="max-w-4xl mx-auto bg-white shadow-md rounded p-6">
                 {/* Header Section */}
                 <div className="mb-6 text-center">
@@ -225,64 +221,56 @@ const Tcard = ({ equipment, form, formOpen }) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td className="border border-black p-1">{formData.serialNo}</td>
-                                    <td className="border border-black p-1">{formData.parameters}</td>
-                                    <td className="border border-black p-1">{formData.ranges}</td>
-                                    <td className="border border-black p-1">{formData.accuracy}</td>
-                                    <td className="border border-black p-1">
-                                        <input
-                                            type="text"
-                                            value={result.calibrationStatus}
-                                            onChange={(e) => setResult({ ...result, calibrationStatus: e.target.value })}
-                                            className="w-full p-1"
-                                        />
-                                    </td>
-                                    <td className="border border-black p-1">
-                                        <input
-                                            type="date"
-                                            value={result.calibrationDate}
-                                            onChange={(e) => setResult({ ...result, calibrationDate: e.target.value })}
-                                            className="w-full p-1"
-                                        />
-                                    </td>
-                                    <td className="border border-black p-1">
-                                        <input
-                                            type="text"
-                                            value={result.remarks}
-                                            onChange={(e) => setResult({ ...result, remarks: e.target.value })}
-                                            className="w-full p-1"
-                                        />
-                                    </td>
-                                </tr>
+                                {parameters.map((parameter, index) => (
+                                    <tr key={index}>
+                                        <td className="border border-black p-1">{index + 1}</td>
+                                        <td className="border border-black p-1">{parameter.parameter}</td>
+                                        <td className="border border-black p-1">{parameter.ranges}</td>
+                                        <td className="border border-black p-1">{parameter.accuracy}</td>
+                                        <td className="border border-black p-1">
+                                            <input
+                                                type="text"
+                                                name='calibrationStatus'
+                                                value={parameter.calibrationStatus}
+                                                onChange={(e) => handleParameterChange(e, index)}
+                                                className="w-full p-1"
+                                            />
+                                        </td>
+                                        <td className="border border-black p-1">
+                                            <input
+                                                type="date"
+                                                name='calibratedDate'
+                                                value={parameter.calibratedDate}
+                                                onChange={(e) => handleParameterChange(e, index)}
+                                                className="w-full p-1"
+                                            />
+                                        </td>
+                                        <td className="border border-black p-1">
+                                            <input
+                                                type="text"
+                                                name='remarks'
+                                                value={parameter.remarks}
+                                                onChange={(e) => handleParameterChange(e, index)}
+                                                className="w-full p-1"
+                                            />
+                                        </td>
+                                    </tr>
+                                ))
+                                }
                             </tbody>
                         </table>
                     </div>
-
+                    {/* Open Calibration Data Section */}
                     {/* Add Observation Section */}
                     <div className="mt-4">
                         <button
                             type="button"
-                            onClick={() => setShowObservationModal(!showObservationModal)}
-                            className={`py-2 px-4 rounded ${showObservationModal ? 'bg-red-500 hover:bg-red-700' : 'bg-green-500 hover:bg-green-700'} text-white`}
+                            onClick={() => setCalDataSheetStatus(!showCalDataSheet)}
+                            className={`py-2 px-4 rounded ${showCalDataSheet ? 'bg-red-500 hover:bg-red-700' : 'bg-green-500 hover:bg-green-700'} text-white`}
                         >
-                            Add Readings +
+                            Show Calibration Data Sheet
                         </button>
                     </div>
-                    {Readings.map((reading, index) => (
-                        <div key={index} className="mt-4">
-                            <div className="flex justify-between items-center">
-                                <h1 className="font-semibold">Reading {index + 1}</h1>
-                                <button
-                                    type="button"
-                                    onClick={() => { }}
-                                    className="bg-yellow-500 text-white py-1 px-2 rounded hover:bg-yellow-700"
-                                >
-                                    Edit
-                                </button>
-                            </div>
-                        </div>
-                    ))}
                     {/* Submit and Issued By Section */}
                     <div className="flex justify-between items-center mt-8">
                         <div className="text-center">
@@ -307,7 +295,8 @@ const Tcard = ({ equipment, form, formOpen }) => {
             </div>
         </div>) : <div>
             <div >
-                <Observation product={equipment} save={handleSaveNewObservation} close={setShowObservationModal} />
+                {/* <Observation product={equipment} save={handleSaveNewObservation} close={setCalDataSheetStatus} /> */}
+                <CalDataSheet product={equipment} save={handleSaveNewObservation} close={setCalDataSheetStatus} form={form} />
             </div>
         </div>
         }
