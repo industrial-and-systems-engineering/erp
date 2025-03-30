@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import Observation from "./Observation";
 
 const CalDataSheet = ({ product, save, close, form }) => {
   const [formData, setFormData] = useState({
@@ -37,19 +36,19 @@ const CalDataSheet = ({ product, save, close, form }) => {
   // Calculation functions for each reading
   const calculateReadingMean = (readings) => {
     const numericReadings = ["r1", "r2", "r3", "r4", "r5"]
-      .map((key) => Number(readings[key] || 0))
-      .filter((val) => !isNaN(val));
+      .map((key) => parseFloat(readings[key]))
+      .filter((val) => !isNaN(val) && val !== null);
 
     if (numericReadings.length === 0) return "";
 
     const mean = numericReadings.reduce((acc, val) => acc + val, 0) / numericReadings.length;
-    return mean.toFixed(2);
+    return mean;
   };
 
   const calculateStdDev = (readings) => {
     const numericReadings = ["r1", "r2", "r3", "r4", "r5"]
-      .map((key) => Number(readings[key] || 0))
-      .filter((val) => !isNaN(val));
+      .map((key) => parseFloat(readings[key]))
+      .filter((val) => !isNaN(val) && val !== null);
 
     if (numericReadings.length <= 1) return 0;
 
@@ -61,22 +60,20 @@ const CalDataSheet = ({ product, save, close, form }) => {
   };
 
   const calculateStdUncertainty = (readings) => {
-    const stdDev = calculateStdDev(readings);
+    const stdDev = parseFloat(calculateStdDev(readings));
     const numericReadings = ["r1", "r2", "r3", "r4", "r5"]
-      .map((key) => Number(readings[key] || 0))
-      .filter((val) => !isNaN(val));
+      .map((key) => parseFloat(readings[key]))
+      .filter((val) => !isNaN(val) && val !== null);
 
-    return numericReadings.length > 0
-      ? (stdDev / Math.sqrt(numericReadings.length)).toFixed(4)
-      : "";
+    return numericReadings.length > 0 ? stdDev / Math.sqrt(numericReadings.length) : "";
   };
 
   const calculateUC = (reading) => {
-    const u1 = Number(reading.masterCertUncertainty) / 2;
-    const u2 = Number(reading.ducResolution) / (2 * Math.sqrt(3));
-    const u3 = Number(reading.masterAccuracy) / Math.sqrt(3);
-    const u5 = Number(reading.stability) / Math.sqrt(3);
-    const stdUncertainty = Number(calculateStdUncertainty(reading)) || 0;
+    const u1 = parseFloat(reading.masterCertUncertainty) / 2 || 0;
+    const u2 = parseFloat(reading.ducResolution) / (2 * Math.sqrt(3)) || 0;
+    const u3 = parseFloat(reading.masterAccuracy) / Math.sqrt(3) || 0;
+    const u5 = parseFloat(reading.stability) / Math.sqrt(3) || 0;
+    const stdUncertainty = parseFloat(calculateStdUncertainty(reading)) || 0;
 
     const uc = Math.sqrt(
       Math.pow(stdUncertainty, 2) +
@@ -85,14 +82,63 @@ const CalDataSheet = ({ product, save, close, form }) => {
         Math.pow(u3, 2) +
         Math.pow(u5, 2)
     );
+    return uc;
+  };
 
-    return uc.toFixed(4);
+  const calculateEDof = (reading) => {
+    const stdUncertainty = parseFloat(calculateStdUncertainty(reading)) || 0;
+    const combinedUncertainty = parseFloat(calculateUC(reading)) || 0;
+
+    if (stdUncertainty === 0) return "N/A";
+
+    return 4 * (Math.pow(combinedUncertainty, 4) / Math.pow(stdUncertainty, 4));
   };
 
   const calculateUE = (reading) => {
-    const uc = Number(calculateUC(reading));
-    const kAt95CL = 2;
-    return (uc * kAt95CL).toFixed(2);
+    const uc = parseFloat(calculateUC(reading)) || 0;
+    const edof = parseFloat(calculateEDof(reading)) || 0;
+    let kAt95CL = 2;
+
+    if (edof < 30) {
+      const tDistribution = {
+        1: 12.71,
+        2: 4.3,
+        3: 3.18,
+        4: 2.78,
+        5: 2.57,
+        6: 2.45,
+        7: 2.36,
+        8: 2.31,
+        9: 2.26,
+        10: 2.23,
+        11: 2.2,
+        12: 2.18,
+        13: 2.16,
+        14: 2.14,
+        15: 2.13,
+        16: 2.12,
+        17: 2.11,
+        18: 2.1,
+        19: 2.09,
+        20: 2.09,
+        21: 2.08,
+        22: 2.07,
+        23: 2.07,
+        24: 2.06,
+        25: 2.06,
+        26: 2.06,
+        27: 2.05,
+        28: 2.05,
+        29: 2.05,
+      };
+      kAt95CL = tDistribution[Math.round(edof)] || 2;
+    }
+
+    const rNameValue = parseFloat(reading.rName) || 1; // Avoid division by zero
+    if (reading.rUnit === "degC") {
+      return (uc * kAt95CL).toFixed(4);
+    }
+    return ((uc * kAt95CL * 100) / rNameValue).toFixed(4);
   };
 
   // Update reading calculations
@@ -119,7 +165,6 @@ const CalDataSheet = ({ product, save, close, form }) => {
       r3: "",
       r4: "",
       r5: "",
-      observations: [],
       mean: "",
       uc: "",
       masterCertUncertainty: 0,
@@ -373,31 +418,72 @@ const CalDataSheet = ({ product, save, close, form }) => {
               </div>
 
               {/* STD/DUC Readings */}
-              <div className='overflow-x-auto'>
-                <table className='w-full border-collapse border border-gray-300'>
-                  <thead className='bg-gray-100'>
-                    <tr>
-                      <th className='border border-gray-300 p-2 text-left'>STD./DUC Reading</th>
-                      <th className='border border-gray-300 p-2 text-left'>R1</th>
-                      <th className='border border-gray-300 p-2 text-left'>R2</th>
-                      <th className='border border-gray-300 p-2 text-left'>R3</th>
-                      <th className='border border-gray-300 p-2 text-left'>R4</th>
-                      <th className='border border-gray-300 p-2 text-left'>R5</th>
-                      <th className='border border-gray-300 p-2 text-left'>MCU</th>
-                      <th className='border border-gray-300 p-2 text-left'>DUCR</th>
-                      <th className='border border-gray-300 p-2 text-left'>MA</th>
-                      <th className='border border-gray-300 p-2 text-left'>St</th>
-                      <th className='border border-gray-300 p-2 text-left'>Mean</th>
-                      <th className='border border-gray-300 p-2 text-left'>Uc</th>
+              <div className='overflow-x-auto shadow-md rounded-lg'>
+                <table className='w-full text-sm text-left text-gray-500'>
+                  <thead>
+                    <tr className='text-xs text-gray-700 uppercase bg-gray-50'>
+                      <th className='px-6 py-3'>STD./DUC Reading</th>
+                      <th
+                        className='px-6 py-3'
+                        colSpan='5'
+                      >
+                        Readings
+                      </th>
+                      <th
+                        className='px-6 py-3'
+                        colSpan='4'
+                      >
+                        Uncertainties
+                      </th>
+                      <th
+                        className='px-6 py-3'
+                        colSpan='2'
+                      >
+                        Results
+                      </th>
+                    </tr>
+                    <tr className='bg-gray-100'>
+                      <th className='px-6 py-3'></th>
+                      <th className='px-4 py-3'>R1</th>
+                      <th className='px-4 py-3'>R2</th>
+                      <th className='px-4 py-3'>R3</th>
+                      <th className='px-4 py-3'>R4</th>
+                      <th className='px-4 py-3'>R5</th>
+                      <th
+                        className='px-4 py-3'
+                        title='Master Cert Uncertainty'
+                      >
+                        MCU
+                      </th>
+                      <th
+                        className='px-4 py-3'
+                        title='DUC Resolution'
+                      >
+                        DUCR
+                      </th>
+                      <th
+                        className='px-4 py-3'
+                        title='Master Accuracy'
+                      >
+                        MA
+                      </th>
+                      <th
+                        className='px-4 py-3'
+                        title='Stability'
+                      >
+                        St
+                      </th>
+                      <th className='px-4 py-3'>Mean</th>
+                      <th className='px-4 py-3'>Uc</th>
                     </tr>
                   </thead>
                   <tbody>
                     {param.readings.map((reading, readingIndex) => (
                       <tr
                         key={readingIndex}
-                        className='hover:bg-gray-50'
+                        className='bg-white border-b hover:bg-gray-50'
                       >
-                        <td className='border border-gray-300 p-2'>
+                        <td className='px-4 py-2'>
                           <div className='flex space-x-2'>
                             <input
                               type='text'
@@ -427,7 +513,7 @@ const CalDataSheet = ({ product, save, close, form }) => {
                             />
                           </div>
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='px-3 py-2'>
                           <input
                             type='text'
                             value={reading.r1}
@@ -437,7 +523,7 @@ const CalDataSheet = ({ product, save, close, form }) => {
                             className='w-full border border-gray-300 rounded-md p-2'
                           />
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='px-3 py-2'>
                           <input
                             type='text'
                             value={reading.r2}
@@ -447,7 +533,7 @@ const CalDataSheet = ({ product, save, close, form }) => {
                             className='w-full border border-gray-300 rounded-md p-2'
                           />
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='px-3 py-2'>
                           <input
                             type='text'
                             value={reading.r3}
@@ -457,7 +543,7 @@ const CalDataSheet = ({ product, save, close, form }) => {
                             className='w-full border border-gray-300 rounded-md p-2'
                           />
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='px-3 py-2'>
                           <input
                             type='text'
                             value={reading.r4}
@@ -467,7 +553,7 @@ const CalDataSheet = ({ product, save, close, form }) => {
                             className='w-full border border-gray-300 rounded-md p-2'
                           />
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='px-3 py-2'>
                           <input
                             type='text'
                             value={reading.r5}
@@ -477,7 +563,7 @@ const CalDataSheet = ({ product, save, close, form }) => {
                             className='w-full border border-gray-300 rounded-md p-2'
                           />
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='px-3 py-2'>
                           <input
                             type='text'
                             value={reading.masterCertUncertainty}
@@ -492,7 +578,7 @@ const CalDataSheet = ({ product, save, close, form }) => {
                             className='w-full border border-gray-300 rounded-md p-2'
                           />
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='px-3 py-2'>
                           <input
                             type='text'
                             value={reading.ducResolution}
@@ -507,7 +593,7 @@ const CalDataSheet = ({ product, save, close, form }) => {
                             className='w-full border border-gray-300 rounded-md p-2'
                           />
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='px-3 py-2'>
                           <input
                             type='text'
                             value={reading.masterAccuracy}
@@ -522,7 +608,7 @@ const CalDataSheet = ({ product, save, close, form }) => {
                             className='w-full border border-gray-300 rounded-md p-2'
                           />
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='px-3 py-2'>
                           <input
                             type='text'
                             value={reading.stability}
@@ -537,7 +623,7 @@ const CalDataSheet = ({ product, save, close, form }) => {
                             className='w-full border border-gray-300 rounded-md p-2'
                           />
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='px-3 py-2'>
                           <input
                             type='text'
                             value={reading.mean}
@@ -545,7 +631,7 @@ const CalDataSheet = ({ product, save, close, form }) => {
                             className='w-full border border-gray-300 rounded-md p-2 bg-gray-100'
                           />
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='px-3 py-2'>
                           <input
                             type='text'
                             value={reading.uc}
@@ -557,14 +643,15 @@ const CalDataSheet = ({ product, save, close, form }) => {
                     ))}
                   </tbody>
                 </table>
-                <button
-                  type='button'
-                  onClick={() => addStdReading(paramIndex)}
-                  className='mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600'
-                >
-                  Add STD./DUC Reading
-                </button>
               </div>
+
+              <button
+                type='button'
+                onClick={() => addStdReading(paramIndex)}
+                className='mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 cursor-pointer'
+              >
+                Add STD./DUC Reading
+              </button>
             </div>
           ))}
           <div className='flex justify-end space-x-4 mt-6'>

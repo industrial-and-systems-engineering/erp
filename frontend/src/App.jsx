@@ -33,7 +33,7 @@ const App = () => {
           element={<LandingPage />}
         >
           <Route
-            index
+            path='*'
             element={<Loginpage />}
           />
           <Route

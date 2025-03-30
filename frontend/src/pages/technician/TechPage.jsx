@@ -39,7 +39,7 @@ const TechPage = () => {
       if (response.ok) {
         const data = await response.json();
         await checkAuth();
-        // navigate("/technician/homepage", { state: { usernumber: data.usernumber } });
+        navigate("/technician/homepage", { state: { usernumber: data.usernumber } });
       } else {
         const errorData = await response.json();
         alert(errorData.message);

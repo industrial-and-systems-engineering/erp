@@ -20,9 +20,10 @@ const Tcard = ({ equipment, form, formOpen }) => {
     makeModel: equipment.instrumentDescription || "",
     serialNo: equipment.serialNo || "",
     targetDate: form.probableDate ? new Date(form.probableDate).toLocaleDateString() : "",
-    parameters: equipment.parameters || [],
   });
+
   console.log(parameters);
+
   useEffect(() => {
     setFormData({
       ulrNo: form.URL_NO || "",
@@ -34,8 +35,10 @@ const Tcard = ({ equipment, form, formOpen }) => {
       makeModel: equipment.instrumentDescription || "",
       serialNo: equipment.serialNo || "",
       targetDate: form.probableDate ? new Date(form.probableDate).toLocaleDateString() : "",
-      parameters: equipment.parameters || [],
     });
+
+    // Reset parameters when equipment changes
+    setParameters([...equipment.parameters]);
   }, [equipment, form]);
 
   const handleChange = (e) => {
@@ -45,18 +48,39 @@ const Tcard = ({ equipment, form, formOpen }) => {
       [name]: value,
     }));
   };
+
   const handleParameterChange = (e, index) => {
     const { name, value } = e.target;
-    setParameters((prevParams) => {
-      const newParams = [...prevParams];
-      newParams[index][name] = value;
-      return newParams;
-    });
+
+    // Create a new copy of the parameters array
+    const updatedParameters = [...parameters];
+
+    // Update the specific parameter at the given index
+    updatedParameters[index] = {
+      ...updatedParameters[index],
+      [name]: value,
+    };
+
+    // Set the updated parameters array
+    setParameters(updatedParameters);
+
+    // Also update newData with the latest parameters
+    setNewData((prevData) => ({
+      ...prevData,
+      parameters: updatedParameters,
+    }));
   };
+
   // Update the form with the new parameters data
   const handleUpdateClick = async () => {
-    const response = await updateForm(form._id, equipment._id, newData);
-    // console.log(newData);
+    // Make sure we're sending the updated parameters
+    const dataToUpdate = {
+      ...newData,
+      parameters: parameters,
+    };
+
+    const response = await updateForm(form._id, equipment._id, dataToUpdate);
+
     if (response.success) {
       alert("Form updated successfully");
       fetchPendingForms();
@@ -65,9 +89,21 @@ const Tcard = ({ equipment, form, formOpen }) => {
       alert("Failed to update form: " + response.message);
     }
   };
+
   // Save the new observation to the list (frontend only)
   const handleSaveNewObservation = (readingData) => {
-    setNewData(readingData);
+    setParameters((prevParameters) => {
+      // Merge the updated parameters from readingData
+      const updatedParameters = readingData.parameters || prevParameters;
+      return updatedParameters;
+    });
+
+    setNewData((prevData) => ({
+      ...prevData,
+      ...readingData,
+    }));
+
+    console.log("New observation data:", readingData);
     setCalDataSheetStatus(false);
   };
 
@@ -232,7 +268,7 @@ const Tcard = ({ equipment, form, formOpen }) => {
                           <input
                             type='text'
                             name='calibrationStatus'
-                            value={parameter.calibrationStatus}
+                            value={parameter.calibrationStatus || ""}
                             onChange={(e) => handleParameterChange(e, index)}
                             className='w-full p-1'
                           />
@@ -241,7 +277,7 @@ const Tcard = ({ equipment, form, formOpen }) => {
                           <input
                             type='date'
                             name='calibratedDate'
-                            value={parameter.calibratedDate}
+                            value={parameter.calibratedDate || ""}
                             onChange={(e) => handleParameterChange(e, index)}
                             className='w-full p-1'
                           />
@@ -250,7 +286,7 @@ const Tcard = ({ equipment, form, formOpen }) => {
                           <input
                             type='text'
                             name='remarks'
-                            value={parameter.remarks}
+                            value={parameter.remarks || ""}
                             onChange={(e) => handleParameterChange(e, index)}
                             className='w-full p-1'
                           />
@@ -260,8 +296,8 @@ const Tcard = ({ equipment, form, formOpen }) => {
                   </tbody>
                 </table>
               </div>
+
               {/* Open Calibration Data Section */}
-              {/* Add Observation Section */}
               <div className='mt-4'>
                 <button
                   type='button'
@@ -275,6 +311,7 @@ const Tcard = ({ equipment, form, formOpen }) => {
                   Show Calibration Data Sheet
                 </button>
               </div>
+
               {/* Submit and Issued By Section */}
               <div className='flex justify-between items-center mt-8'>
                 <div className='text-center'>
