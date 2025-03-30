@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Ucard from "./components/Ucard.jsx";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 import generatePdf from "./utils/pdfGeneration.js";
 
 const Ucompleted = () => {
@@ -30,18 +32,78 @@ const Ucompleted = () => {
   }, []);
 
   const toggleProductDetails = (product, parentForm) => {
-    if (selectedProduct && selectedProduct._id === product._id) {
-      setSelectedProduct(null);
-    } else {
+    console.log("Selected product:", product);
+    console.log("Parent form:", parentForm);
+
+    // Log key fields based on the actual structure we observed
+    console.log("Product fields:", {
+      instrumentDescription: product.instrumentDescription,
+      make: product.make,
+      serialNo: product.serialNo,
+    });
+
+    if (parentForm) {
+      console.log("Parent form fields:", {
+        organization: parentForm.organization,
+        address: parentForm.address,
+        srfNo: parentForm.srfNo,
+      });
+
+      // Create enhanced product with correct field mapping
       const enhancedProduct = {
         ...product,
         _parentForm: parentForm,
-        customerName: product.customerName || parentForm.customerName,
-        customerAddress: product.customerAddress || parentForm.customerAddress,
+
+        // Extract organization as customer name
+        customerName:
+          parentForm.organization ||
+          product.organization ||
+          product.customerName ||
+          product.customer,
+
+        // Extract address
+        customerAddress: parentForm.address || product.address || product.customerAddress,
+
+        // Use instrumentDescription as the primary product name
+        name: product.instrumentDescription || product.name || product.description,
+
+        // Other fields directly from the product
+        make: product.make,
+        serialNo: product.serialNo,
+
+        // Extract location information (new)
+        location: parentForm.calibrationFacilityAvailable || "At Laboratory",
+
+        // If there's a methodology in parameters, extract it
+        method:
+          product.parameters && product.parameters.length > 0
+            ? product.parameters[0].methodUsed
+            : null,
       };
-      setSelectedProduct(enhancedProduct);
-      setCardKey((prevKey) => prevKey + 1);
+
+      console.log("Enhanced product with parent form data:", enhancedProduct);
+
+      setSelectedProduct((prevProduct) =>
+        prevProduct && prevProduct._id === product._id ? null : enhancedProduct
+      );
+    } else {
+      // For products without a parent form
+      const enhancedProduct = {
+        ...product,
+        customerName: product.organization || product.customerName || product.customer,
+        customerAddress: product.address || product.customerAddress,
+        name: product.instrumentDescription || product.name || product.description,
+        location: product.calibrationFacilityAvailable || "At Laboratory", // Add location information here too
+      };
+
+      console.log("Enhanced product without parent form:", enhancedProduct);
+
+      setSelectedProduct((prevProduct) =>
+        prevProduct && prevProduct._id === product._id ? null : enhancedProduct
+      );
     }
+
+    // Clear any previous PDF errors when selecting a new product
     setPdfError(null);
   };
 
@@ -76,26 +138,30 @@ const Ucompleted = () => {
               form.products.map((product, productIndex) => (
                 <div
                   key={product._id}
-                  className={`bg-white p-4 rounded-lg shadow-sm my-3 border-l-4 transition-all duration-200 hover:shadow-md ${
-                    selectedProduct && selectedProduct._id === product._id
-                      ? "border-l-blue-600"
-                      : "border-l-gray-300"
-                  }`}
+                  className='bg-white p-4 border border-gray-200 rounded-md mb-3 hover:shadow-md'
                 >
-                  <div className='flex flex-col gap-2'>
-                    <div>
-                      <p className='font-medium text-gray-800'>
-                        Form: {form.formNumber || `#${formIndex + 1}`}
-                      </p>
-                      <p className='text-sm text-gray-500'>
-                        Product: {product.name || product.description || `#${productIndex + 1}`}
-                      </p>
-                      {(product.customer || form.customerName) && (
-                        <p className='text-sm text-gray-500'>
-                          Customer: {product.customer || form.customerName}
-                        </p>
-                      )}
-                    </div>
+                  <p className='text-gray-700 font-medium'>
+                    Form: {form.formNumber || `#${formIndex + 1}`}
+                  </p>
+                  <p className='text-gray-700'>
+                    Product: {product.name || product.description || `#${productIndex + 1}`}
+                  </p>
+
+                  {/* Enhanced display of customer information */}
+                  {(product.customer ||
+                    product.customerName ||
+                    form.customerName ||
+                    form.customer) && (
+                    <p className='text-gray-700'>
+                      Customer:{" "}
+                      {product.customer ||
+                        product.customerName ||
+                        form.customerName ||
+                        form.customer}
+                    </p>
+                  )}
+
+                  <div className='flex justify-end mt-2'>
                     <button
                       className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         selectedProduct && selectedProduct._id === product._id
@@ -136,6 +202,15 @@ const Ucompleted = () => {
                     className='bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors'
                     onClick={() => {
                       console.log("Download button clicked");
+                      // Add debug logging before generating PDF
+                      console.log("Customer info before PDF generation:", {
+                        customerName: selectedProduct.customerName || selectedProduct.customer,
+                        customerAddress: selectedProduct.customerAddress || selectedProduct.address,
+                        productName:
+                          selectedProduct.name ||
+                          selectedProduct.productName ||
+                          selectedProduct.description,
+                      });
                       generatePdf(selectedProduct);
                     }}
                   >
