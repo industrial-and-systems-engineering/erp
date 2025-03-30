@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { TrashIcon } from "@heroicons/react/24/solid";
 
 const CalDataSheet = ({ product, save, close, form }) => {
   const [formData, setFormData] = useState({
@@ -173,6 +174,14 @@ const CalDataSheet = ({ product, save, close, form }) => {
       stability: 0,
     });
     setParameters(newReadings);
+  };
+  const removeStdReading = (paramIndex, readingIndex) => {
+    const newParameters = [...parameters];
+    // Only allow removal if there's more than one reading
+    if (newParameters[paramIndex].readings.length > 1) {
+      newParameters[paramIndex].readings.splice(readingIndex, 1);
+      setParameters(newParameters);
+    }
   };
 
   // console.log(parameters);
@@ -475,13 +484,14 @@ const CalDataSheet = ({ product, save, close, form }) => {
                       </th>
                       <th className='px-4 py-3'>Mean</th>
                       <th className='px-4 py-3'>Uc</th>
+                      <th className='px-4 py-3'>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {param.readings.map((reading, readingIndex) => (
                       <tr
                         key={readingIndex}
-                        className='bg-white border-b hover:bg-gray-50'
+                        className='bg-white hover:bg-gray-50'
                       >
                         <td className='px-4 py-2'>
                           <div className='flex space-x-2'>
@@ -639,12 +649,22 @@ const CalDataSheet = ({ product, save, close, form }) => {
                             className='w-full border border-gray-300 rounded-md p-2 bg-gray-100'
                           />
                         </td>
+                        <td className='px-3 py-2'>
+                          {param.readings.length > 1 && (
+                            <button
+                              type='button'
+                              onClick={() => removeStdReading(paramIndex, readingIndex)}
+                              className='bg-red-500 text-white p-2 rounded-md hover:bg-red-600'
+                            >
+                              <TrashIcon className='h-5 w-5' />
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-
               <button
                 type='button'
                 onClick={() => addStdReading(paramIndex)}

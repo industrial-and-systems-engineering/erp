@@ -50,10 +50,6 @@ const CTcard = ({ equipment, form }) => {
               <span className='font-semibold'>SRF No. :</span>
               <span className='ml-2 border-b border-gray-300'>{form.srfNo || "N/A"}</span>
             </p>
-            <p className='mb-2'>
-              <span className='font-semibold'>Date:</span>
-              <span className='ml-2 border-b border-gray-300'>{formatDate(form.createdAt)}</span>
-            </p>
           </div>
 
           {/* Item Description Section */}

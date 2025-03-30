@@ -15,7 +15,7 @@ const Tcard = ({ equipment, form, formOpen }) => {
     jobNo: equipment.jobNo || "",
     jobCardIssueDate: form.createdAt ? new Date(form.createdAt).toLocaleDateString() : "",
     srfNo: form.srfNo || "",
-    srfDate: form.createdAt ? new Date(form.createdAt).toLocaleDateString() : "",
+    srfDate: form.createdAt,
     itemName: equipment.instrumentDescription || "",
     makeModel: equipment.instrumentDescription || "",
     serialNo: equipment.serialNo || "",
@@ -135,9 +135,8 @@ const Tcard = ({ equipment, form, formOpen }) => {
                       type='text'
                       name='ulrNo'
                       value={formData.ulrNo}
-                      onChange={handleChange}
-                      disabled
-                      className='ml-2 border-b border-gray-300 focus:outline-none focus:border-blue-500 disabled:text-gray-500'
+                      readOnly
+                      className='ml-2   '
                     />
                   </p>
                 </div>
@@ -147,10 +146,9 @@ const Tcard = ({ equipment, form, formOpen }) => {
                     <input
                       type='text'
                       name='jobNo'
-                      disabled
+                      readOnly
                       value={formData.jobNo}
-                      onChange={handleChange}
-                      className='ml-2 w-20 border-b border-gray-300 focus:outline-none focus:border-blue-500'
+                      className='ml-2 w-20  '
                     />
                   </p>
                   <p className='mt-2'>
@@ -159,8 +157,8 @@ const Tcard = ({ equipment, form, formOpen }) => {
                       type='text'
                       name='jobCardIssueDate'
                       value={formData.jobCardIssueDate}
-                      onChange={handleChange}
-                      className='ml-2 border-b border-gray-300 focus:outline-none focus:border-blue-500'
+                      readOnly
+                      className='ml-2  '
                     />
                   </p>
                 </div>
@@ -174,18 +172,8 @@ const Tcard = ({ equipment, form, formOpen }) => {
                     type='text'
                     name='srfNo'
                     value={formData.srfNo}
-                    onChange={handleChange}
-                    className='ml-2 border-b border-gray-300 focus:outline-none focus:border-blue-500'
-                  />
-                </p>
-                <p className='mb-2'>
-                  <span className='font-semibold'>Date:</span>
-                  <input
-                    type='text'
-                    name='srfDate'
-                    value={formData.srfDate}
-                    onChange={handleChange}
-                    className='ml-2 border-b border-gray-300 focus:outline-none focus:border-blue-500'
+                    readOnly
+                    className='ml-2  '
                   />
                 </p>
               </div>
@@ -200,8 +188,8 @@ const Tcard = ({ equipment, form, formOpen }) => {
                       type='text'
                       name='itemName'
                       value={formData.itemName}
-                      onChange={handleChange}
-                      className='ml-2 border-b border-gray-300 focus:outline-none focus:border-blue-500'
+                      readOnly
+                      className='ml-2  '
                     />
                   </p>
                 </div>
@@ -212,8 +200,8 @@ const Tcard = ({ equipment, form, formOpen }) => {
                       type='text'
                       name='makeModel'
                       value={formData.makeModel}
-                      onChange={handleChange}
-                      className='ml-2 border-b border-gray-300 focus:outline-none focus:border-blue-500'
+                      readOnly
+                      className='ml-2  '
                     />
                   </p>
                 </div>
@@ -224,8 +212,8 @@ const Tcard = ({ equipment, form, formOpen }) => {
                       type='text'
                       name='serialNo'
                       value={formData.serialNo}
-                      onChange={handleChange}
-                      className='ml-2 border-b border-gray-300 focus:outline-none focus:border-blue-500'
+                      readOnly
+                      className='ml-2  '
                     />
                   </p>
                 </div>
@@ -236,8 +224,8 @@ const Tcard = ({ equipment, form, formOpen }) => {
                       type='text'
                       name='targetDate'
                       value={formData.targetDate}
-                      onChange={handleChange}
-                      className='ml-2 border-b border-gray-300 focus:outline-none focus:border-blue-500'
+                      readOnly
+                      className='ml-2  '
                     />
                   </p>
                 </div>
