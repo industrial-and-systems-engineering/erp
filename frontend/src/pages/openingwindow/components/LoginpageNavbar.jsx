@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import logoSvg from "../../../assets/logofull.svg";
 import { Link, useLocation } from "react-router-dom";
 import {
   Bars3Icon,
@@ -61,23 +62,16 @@ export default function LoginpageNavbar() {
       >
         {/* Logo */}
         <div className='flex items-center lg:flex-1'>
-          <a
-            href='/'
+          <Link
+            to='/'
             className='flex items-center gap-2'
           >
             <img
               alt='Company Logo'
-              src='https://anab.ansi.org/wp-content/uploads/2022/10/ANAB-logo.png'
+              src={logoSvg}
               className='h-10 w-auto'
             />
-            {/* <span
-              className={`hidden md:block font-bold text-lg transition-colors ${
-                scrolled ? "text-blue-600" : "text-white"
-              }`}
-            >
-              ANAB Portal
-            </span> */}
-          </a>
+          </Link>
         </div>
 
         {/* Mobile menu button */}
@@ -107,17 +101,21 @@ export default function LoginpageNavbar() {
         {/* Desktop navigation */}
         <div className='hidden lg:flex lg:gap-x-8'>
           {navigation.map((item) => (
-            <a
+            <Link
               key={item.name}
-              href={item.href}
-              className={`px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                scrolled
-                  ? "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                  : "text-white hover:bg-blue-600"
+              to={item.href}
+              className={`flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                isActive(item.href)
+                  ? scrolled
+                    ? "bg-blue-100 text-blue-700"
+                    : "bg-blue-700 text-white"
+                  : scrolled
+                  ? "text-blue-600 hover:bg-blue-50"
+                  : "text-white hover:bg-blue-700"
               }`}
             >
               {item.name}
-            </a>
+            </Link>
           ))}
         </div>
 
@@ -131,10 +129,10 @@ export default function LoginpageNavbar() {
                 isActive(option.path)
                   ? scrolled
                     ? "bg-blue-100 text-blue-700"
-                    : "bg-blue-600 text-white"
+                    : "bg-blue-700 text-white"
                   : scrolled
                   ? "text-blue-600 hover:bg-blue-50"
-                  : "bg-white/10 text-white hover:bg-white/20"
+                  : "bg-white/10 text-white hover:bg-blue-700"
               }`}
             >
               <option.icon className='h-5 w-5' />
@@ -149,14 +147,18 @@ export default function LoginpageNavbar() {
         <div className='lg:hidden absolute inset-x-0 top-16 bg-white shadow-lg rounded-b-lg overflow-hidden'>
           <div className='px-2 pt-2 pb-3 space-y-1'>
             {navigation.map((item) => (
-              <a
+              <Link
                 key={item.name}
-                href={item.href}
+                to={item.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className='block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-md'
+                className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md ${
+                  isActive(item.href)
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
               >
                 {item.name}
-              </a>
+              </Link>
             ))}
 
             <div className='mt-4 pt-4 border-t border-gray-200'>
@@ -166,7 +168,7 @@ export default function LoginpageNavbar() {
                     key={option.name}
                     to={option.path}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-2 px-3 py-2 text-base font-medium rounded-md ${
+                    className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md ${
                       isActive(option.path)
                         ? "bg-blue-100 text-blue-700"
                         : "text-gray-700 hover:bg-gray-100"

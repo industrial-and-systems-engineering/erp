@@ -10,7 +10,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../../../utils/isloggedin.js";
-
+import logoSvg from "../../../assets/logofull.svg";
 const UserNavbar = ({ setFormData }) => {
   const { isAuthenticated, checkAuth } = useAuthStore();
   const navigate = useNavigate();
@@ -81,7 +81,7 @@ const UserNavbar = ({ setFormData }) => {
           >
             <img
               alt='Company Logo'
-              src='https://anab.ansi.org/wp-content/uploads/2022/10/ANAB-logo.png'
+              src={logoSvg}
               className='h-10 w-auto'
             />
             <span

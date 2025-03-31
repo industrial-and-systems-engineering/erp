@@ -3,42 +3,9 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
 const AboutUs = () => {
-  const teamMembers = [
-    {
-      name: "Jane Doe",
-      title: "CEO & Founder",
-      bio: "With over 15 years of industry experience, Jane leads our vision and strategy.",
-      email: "jane@example.com",
-      image:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1974&auto=format&fit=crop",
-    },
-    {
-      name: "Mike Ross",
-      title: "Technical Director",
-      bio: "Mike oversees all technical operations and ensures we deliver cutting-edge solutions.",
-      email: "mike@example.com",
-      image:
-        "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1974&auto=format&fit=crop",
-    },
-    {
-      name: "Sarah Johnson",
-      title: "Design Lead",
-      bio: "Sarah brings creativity and user-centered design principles to every project we undertake.",
-      email: "sarah@example.com",
-      image:
-        "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1976&auto=format&fit=crop",
-    },
-  ];
-
-  // Animation variants
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.8 } },
-  };
-
-  const staggerContainer = {
-    hidden: {},
-    visible: { transition: { staggerChildren: 0.2 } },
   };
 
   return (
@@ -48,12 +15,11 @@ const AboutUs = () => {
         initial='hidden'
         animate='visible'
         variants={fadeIn}
-        className='text-white py-40 px-4 text-center bg-blue-950'
+        className='text-white py-24 px-4 text-center bg-blue-900'
       >
-        <h1 className='text-4xl md:text-5xl font-bold mb-4'>About Us</h1>
-        <p className='text-xl max-w-3xl mx-auto'>
-          We're on a mission to transform how businesses connect with their customers through
-          innovative solutions and exceptional service.
+        <h1 className='text-3xl md:text-4xl font-bold mb-4'>Precision is Our Promise</h1>
+        <p className='text-lg max-w-2xl mx-auto'>
+          Error Detector - Your NABL-accredited partner in maintaining measurement accuracy.
         </p>
       </motion.div>
 
@@ -62,218 +28,127 @@ const AboutUs = () => {
         initial='hidden'
         animate='visible'
         variants={fadeIn}
-        className='py-16 px-4 max-w-7xl mx-auto'
+        className='py-12 px-4 max-w-6xl mx-auto'
       >
-        <div className='grid md:grid-cols-2 gap-12 items-center'>
-          <motion.div variants={fadeIn}>
-            <h2 className='text-3xl font-bold mb-6'>Our Story</h2>
-            <p className='text-gray-600 mb-4'>
-              Founded in 2020, our company began with a simple idea: to create solutions that truly
-              address our clients' needs while providing exceptional value and service.
+        <div className='grid md:grid-cols-2 gap-8 items-center'>
+          <div>
+            <h2 className='text-2xl font-bold mb-4'>Our Commitment to Precision</h2>
+            <p className='text-gray-600 mb-3'>
+              Error Detector was founded with a vision to become the gold standard in calibration
+              services. As an ISO/IEC 17025-accredited laboratory under NABL, we adhere to the most
+              stringent international standards in every calibration process.
             </p>
-            <p className='text-gray-600 mb-4'>
-              What started as a small team of passionate innovators has grown into a thriving
-              company serving clients across multiple industries. Throughout our journey, we've
-              remained committed to our core values of integrity, innovation, and customer
-              satisfaction.
-            </p>
-            <p className='text-gray-600'>
-              Today, we're proud to be recognized as industry leaders, but we're even more proud of
-              the relationships we've built and the positive impact we've made for our clients.
-            </p>
-          </motion.div>
-          <motion.div
-            variants={fadeIn}
-            className='rounded-lg overflow-hidden shadow-xl'
-          >
+          </div>
+          <div className='rounded-lg overflow-hidden shadow-lg'>
             <img
-              src='https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2070&auto=format&fit=crop'
-              alt='Our team collaborating'
+              src='https://images.unsplash.com/photo-1719210722633-2756cda18bcf?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+              alt='Precision calibration equipment'
               className='w-full h-auto'
             />
-          </motion.div>
-        </div>
-      </motion.section>
-
-      {/* Our Mission & Values */}
-      <motion.section
-        initial='hidden'
-        animate='visible'
-        variants={fadeIn}
-        className='py-16 px-4 bg-gray-50'
-      >
-        <div className='max-w-7xl mx-auto'>
-          <h2 className='text-3xl font-bold mb-12 text-center'>Our Mission & Values</h2>
-          <div className='grid md:grid-cols-3 gap-8'>
-            {[
-              {
-                icon: (
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    className='h-6 w-6 text-blue-600'
-                    fill='none'
-                    viewBox='0 0 24 24'
-                    stroke='currentColor'
-                  >
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      strokeWidth={2}
-                      d='M13 10V3L4 14h7v7l9-11h-7z'
-                    />
-                  </svg>
-                ),
-                title: "Innovation",
-                description:
-                  "We constantly explore new ideas and technologies to deliver cutting-edge solutions that help our clients stay ahead.",
-              },
-              {
-                icon: (
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    className='h-6 w-6 text-blue-600'
-                    fill='none'
-                    viewBox='0 0 24 24'
-                    stroke='currentColor'
-                  >
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      strokeWidth={2}
-                      d='M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'
-                    />
-                  </svg>
-                ),
-                title: "Collaboration",
-                description:
-                  "We believe in the power of teamwork and partnership, working closely with our clients to achieve shared goals.",
-              },
-              {
-                icon: (
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    className='h-6 w-6 text-blue-600'
-                    fill='none'
-                    viewBox='0 0 24 24'
-                    stroke='currentColor'
-                  >
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      strokeWidth={2}
-                      d='M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'
-                    />
-                  </svg>
-                ),
-                title: "Integrity",
-                description:
-                  "We conduct our business with honesty, transparency, and a commitment to doing what's right for our clients and employees.",
-              },
-            ].map((item, index) => (
-              <motion.div
-                key={index}
-                variants={fadeIn}
-                className='bg-white p-8 rounded-lg shadow-md'
-              >
-                <div className='w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4'>
-                  {item.icon}
-                </div>
-                <h3 className='text-xl font-semibold mb-3'>{item.title}</h3>
-                <p className='text-gray-600'>{item.description}</p>
-              </motion.div>
-            ))}
           </div>
         </div>
       </motion.section>
 
-      {/* Team Section */}
+      {/* Our Services */}
       <motion.section
         initial='hidden'
         animate='visible'
-        variants={staggerContainer}
-        className='py-16 px-4 max-w-7xl mx-auto'
+        variants={fadeIn}
+        className='py-12 px-4 bg-gray-50'
       >
-        <h2 className='text-3xl font-bold mb-12 text-center'>Meet Our Team</h2>
-        <div className='grid md:grid-cols-3 gap-8'>
-          {teamMembers.map((member, index) => (
-            <motion.div
-              key={index}
-              variants={fadeIn}
-              className='bg-white rounded-lg shadow-md overflow-hidden'
-            >
-              <img
-                src={member.image}
-                alt={member.name}
-                className='w-full h-64 object-cover'
-              />
-              <div className='p-6'>
-                <h3 className='text-xl font-semibold mb-1'>{member.name}</h3>
-                <p className='text-blue-600 mb-3'>{member.title}</p>
-                <p className='text-gray-600 mb-4'>{member.bio}</p>
-                <a
-                  href={`mailto:${member.email}`}
-                  className='text-blue-600 hover:underline'
-                >
-                  {member.email}
-                </a>
+        <div className='max-w-6xl mx-auto'>
+          <h2 className='text-2xl font-bold mb-8 text-center'>
+            Comprehensive Calibration Services
+          </h2>
+          <div className='grid md:grid-cols-3 gap-6'>
+            {[
+              "Electrical Calibration",
+              "Mechanical Calibration",
+              "Thermal Calibration",
+              "Mass Calibration",
+              "On-Site Calibration",
+            ].map((service, index) => (
+              <div
+                key={index}
+                className='bg-white p-6 rounded-lg shadow-md'
+              >
+                <h3 className='text-lg font-semibold mb-2'>{service}</h3>
+                <p className='text-gray-600 text-sm'>
+                  Precision testing and calibration services for various industries.
+                </p>
               </div>
-            </motion.div>
-          ))}
-        </div>
-      </motion.section>
-
-      {/* Stats Section */}
-      <motion.section
-        initial='hidden'
-        animate='visible'
-        variants={fadeIn}
-        className='py-16 px-4 bg-blue-600 text-white'
-      >
-        <div className='max-w-7xl mx-auto'>
-          <h2 className='text-3xl font-bold mb-12 text-center'>Our Impact</h2>
-          <div className='grid grid-cols-2 md:grid-cols-4 gap-8 text-center'>
-            {[
-              { stat: "500+", label: "Projects Completed" },
-              { stat: "50+", label: "Team Members" },
-              { stat: "100%", label: "Client Satisfaction" },
-              { stat: "12", label: "Industry Awards" },
-            ].map((item, index) => (
-              <motion.div
-                key={index}
-                variants={fadeIn}
-              >
-                <div className='text-4xl font-bold mb-2'>{item.stat}</div>
-                <p>{item.label}</p>
-              </motion.div>
             ))}
           </div>
         </div>
       </motion.section>
 
-      {/* CTA Section */}
+      {/* Why Choose Us */}
       <motion.section
         initial='hidden'
         animate='visible'
         variants={fadeIn}
-        className='py-16 px-4 text-center'
+        className='py-12 px-4 max-w-6xl mx-auto'
+      >
+        <h2 className='text-2xl font-bold mb-8 text-center'>Why Error Detector?</h2>
+        <div className='grid md:grid-cols-2 gap-8'>
+          <div>
+            <ul className='space-y-4'>
+              <li>NABL Accreditation</li>
+              <li>Expert Team</li>
+              <li>Comprehensive Documentation</li>
+              <li>Quick Turnaround</li>
+            </ul>
+          </div>
+          <div className='rounded-lg overflow-hidden shadow-lg'>
+            <img
+              src='https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format&fit=crop'
+              alt='Advanced calibration laboratory'
+              className='w-full h-auto'
+            />
+          </div>
+        </div>
+      </motion.section>
+
+      {/* Industries We Serve */}
+      <motion.section
+        initial='hidden'
+        animate='visible'
+        variants={fadeIn}
+        className='py-12 px-4 bg-gray-50'
+      >
+        <div className='max-w-6xl mx-auto'>
+          <h2 className='text-2xl font-bold mb-8 text-center'>Industries We Serve</h2>
+          <div className='grid md:grid-cols-4 gap-4'>
+            {["Pharmaceuticals", "Manufacturing", "Power & Energy", "Research & Development"].map(
+              (industry, index) => (
+                <div
+                  key={index}
+                  className='bg-white p-4 rounded-lg shadow-md text-center'
+                >
+                  <h3 className='text-base font-semibold mb-1'>{industry}</h3>
+                  <p className='text-gray-600 text-sm'>Ensuring precision and compliance.</p>
+                </div>
+              )
+            )}
+          </div>
+        </div>
+      </motion.section>
+
+      {/* Call to Action */}
+      <motion.section
+        initial='hidden'
+        animate='visible'
+        variants={fadeIn}
+        className='py-12 px-4 text-center bg-blue-900 text-white'
       >
         <div className='max-w-3xl mx-auto'>
-          <h2 className='text-3xl font-bold mb-4'>Ready to work with us?</h2>
-          <p className='text-gray-600 mb-8'>
-            We're always looking for new challenges and opportunities to make an impact.
-          </p>
-          <div className='flex flex-wrap justify-center gap-4'>
-            <Link
-              to='/contact'
-              className='bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium transition-colors'
-            >
-              Contact Us
-            </Link>
+          <h2 className='text-2xl font-bold mb-4'>Ready to Ensure Precision in Your Operations?</h2>
+          <div className='flex justify-center gap-3'>
             <Link
               to='/services'
-              className='bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-6 py-3 rounded-md font-medium transition-colors'
+              className='px-6 py-2 bg-transparent border border-white text-white font-medium rounded-md hover:bg-blue-800 transition-colors text-sm'
             >
-              Our Services
+              Explore Services
             </Link>
           </div>
         </div>

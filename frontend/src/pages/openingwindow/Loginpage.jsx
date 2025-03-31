@@ -1,121 +1,68 @@
 import React from "react";
 import { motion } from "framer-motion";
-import {
-  StarIcon,
-  CheckCircleIcon,
-  ArrowRightIcon,
-  CalendarIcon,
-  NewspaperIcon,
-} from "@heroicons/react/24/outline";
+import { StarIcon, CheckCircleIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 
 const Loginpage = () => {
-  // Upcoming calibration events
-  const upcomingEvents = [
-    {
-      title: "Calibration Training Symposium",
-      date: "April 14-17, 2025",
-      location: "Anaheim, CA",
-    },
-    {
-      title: "NCSL International Workshop",
-      date: "July 18-24, 2025",
-      location: "Cleveland, OH",
-    },
-    {
-      title: "On-Site Calibration Service Event",
-      date: "April 8, 2025",
-      location: "Irving, TX",
-    },
-  ];
-
-  // News items
-  const newsItems = [
-    {
-      title: "New ISO 17025 Standards Update",
-      date: "March 15, 2025",
-      summary: "Latest changes to calibration standards that affect industry compliance.",
-    },
-    {
-      title: "Expansion of Calibration Services",
-      date: "February 27, 2025",
-      summary:
-        "We've added new capabilities to our electrical and mechanical calibration services.",
-    },
-  ];
-
   // Services offered
   const services = [
     {
       title: "Electrical Calibration",
       description:
-        "Calibration of electrical measurement instruments including multimeters, oscilloscopes, and power supplies.",
+        "Includes testing instruments like MultiMate's, oscilloscopes, and power analyser's.",
       image: "https://images.unsplash.com/photo-1627704671340-0969d7dbac25",
     },
     {
       title: "Mechanical Calibration",
-      description: "Precision calibration for torque wrenches, pressure gauges, and micrometers.",
+      description:
+        "Ensures precision in tools such as micrometre's, pressure gauges, and torque wrenches.",
       image: "https://images.unsplash.com/photo-1627704671340-0969d7dbac25",
     },
     {
-      title: "Temperature Calibration",
-      description: "Calibration of thermometers, thermal cameras, and temperature controllers.",
+      title: "Thermal Calibration",
+      description: "Verifies the accuracy of temperature sensors, thermometers, and ovens.",
       image: "https://images.unsplash.com/photo-1627704671340-0969d7dbac25",
     },
     {
-      title: "Dimensional Calibration",
-      description: "Calibration of rulers, calipers, micrometers and other measuring tools.",
+      title: "Mass Calibration",
+      description: "Tests and calibrates weighing scales and balances to maintain accuracy.",
+      image: "https://images.unsplash.com/photo-1627704671340-0969d7dbac25",
+    },
+    {
+      title: "On-Site Calibration",
+      description:
+        "Offers the convenience of calibration services at the client's premises, minimizing downtime.",
       image: "https://images.unsplash.com/photo-1627704671340-0969d7dbac25",
     },
   ];
 
   // Industries served
   const industries = [
-    "Manufacturing",
-    "Aerospace",
-    "Automotive",
-    "Healthcare",
-    "Electronics",
-    "Energy",
-    "Food & Beverage",
-    "Research",
+    "Pharmaceuticals",
+    "Automobile Manufacturing",
+    "Power and Energy",
+    "Research and Development",
   ];
 
-  // Testimonials
-  const testimonials = [
+  // Advantages
+  const advantages = [
     {
-      text: "Their continued excellence in calibration includes quality of customer service, timeliness, and cost-effectiveness.",
-      author: "KLM Manufacturing",
-      rating: 5,
+      title: "Accuracy",
+      description:
+        "With state-of-the-art equipment and skilled professionals, the lab guarantees high precision.",
     },
     {
-      text: "The service we have received thus far is nothing short of superior. I do not doubt the instrument's return condition or the calibration data.",
-      author: "S.N., Electronic Component Manufacturer",
-      rating: 5,
+      title: "Reliability",
+      description: "NABL accreditation ensures compliance with international standards.",
     },
     {
-      text: "We have never failed an ISO inspection because of their precise calibration efforts and teamwork.",
-      author: "D.L., Chocolate Manufacturer",
-      rating: 5,
-    },
-  ];
-
-  // FAQs
-  const faqs = [
-    {
-      question: "How often should equipment be calibrated?",
-      answer:
-        "Most equipment should be calibrated annually, but high-precision instruments or those used in critical applications may require more frequent calibration.",
+      title: "Quick Turnaround",
+      description: "Efficient processes and on-site services reduce operational delays.",
     },
     {
-      question: "Do you offer on-site calibration?",
-      answer:
-        "Yes, we provide on-site calibration services for equipment that cannot be moved or when minimal downtime is required.",
-    },
-    {
-      question: "Are your calibrations traceable to national standards?",
-      answer:
-        "Yes, all our calibrations are traceable to NIST or other national metrology institutions, ensuring compliance with international standards.",
+      title: "Comprehensive Support",
+      description:
+        "The lab provides calibration certificates, traceability reports, and expert guidance.",
     },
   ];
 
@@ -137,17 +84,16 @@ const Loginpage = () => {
         >
           <img
             src='https://images.unsplash.com/photo-1582551716463-c0ba72d6e1d0?q=80&w=2062&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
-            alt='Hero Background'
-            className='absolute inset-0 w-full h-full object-cover blur-xs '
+            alt='Precision Calibration Equipment'
+            className='absolute inset-0 w-full h-full object-cover blur-xs'
           />
-          <div className='absolute inset-0' />
-          <div className='absolute inset-0' />
+          <div className='absolute inset-0 bg-black opacity-50' />
           <div className='relative text-center text-white px-4 max-w-4xl'>
             <h1 className='text-4xl md:text-5xl font-bold mb-4'>
-              Precision Calibration for Peak Performance
+              Error Detector: A NABL-Certified Calibration Lab
             </h1>
             <p className='text-xl md:text-2xl mb-8'>
-              NABL Accredited Calibration Services You Can Trust
+              Ensuring Precision and Trust in Every Measurement
             </p>
             <div className='flex flex-wrap justify-center gap-4'>
               <Link
@@ -156,18 +102,55 @@ const Loginpage = () => {
               >
                 Get Started
               </Link>
-
               <Link
                 to='/services'
                 className='bg-transparent border-2 border-white hover:bg-white hover:text-blue-600 text-white px-6 py-3 rounded-md font-medium transition-colors'
               >
-                Learn More
+                Explore Services
               </Link>
             </div>
           </div>
         </motion.section>
-
-        {/* Services Section */}
+        {/* About Section */}
+        <motion.section
+          initial='hidden'
+          animate='visible'
+          variants={fadeIn}
+          className='py-16 bg-white'
+        >
+          <div className='container mx-auto px-4'>
+            <div className='flex flex-col md:flex-row items-center gap-8'>
+              <div className='md:w-1/2'>
+                <img
+                  src='https://images.unsplash.com/photo-1602052577122-f73b9710adba?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+                  alt='Calibration Laboratory'
+                  className='rounded-lg shadow-lg w-full h-auto'
+                />
+              </div>
+              <div className='md:w-1/2'>
+                <h2 className='text-3xl font-bold mb-4'>About Error Detector</h2>
+                <p className='text-gray-700 mb-4'>
+                  Error Detector is an ISO/IEC 17025-accredited calibration laboratory under the
+                  National Accreditation Board for Testing and Calibration Laboratories (NABL). With
+                  a commitment to excellence, the lab offers services to industries such as Testing
+                  and Calibration facilities.
+                </p>
+                <p className='text-gray-700 mb-4'>
+                  The NABL certification ensures that every calibration process adheres to stringent
+                  international standards, giving client's confidence in the precision and
+                  reliability of their equipment.
+                </p>
+                <p className='text-gray-700'>
+                  In the world of engineering, precision is paramount. Whether it's measuring
+                  voltage, resistance, or mechanical stress, accuracy can make or break an
+                  operation. This is where NABL-certified calibration labs, like Error Detector,
+                  come into play.
+                </p>
+              </div>
+            </div>
+          </div>
+        </motion.section>
+        {/* Why Calibration is Crucial */}
         <motion.section
           initial='hidden'
           animate='visible'
@@ -175,22 +158,40 @@ const Loginpage = () => {
           className='py-16 bg-gray-100'
         >
           <div className='container mx-auto px-4'>
-            <h2 className='text-3xl font-bold text-center mb-8'>Our Services</h2>
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8'>
+            <h2 className='text-3xl font-bold text-center mb-8'>Why Calibration is Crucial</h2>
+            <div className='bg-white p-6 rounded-lg shadow-md'>
+              <p className='text-gray-700 mb-4'>
+                Calibration is the process of verifying and adjusting the accuracy of measuring
+                instruments. Over time, even the most advanced equipment may lose precision due to
+                wear and tear or environmental factors. This can lead to incorrect readings,
+                compromising the quality of products and processes.
+              </p>
+              <p className='text-gray-700'>
+                Error Detector ensures that all instruments are calibrated to deliver accurate
+                results, reducing errors and enhancing operational efficiency.
+              </p>
+            </div>
+          </div>
+        </motion.section>
+        {/* Services Section */}
+        <motion.section
+          initial='hidden'
+          animate='visible'
+          variants={fadeIn}
+          className='py-16 bg-white'
+        >
+          <div className='container mx-auto px-4'>
+            <h2 className='text-3xl font-bold text-center mb-8'>Our Calibration Services</h2>
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
               {services.map((service, index) => (
                 <motion.div
                   key={index}
-                  className='bg-white shadow-md rounded-lg overflow-hidden'
+                  className='bg-gray-100 shadow-md rounded-lg overflow-hidden flex flex-col'
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.2 }}
                 >
-                  <img
-                    src={service.image}
-                    alt={service.title}
-                    className='w-full h-48 object-cover'
-                  />
-                  <div className='p-4'>
+                  <div className='p-4 flex-grow'>
                     <h3 className='text-xl font-bold mb-2'>{service.title}</h3>
                     <p className='text-gray-600'>{service.description}</p>
                   </div>
@@ -199,42 +200,7 @@ const Loginpage = () => {
             </div>
           </div>
         </motion.section>
-
-        {/* Testimonials Section */}
-        <motion.section
-          initial='hidden'
-          animate='visible'
-          variants={fadeIn}
-          className='py-16 bg-white'
-        >
-          <div className='container mx-auto px-4'>
-            <h2 className='text-3xl font-bold text-center mb-8'>What Our Clients Say</h2>
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
-              {testimonials.map((testimonial, index) => (
-                <motion.div
-                  key={index}
-                  className='bg-gray-100 p-6 rounded-lg shadow-md'
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.2 }}
-                >
-                  <p className='text-gray-700 italic mb-4'>"{testimonial.text}"</p>
-                  <p className='font-bold text-gray-900'>- {testimonial.author}</p>
-                  <div className='flex items-center mt-2'>
-                    {Array.from({ length: testimonial.rating }).map((_, i) => (
-                      <StarIcon
-                        key={i}
-                        className='h-5 w-5 text-yellow-500'
-                      />
-                    ))}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </motion.section>
-
-        {/* FAQs Section */}
+        {/* Advantages Section */}
         <motion.section
           initial='hidden'
           animate='visible'
@@ -242,20 +208,70 @@ const Loginpage = () => {
           className='py-16 bg-gray-100'
         >
           <div className='container mx-auto px-4'>
-            <h2 className='text-3xl font-bold text-center mb-8'>Frequently Asked Questions</h2>
-            <div className='space-y-6'>
-              {faqs.map((faq, index) => (
+            <h2 className='text-3xl font-bold text-center mb-8'>
+              Advantages of Choosing Error Detector
+            </h2>
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
+              {advantages.map((advantage, index) => (
                 <motion.div
                   key={index}
-                  className='bg-white p-6 rounded-lg shadow-md'
+                  className='bg-white p-6 rounded-lg shadow-md text-center'
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.2 }}
                 >
-                  <h3 className='text-xl font-bold mb-2'>{faq.question}</h3>
-                  <p className='text-gray-600'>{faq.answer}</p>
+                  <CheckCircleIcon className='h-12 w-12 text-green-500 mx-auto mb-4' />
+                  <h3 className='text-xl font-bold mb-2'>{advantage.title}</h3>
+                  <p className='text-gray-600'>{advantage.description}</p>
                 </motion.div>
               ))}
+            </div>
+          </div>
+        </motion.section>
+        {/* Industries Section */}
+        <motion.section
+          initial='hidden'
+          animate='visible'
+          variants={fadeIn}
+          className='py-16 bg-white'
+        >
+          <div className='container mx-auto px-4'>
+            <h2 className='text-3xl font-bold text-center mb-8'>Industries We Serve</h2>
+            <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
+              {industries.map((industry, index) => (
+                <motion.div
+                  key={index}
+                  className='bg-gray-100 p-4 rounded-lg shadow-md text-center'
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <p className='font-semibold'>{industry}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </motion.section>
+        {/* Conclusion Section */}
+        <motion.section
+          initial='hidden'
+          animate='visible'
+          variants={fadeIn}
+          className='py-16 bg-gray-100'
+        >
+          <div className='container mx-auto px-4'>
+            <h2 className='text-3xl font-bold text-center mb-8'>Our Commitment to Excellence</h2>
+            <div className='bg-white p-6 rounded-lg shadow-md text-center'>
+              <p className='text-gray-700 mb-4'>
+                Error Detector is not just a calibration lab; it is a partner in maintaining
+                accuracy, trust, and excellence. By choosing a NABL-certified lab like Error
+                Detector, businesses can ensure their instruments are reliable and compliant with
+                the highest standards.
+              </p>
+              <p className='text-gray-700 font-bold'>
+                Precision matters, and with Error Detector, it's a guarantee.
+              </p>
+              <div className='mt-8'></div>
             </div>
           </div>
         </motion.section>

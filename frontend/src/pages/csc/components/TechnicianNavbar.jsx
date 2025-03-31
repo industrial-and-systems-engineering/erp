@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import logoSvg from "../../../assets/logofull.svg";
 import {
   Bars3Icon,
   XMarkIcon,
@@ -79,7 +80,7 @@ const TechnicianNavbar = ({ setFormData }) => {
           >
             <img
               alt='ANAB Logo'
-              src='https://anab.ansi.org/wp-content/uploads/2022/10/ANAB-logo.png'
+              src={logoSvg}
               className='h-10 w-auto'
             />
             <span
