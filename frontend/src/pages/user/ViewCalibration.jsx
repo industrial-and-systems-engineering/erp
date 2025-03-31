@@ -458,7 +458,6 @@ const ViewCalibration = () => {
                 <li>Created: {new Date(certificateData.timestamp).toLocaleString()}</li>
               </ul>
             </div>
-            {/* this is a dummy comment */}
             <div className="text-center">
               <button
                 onClick={() => generateCompleteCertificate(certificateData)}
