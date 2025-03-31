@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import UncertainityBudget from "./UncertainityBudget";
 
 const CcalDataSheet = ({ product, form }) => {
   // Compute header data directly from props
@@ -12,7 +13,7 @@ const CcalDataSheet = ({ product, form }) => {
     make: product.make,
     srNo: product.serialNo,
   };
-
+  const [openUncertaintyRow, setOpenUncertaintyRow] = useState(null);
   // Compute newData directly from props
   const newData = {
     Location: product.Location,
@@ -27,10 +28,6 @@ const CcalDataSheet = ({ product, form }) => {
     ...param,
     readings: param.readings.map((reading) => ({
       ...reading,
-      masterCertUncertainty: 0,
-      ducResolution: 0,
-      masterAccuracy: 0,
-      stability: 0,
     })),
   }));
 
@@ -156,64 +153,29 @@ const CcalDataSheet = ({ product, form }) => {
         </div>
         {/* Details of Master Used */}
         <h2 className='text-lg font-bold mt-6'>Details of Master Used</h2>
-        <div className='grid grid-cols-4 gap-4 mt-4'>
-          <div>
-            <input
-              type='text'
-              value={"Name"}
-              readOnly
-              className='mt-1 block w-full rounded-md p-2'
-            />
-            <input
-              type='text'
-              value={"Equipment ID"}
-              readOnly
-              className='mt-1 block w-full rounded-md p-2'
-            />
-          </div>
-          <div>
-            <input
-              type='text'
-              value={formData.name}
-              readOnly
-              className='mt-1 block w-full border border-gray-300 rounded-md p-2'
-            />
-            <input
-              type='text'
-              value={formData.equipmentId || ""}
-              readOnly
-              className='mt-1 block w-full border border-gray-300 rounded-md p-2'
-            />
-          </div>
-          <div>
-            <input
-              type='text'
-              value={formData.name}
-              readOnly
-              className='mt-1 block w-full border border-gray-300 rounded-md p-2'
-            />
-            <input
-              type='text'
-              value={formData.equipmentId || ""}
-              readOnly
-              className='mt-1 block w-full border border-gray-300 rounded-md p-2'
-            />
-          </div>
-          <div>
-            <input
-              type='text'
-              value={formData.name}
-              readOnly
-              className='mt-1 block w-full border border-gray-300 rounded-md p-2'
-            />
-            <input
-              type='text'
-              value={formData.equipmentId || ""}
-              readOnly
-              className='mt-1 block w-full border border-gray-300 rounded-md p-2'
-            />
-          </div>
+        <div className='mt-4'>
+          <table className='w-full border-collapse border border-gray-300'>
+            <thead className='bg-gray-100'>
+              <tr>
+                <th className='border border-gray-300 p-2 text-left'>Name</th>
+                <th className='border border-gray-300 p-2 text-left'>Serial No./ID</th>
+              </tr>
+            </thead>
+            <tbody>
+              {product.detailsOfMasterUsed &&
+                product.detailsOfMasterUsed.map((item, index) => (
+                  <tr
+                    key={index}
+                    className='hover:bg-gray-50'
+                  >
+                    <td className='border border-gray-300 p-2'>{item.name}</td>
+                    <td className='border border-gray-300 p-2'>{item.serialNo}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
         </div>
+
         {/* Observation */}
         <h2 className='text-lg font-bold mt-6'>Observation</h2>
         <div>
@@ -263,139 +225,169 @@ const CcalDataSheet = ({ product, form }) => {
               </div>
 
               {/* STD/DUC Readings */}
-              <div className='overflow-x-auto'>
-                <table className='w-full border-collapse border border-gray-300'>
-                  <thead className='bg-gray-100'>
-                    <tr>
-                      <th className='border border-gray-300 p-2 text-left'>STD./DUC Reading</th>
-                      <th className='border border-gray-300 p-2 text-left'>R1</th>
-                      <th className='border border-gray-300 p-2 text-left'>R2</th>
-                      <th className='border border-gray-300 p-2 text-left'>R3</th>
-                      <th className='border border-gray-300 p-2 text-left'>R4</th>
-                      <th className='border border-gray-300 p-2 text-left'>R5</th>
-                      <th className='border border-gray-300 p-2 text-left'>MCU</th>
-                      <th className='border border-gray-300 p-2 text-left'>DUCR</th>
-                      <th className='border border-gray-300 p-2 text-left'>MA</th>
-                      <th className='border border-gray-300 p-2 text-left'>St</th>
-                      <th className='border border-gray-300 p-2 text-left'>Mean</th>
-                      <th className='border border-gray-300 p-2 text-left'>Uc</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {param.readings.map((reading, readingIndex) => (
-                      <tr
-                        key={readingIndex}
-                        className='hover:bg-gray-50'
-                      >
-                        <td className='border border-gray-300 p-2'>
-                          <div className='flex space-x-2'>
+              <table className='w-full border-collapse border border-gray-300 text-sm'>
+                <thead className='bg-gray-100'>
+                  <tr>
+                    <th className='border border-gray-300 p-1 text-left'>STD./DUC</th>
+                    <th className='border border-gray-300 p-1 text-left'>R1</th>
+                    <th className='border border-gray-300 p-1 text-left'>R2</th>
+                    <th className='border border-gray-300 p-1 text-left'>R3</th>
+                    <th className='border border-gray-300 p-1 text-left'>R4</th>
+                    <th className='border border-gray-300 p-1 text-left'>R5</th>
+                    <th className='border border-gray-300 p-1 text-left'>MCU</th>
+                    <th className='border border-gray-300 p-1 text-left'>DUCR</th>
+                    <th className='border border-gray-300 p-1 text-left'>MA</th>
+                    <th className='border border-gray-300 p-1 text-left'>St</th>
+                    <th className='border border-gray-300 p-1 text-left'>Mean</th>
+                    <th className='border border-gray-300 p-1 text-left'>Uc</th>
+                    <th className='border border-gray-300 p-1 text-center'>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {param.readings.map((reading, readingIndex) => (
+                    <React.Fragment key={readingIndex}>
+                      <tr className='hover:bg-gray-50'>
+                        <td className='border border-gray-300 p-1'>
+                          <div className='flex space-x-1'>
                             <input
                               type='text'
                               value={reading.rName}
                               readOnly
-                              className='w-1/2 border border-gray-300 rounded-md p-2'
+                              className='w-1/2 border border-gray-300 rounded-md p-1 text-xs'
                             />
                             <input
                               type='text'
                               value={reading.rUnit}
                               readOnly
-                              className='w-1/2 border border-gray-300 rounded-md p-2'
+                              className='w-1/2 border border-gray-300 rounded-md p-1 text-xs'
                             />
                           </div>
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='border border-gray-300 p-1'>
                           <input
                             type='text'
                             value={reading.r1}
                             readOnly
-                            className='w-full border border-gray-300 rounded-md p-2'
+                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
                           />
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='border border-gray-300 p-1'>
                           <input
                             type='text'
                             value={reading.r2}
                             readOnly
-                            className='w-full border border-gray-300 rounded-md p-2'
+                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
                           />
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='border border-gray-300 p-1'>
                           <input
                             type='text'
                             value={reading.r3}
                             readOnly
-                            className='w-full border border-gray-300 rounded-md p-2'
+                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
                           />
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='border border-gray-300 p-1'>
                           <input
                             type='text'
                             value={reading.r4}
                             readOnly
-                            className='w-full border border-gray-300 rounded-md p-2'
+                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
                           />
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='border border-gray-300 p-1'>
                           <input
                             type='text'
                             value={reading.r5}
                             readOnly
-                            className='w-full border border-gray-300 rounded-md p-2'
+                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
                           />
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='border border-gray-300 p-1'>
                           <input
                             type='text'
                             value={reading.masterCertUncertainty}
                             readOnly
-                            className='w-full border border-gray-300 rounded-md p-2'
+                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
                           />
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='border border-gray-300 p-1'>
                           <input
                             type='text'
                             value={reading.ducResolution}
                             readOnly
-                            className='w-full border border-gray-300 rounded-md p-2'
+                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
                           />
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='border border-gray-300 p-1'>
                           <input
                             type='text'
                             value={reading.masterAccuracy}
                             readOnly
-                            className='w-full border border-gray-300 rounded-md p-2'
+                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
                           />
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='border border-gray-300 p-1'>
                           <input
                             type='text'
                             value={reading.stability}
                             readOnly
-                            className='w-full border border-gray-300 rounded-md p-2'
+                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
                           />
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='border border-gray-300 p-1'>
                           <input
                             type='text'
                             value={reading.mean}
                             readOnly
-                            className='w-full border border-gray-300 rounded-md p-2 bg-gray-100'
+                            className='w-full border border-gray-300 rounded-md p-1 bg-gray-100 text-xs'
                           />
                         </td>
-                        <td className='border border-gray-300 p-2'>
+                        <td className='border border-gray-300 p-1'>
                           <input
                             type='text'
                             value={reading.uc}
                             readOnly
-                            className='w-full border border-gray-300 rounded-md p-2 bg-gray-100'
+                            className='w-full border border-gray-300 rounded-md p-1 bg-gray-100 text-xs'
                           />
                         </td>
+                        <td className='border border-gray-300 p-1 text-center'>
+                          <button
+                            type='button'
+                            onClick={() =>
+                              setOpenUncertaintyRow(
+                                openUncertaintyRow === `${paramIndex}-${readingIndex}`
+                                  ? null
+                                  : `${paramIndex}-${readingIndex}`
+                              )
+                            }
+                            className='cursor-pointer bg-blue-500 hover:bg-blue-600 text-white px-2 py-0.5 rounded text-xs'
+                          >
+                            {openUncertaintyRow === `${paramIndex}-${readingIndex}`
+                              ? "Hide"
+                              : "Show"}
+                          </button>
+                        </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+
+                      {/* Conditional rendering of Uncertainty Budget component */}
+                      {openUncertaintyRow === `${paramIndex}-${readingIndex}` && (
+                        <tr>
+                          <td
+                            colSpan='13'
+                            className='p-0'
+                          >
+                            <div className='bg-gray-50 p-2 border-t border-gray-300'>
+                              <h3 className='text-md font-medium mb-2'>Uncertainty Budget</h3>
+                              <UncertainityBudget reading={reading} />
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ))}
         </div>

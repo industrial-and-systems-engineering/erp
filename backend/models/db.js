@@ -17,6 +17,12 @@ const ProductSchema = new Schema(
     resolution: { type: String },
     roomTemp: { type: String },
     sensorType: { type: String },
+    detailsOfMasterUsed: {
+      type: [{
+        name: { type: String },
+        serialNo: { type: String },
+      }]
+    },
     parameters: {
       type: [{
         parameter: { type: String, required: true },
@@ -35,6 +41,7 @@ const ProductSchema = new Schema(
             masterAccuracy: { type: String },
             masterCertUncertainty: { type: String },
             ducResolution: { type: String },
+            stability: { type: String },
             r1: { type: String },
             r2: { type: String },
             r3: { type: String },
@@ -42,6 +49,7 @@ const ProductSchema = new Schema(
             r5: { type: String },
             mean: { type: String },
             uc: { type: String },
+            repeatibility: { type: String },
           }], default: []
         }
       }]

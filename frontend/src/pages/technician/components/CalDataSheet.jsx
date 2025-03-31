@@ -11,7 +11,6 @@ const CalDataSheet = ({ product, save, close, form }) => {
     name: product.instrumentDescription,
     make: product.make,
     srNo: product.serialNo,
-    parameters: product.parameters,
   });
   const [newData, setNewData] = useState({
     Location: "",
@@ -19,7 +18,67 @@ const CalDataSheet = ({ product, save, close, form }) => {
     resolution: "",
     roomTemp: "",
     humidity: "",
+    detailsOfMasterUsed: [],
   });
+  // Details of Master Used section
+  const masterEquipment = [
+    { name: "5½ Digit Multifunction Calibrator With Current Coil", serialNo: "20140557A ED/CC-02" },
+    { name: "5½ Digit Multifunction Calibrator", serialNo: "20140557 ED/MFC-02" },
+    { name: "6½ Digit Digital Multimeter", serialNo: "2654101 ED/DMM-03" },
+    { name: "Decade Capacitance Box", serialNo: "121001 ED/DCB-01" },
+    { name: "Decade Inductance Box", serialNo: "121201 ED/DIB-01" },
+    { name: "Decade Resistance Box", serialNo: "201008205 ED/RB-02" },
+    { name: "Digital Anemo Meter", serialNo: "ED/DAM-01" },
+    { name: "Digital Clampmeter", serialNo: "110500541 ED/DCM-01" },
+    { name: "Digital IR Thermo Meter", serialNo: "11018053 ED/IT(M-16)-01" },
+    { name: "Digital Multimeter (5¾ Digit)", serialNo: "LG0171 ED/DMM-01" },
+    { name: "Digital Pressure Calibrator", serialNo: "60303803 ED/DPC/01" },
+    { name: "Digital Pressure gauge", serialNo: "NAIM1904001 ED/PG/700/06" },
+    { name: "Digital Pressure gauge", serialNo: "007417 ED/LPG9300/03" },
+    { name: "Digital Tachometar", serialNo: "747; ED/DTM-01" },
+    { name: "Digital Thermometer", serialNo: "T0103;ED/THEM/01" },
+    { name: "Digital Timer", serialNo: "2021031701; ED/TIMER-01" },
+    { name: "Digital Vibration Meter with Sensor", serialNo: "1572" },
+    { name: "Gold Plated Low Resistance Box", serialNo: "11122002 ED/RB-01" },
+    { name: "High Voltage Probe with DMM", serialNo: "95290020;ED/HVP-01" },
+    { name: "Meg ohm Box", serialNo: "38000208;ED/DMM-02" },
+    { name: "Multiproduct Calibrator 5500A", serialNo: "102010 ED/MOHM-01" },
+    { name: "Multiproduct Calibrator With Current Coil", serialNo: "6530020 ED/MFC-03" },
+    { name: "Precission C.T", serialNo: "6530020 201008204A" },
+    { name: "Process Source", serialNo: "12952 995115358 ED/PS/01" },
+    { name: "S Type Thermometer with Temp Indicator", serialNo: "2426/T0103 ED/TC(S)/STD/01" },
+    { name: "Slip Gauge Block Set", serialNo: "8419" },
+    { name: "SPRT Sensor", serialNo: "1405 ED/SPRT/STD/01" },
+    { name: "Standard Resistance box", serialNo: "210212 ED/SRB-02" },
+    { name: "Temperature Calibrator", serialNo: "99431127 ED/TC-01" },
+  ];
+
+  const [selectedMaster, setSelectedMaster] = useState("");
+
+  const handleAddMaster = () => {
+    if (selectedMaster) {
+      const masterToAdd = masterEquipment.find((item) => item.name === selectedMaster);
+      if (
+        masterToAdd &&
+        !newData.detailsOfMasterUsed.some((item) => item.name === masterToAdd.name)
+      ) {
+        setNewData({
+          ...newData,
+          detailsOfMasterUsed: [...newData.detailsOfMasterUsed, masterToAdd],
+        });
+        setSelectedMaster("");
+      }
+    }
+  };
+
+  const handleRemoveMaster = (index) => {
+    const updatedMasters = [...newData.detailsOfMasterUsed];
+    updatedMasters.splice(index, 1);
+    setNewData({
+      ...newData,
+      detailsOfMasterUsed: updatedMasters,
+    });
+  };
 
   const [parameters, setParameters] = useState(
     product.parameters.map((param) => ({
@@ -172,6 +231,7 @@ const CalDataSheet = ({ product, save, close, form }) => {
       ducResolution: 0,
       masterAccuracy: 0,
       stability: 0,
+      repeatibility: 0,
     });
     setParameters(newReadings);
   };
@@ -308,75 +368,68 @@ const CalDataSheet = ({ product, save, close, form }) => {
           </div>
         </div>
         {/* details of master used */}
+        {/* details of master used */}
         <h2 className='text-lg font-bold mt-6'>Details of Master Used</h2>
-        <div className='grid grid-cols-4 gap-4 mt-4'>
-          <div>
-            <input
-              type='text'
-              value={"Name"}
-              readOnly
-              className='mt-1 block w-full  rounded-md p-2'
-            />
-            <input
-              type='text'
-              value={"Equipment ID"}
-              readOnly
-              className='mt-1 block w-full rounded-md p-2'
-            />
-          </div>
-          <div>
-            <input
-              type='text'
-              value={formData.name}
-              onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-              className='mt-1 block w-full border border-gray-300 rounded-md p-2'
-            />
-            <input
-              type='text'
-              value={formData.equipmentId}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  equipmentId: e.target.value,
-                }))
-              }
-              className='mt-1 block w-full border border-gray-300 rounded-md p-2'
-            />
-          </div>
-          <div>
-            <input
-              type='text'
-              value={formData.name}
-              onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-              className='mt-1 block w-full border border-gray-300 rounded-md p-2'
-            />
-            <input
-              type='text'
-              value={formData.equipmentId}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  equipmentId: e.target.value,
-                }))
-              }
-              className='mt-1 block w-full border border-gray-300 rounded-md p-2'
-            />
+        <div className='mt-4'>
+          <div className='flex space-x-2 mb-4'>
+            <select
+              value={selectedMaster}
+              onChange={(e) => setSelectedMaster(e.target.value)}
+              className='flex-grow border border-gray-300 rounded-md p-2'
+            >
+              <option value=''>Select Master Equipment</option>
+              {masterEquipment.map((item, idx) => (
+                <option
+                  key={idx}
+                  value={item.name}
+                >
+                  {item.name}
+                </option>
+              ))}
+            </select>
+            <button
+              type='button'
+              onClick={handleAddMaster}
+              className='bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600'
+            >
+              Add
+            </button>
           </div>
 
-          <div>
-            <input
-              type='text'
-              value={formData.name}
-              readOnly
-              className='mt-1 block w-full border border-gray-300 rounded-md p-2'
-            />
-            <input
-              type='text'
-              value={formData.equipmentId}
-              readOnly
-              className='mt-1 block w-full border border-gray-300 rounded-md p-2'
-            />
-          </div>
+          {newData.detailsOfMasterUsed.length > 0 && (
+            <div className='border rounded-md p-4 mb-4'>
+              <h3 className='font-medium mb-2'>Selected Equipment:</h3>
+              <table className='w-full'>
+                <thead>
+                  <tr className='bg-gray-100'>
+                    <th className='text-left p-2'>Name</th>
+                    <th className='text-left p-2'>Serial No.</th>
+                    <th className='text-center p-2'>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {newData.detailsOfMasterUsed.map((item, index) => (
+                    <tr
+                      key={index}
+                      className='border-t'
+                    >
+                      <td className='p-2'>{item.name}</td>
+                      <td className='p-2'>{item.serialNo}</td>
+                      <td className='p-2 text-center'>
+                        <button
+                          type='button'
+                          onClick={() => handleRemoveMaster(index)}
+                          className='bg-red-500 text-white p-1 rounded hover:bg-red-600'
+                        >
+                          <TrashIcon className='h-4 w-4' />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
         {/* Observation */}
         <h2 className='text-lg font-bold mt-6'>Observation</h2>
@@ -428,63 +481,69 @@ const CalDataSheet = ({ product, save, close, form }) => {
 
               {/* STD/DUC Readings */}
               <div className='overflow-x-auto shadow-md rounded-lg'>
-                <table className='w-full text-sm text-left text-gray-500'>
+                <table className='w-full text-xs text-left text-gray-500 border-collapse'>
                   <thead>
                     <tr className='text-xs text-gray-700 uppercase bg-gray-50'>
-                      <th className='px-6 py-3'>STD./DUC Reading</th>
+                      <th className='px-2 py-1'>STD./DUC</th>
                       <th
-                        className='px-6 py-3'
+                        className='px-2 py-1'
                         colSpan='5'
                       >
                         Readings
                       </th>
                       <th
-                        className='px-6 py-3'
+                        className='px-2 py-1'
                         colSpan='4'
                       >
-                        Uncertainties
+                        Details of Master
                       </th>
                       <th
-                        className='px-6 py-3'
+                        className='px-2 py-1'
                         colSpan='2'
                       >
                         Results
                       </th>
                     </tr>
                     <tr className='bg-gray-100'>
-                      <th className='px-6 py-3'></th>
-                      <th className='px-4 py-3'>R1</th>
-                      <th className='px-4 py-3'>R2</th>
-                      <th className='px-4 py-3'>R3</th>
-                      <th className='px-4 py-3'>R4</th>
-                      <th className='px-4 py-3'>R5</th>
+                      <th className='px-2 py-1'></th>
+                      <th className='px-1 py-1'>R1</th>
+                      <th className='px-1 py-1'>R2</th>
+                      <th className='px-1 py-1'>R3</th>
+                      <th className='px-1 py-1'>R4</th>
+                      <th className='px-1 py-1'>R5</th>
                       <th
-                        className='px-4 py-3'
+                        className='px-1 py-1'
                         title='Master Cert Uncertainty'
                       >
                         MCU
                       </th>
                       <th
-                        className='px-4 py-3'
+                        className='px-1 py-1'
                         title='DUC Resolution'
                       >
                         DUCR
                       </th>
                       <th
-                        className='px-4 py-3'
+                        className='px-1 py-1'
                         title='Master Accuracy'
                       >
                         MA
                       </th>
                       <th
-                        className='px-4 py-3'
+                        className='px-1 py-1'
                         title='Stability'
                       >
                         St
                       </th>
-                      <th className='px-4 py-3'>Mean</th>
-                      <th className='px-4 py-3'>Uc</th>
-                      <th className='px-4 py-3'>Actions</th>
+                      <th
+                        className='px-1 py-1'
+                        title='Readibility'
+                      >
+                        Rd
+                      </th>
+                      <th className='px-1 py-1'>Mean</th>
+                      <th className='px-1 py-1'>Uc</th>
+                      <th className='px-1 py-1'></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -493,8 +552,8 @@ const CalDataSheet = ({ product, save, close, form }) => {
                         key={readingIndex}
                         className='bg-white hover:bg-gray-50'
                       >
-                        <td className='px-4 py-2'>
-                          <div className='flex space-x-2'>
+                        <td className='px-1 py-1'>
+                          <div className='flex space-x-1'>
                             <input
                               type='text'
                               value={reading.rName}
@@ -506,7 +565,7 @@ const CalDataSheet = ({ product, save, close, form }) => {
                                   e.target.value
                                 )
                               }
-                              className='w-1/2 border border-gray-300 rounded-md p-2'
+                              className='w-1/2 border border-gray-300 rounded-md p-1 text-xs'
                             />
                             <input
                               type='text'
@@ -519,61 +578,61 @@ const CalDataSheet = ({ product, save, close, form }) => {
                                   e.target.value
                                 )
                               }
-                              className='w-1/2 border border-gray-300 rounded-md p-2'
+                              className='w-1/2 border border-gray-300 rounded-md p-1 text-xs'
                             />
                           </div>
                         </td>
-                        <td className='px-3 py-2'>
+                        <td className='px-1 py-1'>
                           <input
                             type='text'
                             value={reading.r1}
                             onChange={(e) =>
                               handleReadingChange(paramIndex, readingIndex, "r1", e.target.value)
                             }
-                            className='w-full border border-gray-300 rounded-md p-2'
+                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
                           />
                         </td>
-                        <td className='px-3 py-2'>
+                        <td className='px-1 py-1'>
                           <input
                             type='text'
                             value={reading.r2}
                             onChange={(e) =>
                               handleReadingChange(paramIndex, readingIndex, "r2", e.target.value)
                             }
-                            className='w-full border border-gray-300 rounded-md p-2'
+                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
                           />
                         </td>
-                        <td className='px-3 py-2'>
+                        <td className='px-1 py-1'>
                           <input
                             type='text'
                             value={reading.r3}
                             onChange={(e) =>
                               handleReadingChange(paramIndex, readingIndex, "r3", e.target.value)
                             }
-                            className='w-full border border-gray-300 rounded-md p-2'
+                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
                           />
                         </td>
-                        <td className='px-3 py-2'>
+                        <td className='px-1 py-1'>
                           <input
                             type='text'
                             value={reading.r4}
                             onChange={(e) =>
                               handleReadingChange(paramIndex, readingIndex, "r4", e.target.value)
                             }
-                            className='w-full border border-gray-300 rounded-md p-2'
+                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
                           />
                         </td>
-                        <td className='px-3 py-2'>
+                        <td className='px-1 py-1'>
                           <input
                             type='text'
                             value={reading.r5}
                             onChange={(e) =>
                               handleReadingChange(paramIndex, readingIndex, "r5", e.target.value)
                             }
-                            className='w-full border border-gray-300 rounded-md p-2'
+                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
                           />
                         </td>
-                        <td className='px-3 py-2'>
+                        <td className='px-1 py-1'>
                           <input
                             type='text'
                             value={reading.masterCertUncertainty}
@@ -585,10 +644,10 @@ const CalDataSheet = ({ product, save, close, form }) => {
                                 e.target.value
                               )
                             }
-                            className='w-full border border-gray-300 rounded-md p-2'
+                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
                           />
                         </td>
-                        <td className='px-3 py-2'>
+                        <td className='px-1 py-1'>
                           <input
                             type='text'
                             value={reading.ducResolution}
@@ -600,10 +659,10 @@ const CalDataSheet = ({ product, save, close, form }) => {
                                 e.target.value
                               )
                             }
-                            className='w-full border border-gray-300 rounded-md p-2'
+                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
                           />
                         </td>
-                        <td className='px-3 py-2'>
+                        <td className='px-1 py-1'>
                           <input
                             type='text'
                             value={reading.masterAccuracy}
@@ -615,10 +674,10 @@ const CalDataSheet = ({ product, save, close, form }) => {
                                 e.target.value
                               )
                             }
-                            className='w-full border border-gray-300 rounded-md p-2'
+                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
                           />
                         </td>
-                        <td className='px-3 py-2'>
+                        <td className='px-1 py-1'>
                           <input
                             type='text'
                             value={reading.stability}
@@ -630,33 +689,48 @@ const CalDataSheet = ({ product, save, close, form }) => {
                                 e.target.value
                               )
                             }
-                            className='w-full border border-gray-300 rounded-md p-2'
+                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
                           />
                         </td>
-                        <td className='px-3 py-2'>
+                        <td className='px-1 py-1'>
+                          <input
+                            type='text'
+                            value={reading.repeatibility}
+                            onChange={(e) =>
+                              handleReadingChange(
+                                paramIndex,
+                                readingIndex,
+                                "repeatibility",
+                                e.target.value
+                              )
+                            }
+                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
+                          />
+                        </td>
+                        <td className='px-1 py-1'>
                           <input
                             type='text'
                             value={reading.mean}
                             readOnly
-                            className='w-full border border-gray-300 rounded-md p-2 bg-gray-100'
+                            className='w-full border border-gray-300 rounded-md p-1 bg-gray-100 text-xs'
                           />
                         </td>
-                        <td className='px-3 py-2'>
+                        <td className='px-1 py-1'>
                           <input
                             type='text'
                             value={reading.uc}
                             readOnly
-                            className='w-full border border-gray-300 rounded-md p-2 bg-gray-100'
+                            className='w-full border border-gray-300 rounded-md p-1 bg-gray-100 text-xs'
                           />
                         </td>
-                        <td className='px-3 py-2'>
+                        <td className='px-1 py-1'>
                           {param.readings.length > 1 && (
                             <button
                               type='button'
                               onClick={() => removeStdReading(paramIndex, readingIndex)}
-                              className='bg-red-500 text-white p-2 rounded-md hover:bg-red-600'
+                              className='bg-red-500 text-white p-1 rounded-md hover:bg-red-600 cursor-pointer'
                             >
-                              <TrashIcon className='h-5 w-5' />
+                              <TrashIcon className='h-3 w-3' />
                             </button>
                           )}
                         </td>
