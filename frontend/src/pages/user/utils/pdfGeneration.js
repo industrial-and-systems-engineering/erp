@@ -68,7 +68,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     if (selectedProduct.parameters && selectedProduct.parameters.length > 0 && selectedProduct.parameters[0].methodUsed) {
       methodUsed = selectedProduct.parameters[0].methodUsed.split(" - ")[0]; // Get just the method number
     }
-
+    
     // Format dates in DD.MM.YYYY format
     const formatDate = (date) => {
       if (!date) return new Date().toLocaleDateString('en-GB', {
@@ -122,6 +122,33 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       console.log("Using calibrationLocation from parent form:", location);
     }
 
+    // Extract reference standard data from product if available
+    const referenceStandards = [];
+    
+    // Check if there's reference standard data in the product
+    if (selectedProduct.referenceStandards && selectedProduct.referenceStandards.length > 0) {
+      referenceStandards.push(...selectedProduct.referenceStandards);
+    } 
+    // Check if there's reference standard data in the parent form
+    else if (selectedProduct._parentForm && selectedProduct._parentForm.referenceStandards && 
+             selectedProduct._parentForm.referenceStandards.length > 0) {
+      referenceStandards.push(...selectedProduct._parentForm.referenceStandards);
+    } 
+    // Fallback to default reference standard if not available
+    else {
+      referenceStandards.push({
+        description: "Decade Resistance Box",
+        makeModel: "Zeal Services ZSDRB",
+        slNoIdNo: "201008205 ED/RB-02",
+        calibrationCertificateNo: "CAL/24-25/CC/0270-1",
+        validUpTo: "06.07.2025",
+        calibratedBy: "Nashik Engineering Cluster",
+        traceableTo: "NPL"
+      });
+    }
+    
+    console.log("Reference standards data:", referenceStandards);
+
     // Use selectedProduct data for certificate fields
     const certificate = {
       certificateNo: certificateNo,
@@ -142,17 +169,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       temperature: temperature, // Use extracted temperature
       humidity: humidity, // Use extracted humidity
       method: methodUsed,
-      referenceStandard: [
-        {
-          description: "Decade Resistance Box",
-          makeModel: "Zeal Services ZSDRB",
-          slNoIdNo: "201008205 ED/RB-02",
-          calibrationCertificateNo: "CAL/24-25/CC/0270-1",
-          validUpTo: "06.07.2025",
-          calibratedBy: "Nashik Engineering Cluster",
-          traceableTo: "NPL"
-        }
-      ]
+      referenceStandards: referenceStandards
     };
     
     console.log("Certificate data prepared:", certificate);
@@ -214,7 +231,9 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     
     // ULR line
     doc.setTextColor(0, 0, 0);
-    doc.text("ULR-CC373124000000502F", 20, 35);
+    // Replace hardcoded ULR with dynamic year
+    const currentYear = new Date().getFullYear().toString().slice(-2);
+    doc.text(`ULR-CC3731${currentYear}000000502F`, 20, 35);
     
     // Section Details
     let y = 45;
@@ -393,7 +412,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.autoTable({
       startY: y,
       head: [['SI no', 'Description', 'Make/Model', 'Slno/Idno', 'Calibration Certificate No', 'Valid up to', 'Calibrated By', 'Traceable to']],
-      body: certificate.referenceStandard.map((ref, index) => [
+      body: certificate.referenceStandards.map((ref, index) => [
         `${index + 1}.`,
         ref.description,
         ref.makeModel,
@@ -454,6 +473,57 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
   }
 }
 
+// Function to add a QR code to an existing PDF document
+export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
+  try {
+    if (!doc) {
+      console.error("No PDF document provided");
+      return null;
+    }
+    
+    if (!qrCodeDataUrl) {
+      console.error("No QR code data URL provided");
+      return doc;
+    }
+    
+    console.log("Adding QR code to PDF");
+    
+    // Get the dimensions of the page
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    
+    // Add the QR code at the bottom left of the page
+    // Adjust these values if needed for better positioning
+    const qrSize = 30;
+    const qrX = 20;
+    const qrY = pageHeight - qrSize - 10;
+    
+    console.log("QR code dimensions:", {
+      pageWidth,
+      pageHeight,
+      qrX,
+      qrY,
+      qrSize
+    });
+    
+    // Add the QR code image to the PDF
+    doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+    
+    // Add explanatory text next to the QR code
+    if (text) {
+      doc.setFontSize(8);
+      doc.setTextColor(0, 0, 0);
+      doc.text(text, qrX + qrSize + 5, qrY + qrSize/2);
+    }
+    
+    console.log("QR code added successfully");
+    return doc;
+  } catch (error) {
+    console.error("Error adding QR code to PDF:", error);
+    return doc;
+  }
+}
+
 // Add a new function to generate the second page of calibration results
 export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
   try {
@@ -476,7 +546,9 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
     doc.setFontSize(11);
     doc.text(`Calibration Certificate No. : ${certificateNo}`, margin, 25);
     doc.text(`Job No: ${jobNo}`, margin, 30);
-    doc.text("ULR-CC373124000000502F", margin, 35);
+    // Get current year for ULR code
+    const currentYear = new Date().getFullYear().toString().slice(-2);
+    doc.text(`ULR-CC3731${currentYear}000000502F`, margin, 35);
     
     // Date and other info
     const today = new Date();
@@ -490,19 +562,92 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
     doc.setFontSize(14);
     doc.text("CALIBRATION RESULTS", pageWidth / 2, 45, { align: "center" });
     
-    // Table data
-    const tableData = [
-      ["1.", "DC high resistance @1000 Volt", "1 M.ohm", "1.0045 M.ohm", "5.75%"],
-      ["2.", "Range: 1000 M.ohm", "2 M.ohm", "2.0085 M.ohm", "14.37%"],
-      ["3.", "", "5 M.ohm", "5.0156 M.ohm", "11.51%"],
-      ["4.", "", "10 M.ohm", "10.0179 M.ohm", "5.71%"],
-      ["5.", "", "20 M.ohm", "20.0546 M.ohm", "14.39%"],
-      ["6.", "", "50 M.ohm", "48.0469 M.ohm", "12.02%"],
-      ["7.", "", "100 M.ohm", "95.1580 M.ohm", "6.07%"],
-      ["8.", "", "200 M.ohm", "195.2565 M.ohm", "14.78%"],
-      ["9.", "", "500 M.ohm", "505.1733 Μ.ohm", "11.67%"],
-      ["10.", "", "1000 M.ohm", "1003.083 M.ohm", "6.22%"],
-    ];
+    // Extract and format calibration data from product parameters
+    let tableData = [];
+    
+    // Extract parameter details for the header row
+    let parameterDetails = "N/A";
+    let rangeDetails = "N/A";
+    
+    // Check if product has parameters
+    if (product.parameters && product.parameters.length > 0) {
+      const parameter = product.parameters[0];
+      parameterDetails = parameter.parameter || "DC high resistance @1000 Volt";
+      rangeDetails = parameter.ranges || "1000 M.ohm";
+      
+      // Check if readings are available
+      if (parameter.readings && parameter.readings.length > 0) {
+        // Map readings to table rows
+        tableData = parameter.readings.map((reading, index) => {
+          // Get DUC value (rName field typically contains the set value)
+          const ducValue = `${reading.rName || "N/A"} ${reading.rUnit || ""}`.trim();
+          
+          // Get standard value (usually stored in mean field)
+          const stdValue = `${reading.mean || "N/A"} ${reading.rUnit || ""}`.trim();
+          
+          // Get uncertainty (uc field contains the calculated uncertainty)
+          const uncertainty = reading.uc ? `${reading.uc}%` : "N/A";
+          
+          // First row includes parameter details
+          if (index === 0) {
+            return [
+              "1.", 
+              parameterDetails, 
+              ducValue, 
+              stdValue, 
+              uncertainty
+            ];
+          }
+          
+          // Subsequent rows don't repeat parameter details
+          return [
+            `${index + 1}.`, 
+            "", 
+            ducValue, 
+            stdValue, 
+            uncertainty
+          ];
+        });
+        
+        // If we don't have any readings, create a placeholder row
+        if (tableData.length === 0) {
+          tableData.push([
+            "1.", 
+            parameterDetails, 
+            "N/A", 
+            "N/A", 
+            "N/A"
+          ]);
+        }
+      } else {
+        // No readings available, create placeholder row with parameter info
+        tableData.push([
+          "1.", 
+          parameterDetails, 
+          "N/A", 
+          "N/A", 
+          "N/A"
+        ]);
+      }
+    } else {
+      // No parameters available, use defaults similar to the hardcoded table
+      console.warn("No calibration parameters found in product data, using default values");
+      tableData = [
+        ["1.", "DC high resistance @1000 Volt", "1 M.ohm", "1.0045 M.ohm", "5.75%"],
+        ["2.", "Range: 1000 M.ohm", "2 M.ohm", "2.0085 M.ohm", "14.37%"],
+        ["3.", "", "5 M.ohm", "5.0156 M.ohm", "11.51%"],
+        ["4.", "", "10 M.ohm", "10.0179 M.ohm", "5.71%"],
+        ["5.", "", "20 M.ohm", "20.0546 M.ohm", "14.39%"],
+        ["6.", "", "50 M.ohm", "48.0469 M.ohm", "12.02%"],
+        ["7.", "", "100 M.ohm", "95.1580 M.ohm", "6.07%"],
+        ["8.", "", "200 M.ohm", "195.2565 M.ohm", "14.78%"],
+        ["9.", "", "500 M.ohm", "505.1733 M.ohm", "11.67%"],
+        ["10.", "", "1000 M.ohm", "1003.083 M.ohm", "6.22%"],
+      ];
+    }
+    
+    // Log the table data for debugging
+    console.log("Calibration results table data:", tableData);
     
     // Draw table
     doc.autoTable({

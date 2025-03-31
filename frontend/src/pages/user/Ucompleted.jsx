@@ -127,58 +127,91 @@ const Ucompleted = () => {
       // Create unique document ID
       const documentId = `${selectedProduct._id}_${certificateNo.replace(/\//g, '_')}`;
       
-      // Create QR code data
+      // Create the direct URL for the QR code
+      const viewUrl = `${window.location.origin}/view-calibration/${documentId}`;
+      console.log("QR code will link to:", viewUrl);
+      
+      // Create QR code data for storage
       const qrData = {
         productId: selectedProduct._id,
         certificateNo: certificateNo,
         jobNo: jobNo,
         documentId: documentId,
         type: "calibration_certificate",
-        url: `${window.location.origin}/view-calibration/${documentId}`
+        url: viewUrl
       };
       
-      // Generate the PDF (first page only)
-      const doc = await generatePdf(selectedProduct, true, certificateNo);
-      
-      if (!doc) {
-        throw new Error("Failed to generate PDF");
+      try {
+        // Generate QR code data URL with the direct URL for better compatibility
+        const qrCodeDataUrl = await QRCode.toDataURL(viewUrl, {
+          errorCorrectionLevel: 'M',
+          margin: 1,
+          width: 200,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        });
+        
+        console.log("QR code generated successfully with URL:", viewUrl);
+        
+        // Generate the PDF (first page only)
+        const doc = await generatePdf(selectedProduct, true, certificateNo);
+        
+        if (!doc) {
+          throw new Error("Failed to generate PDF");
+        }
+        
+        console.log("PDF generated successfully, now adding QR code");
+        
+        // Get page dimensions
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        
+        // Add QR code to bottom left of page
+        doc.addImage(qrCodeDataUrl, 'PNG', 20, pageHeight - 40, 30, 30);
+        
+        // Debug information about QR placement
+        console.log("QR code placed at coordinates:", {
+          x: 20,
+          y: pageHeight - 40,
+          width: 30,
+          height: 30,
+          pageHeight: pageHeight
+        });
+        
+        // Add text explaining the QR code
+        doc.setFontSize(8);
+        doc.setTextColor(0, 0, 0);
+        doc.text("Scan this QR code to view the complete calibration certificate", 55, pageHeight - 25);
+        
+        // Save the PDF
+        doc.save(`Calibration_Certificate_${certificateNo.replace(/\//g, '_')}.pdf`);
+        console.log("PDF with QR code saved successfully");
+        
+        // Store certificate data for QR code lookup
+        const certificateData = {
+          product: selectedProduct,
+          certificateNo: certificateNo,
+          jobNo: jobNo,
+          documentId: documentId,
+          timestamp: new Date().toISOString()
+        };
+        
+        localStorage.setItem(`certificate_${documentId}`, JSON.stringify(certificateData));
+        console.log("Certificate data stored for QR lookup with ID:", documentId);
+        
+      } catch (qrError) {
+        console.error("Error generating QR code:", qrError);
+        throw new Error("Failed to generate QR code: " + qrError.message);
       }
-      
-      // Generate QR code data URL
-      const qrCodeDataUrl = await QRCode.toDataURL(JSON.stringify(qrData));
-      
-      // Add QR code to the bottom left corner of the PDF
-      const pageHeight = doc.internal.pageSize.height;
-      doc.addImage(qrCodeDataUrl, 'PNG', 20, pageHeight - 40, 30, 30);
-      
-      // Add text explaining the QR code
-      doc.setFontSize(8);
-      doc.setTextColor(0, 0, 0);
-      doc.text("Scan this QR code to view the complete calibration certificate", 55, pageHeight - 20);
-      // doc.text("including calibration results", 55, pageHeight - 35);
-      
-      // Save the PDF
-      doc.save(`Calibration_Certificate_${certificateNo.replace(/\//g, '_')}.pdf`);
-      
-      // Store certificate data for QR code lookup
-      // Save the product and certificate data in localStorage
-      const certificateData = {
-        product: selectedProduct,
-        certificateNo: certificateNo,
-        jobNo: jobNo,
-        documentId: documentId,
-        timestamp: new Date().toISOString()
-      };
-      
-      localStorage.setItem(`certificate_${documentId}`, JSON.stringify(certificateData));
-      console.log("Certificate data stored for QR lookup:", certificateData);
       
     } catch (error) {
       console.error("Error generating PDF with QR:", error);
-      setPdfError("Failed to generate PDF with QR code. See console for details.");
+      setPdfError("Failed to generate PDF with QR code: " + error.message);
     }
   };
-
+  
   if (isLoading) {
     return (
       <div className='flex justify-center items-center h-64'>
@@ -262,13 +295,22 @@ const Ucompleted = () => {
                 />
                 <div className='flex justify-end mt-4'>
                   <button
-                    className='bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors'
+                    className='bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors mr-2'
                     onClick={() => {
                       console.log("Download button clicked");
                       generatePdf(selectedProduct);
                     }}
                   >
                     Download Form
+                  </button>
+                  <button
+                    className='bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors'
+                    onClick={() => {
+                      console.log("Download with QR button clicked");
+                      generatePdfWithQR(selectedProduct);
+                    }}
+                  >
+                    Download with QR
                   </button>
                 </div>
               </div>
