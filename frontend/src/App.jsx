@@ -23,6 +23,7 @@ import AboutUs from "./pages/openingwindow/AboutUs.jsx";
 import Certification from "./pages/openingwindow/Certification.jsx";
 import IndustriesServed from "./pages/openingwindow/IndustriesServed.jsx";
 import Services from "./pages/openingwindow/Services.jsx";
+import ViewCalibration from "./pages/user/ViewCalibration.jsx";
 
 const App = () => {
   return (
@@ -53,6 +54,9 @@ const App = () => {
             element={<Certification />}
           />
         </Route>
+
+        {/* Add the ViewCalibration route at the top level */}
+        <Route path='/view-calibration/:documentId' element={<ViewCalibration />} />
 
         <Route
           path='/user'

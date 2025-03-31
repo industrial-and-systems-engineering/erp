@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
-import Ucard from "./components/Ucard.jsx";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
-import generatePdf from "./utils/pdfGeneration.js";
+import React, { useEffect, useState } from 'react';
+import Ucard from './components/Ucard.jsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import generatePdf from './utils/pdfGeneration.js';
+import QRCode from 'qrcode';
 
 const Ucompleted = () => {
   const [calibratedForms, setCalibratedForms] = useState([]);
@@ -34,57 +35,62 @@ const Ucompleted = () => {
   const toggleProductDetails = (product, parentForm) => {
     console.log("Selected product:", product);
     console.log("Parent form:", parentForm);
-
+    
     // Log key fields based on the actual structure we observed
     console.log("Product fields:", {
       instrumentDescription: product.instrumentDescription,
       make: product.make,
-      serialNo: product.serialNo,
+      serialNo: product.serialNo
     });
-
+    
     if (parentForm) {
       console.log("Parent form fields:", {
         organization: parentForm.organization,
         address: parentForm.address,
-        srfNo: parentForm.srfNo,
+        srfNo: parentForm.srfNo
       });
-
+      
       // Create enhanced product with correct field mapping
       const enhancedProduct = {
         ...product,
         _parentForm: parentForm,
-
+        
         // Extract organization as customer name
-        customerName:
-          parentForm.organization ||
-          product.organization ||
-          product.customerName ||
+        customerName: 
+          parentForm.organization || 
+          product.organization || 
+          product.customerName || 
           product.customer,
-
+        
         // Extract address
-        customerAddress: parentForm.address || product.address || product.customerAddress,
-
+        customerAddress: 
+          parentForm.address || 
+          product.address || 
+          product.customerAddress,
+        
         // Use instrumentDescription as the primary product name
-        name: product.instrumentDescription || product.name || product.description,
-
+        name: 
+          product.instrumentDescription || 
+          product.name || 
+          product.description,
+        
         // Other fields directly from the product
         make: product.make,
         serialNo: product.serialNo,
-
+        
         // Extract location information (new)
-        location: parentForm.calibrationFacilityAvailable || "At Laboratory",
-
+        location: product.calibrationFacilityAvailable || "At Laboratory",
+        
         // If there's a methodology in parameters, extract it
-        method:
-          product.parameters && product.parameters.length > 0
-            ? product.parameters[0].methodUsed
-            : null,
+        method: product.parameters && product.parameters.length > 0 
+                ? product.parameters[0].methodUsed 
+                : null
       };
-
+      
       console.log("Enhanced product with parent form data:", enhancedProduct);
-
-      setSelectedProduct((prevProduct) =>
-        prevProduct && prevProduct._id === product._id ? null : enhancedProduct
+      
+      setSelectedProduct(prevProduct =>
+        (prevProduct && prevProduct._id === product._id) ? null : enhancedProduct
       );
     } else {
       // For products without a parent form
@@ -93,20 +99,119 @@ const Ucompleted = () => {
         customerName: product.organization || product.customerName || product.customer,
         customerAddress: product.address || product.customerAddress,
         name: product.instrumentDescription || product.name || product.description,
-        location: product.calibrationFacilityAvailable || "At Laboratory", // Add location information here too
+        location: product.calibrationFacilityAvailable || "At Laboratory" // Add location information here too
       };
-
+      
       console.log("Enhanced product without parent form:", enhancedProduct);
-
-      setSelectedProduct((prevProduct) =>
-        prevProduct && prevProduct._id === product._id ? null : enhancedProduct
+      
+      setSelectedProduct(prevProduct =>
+        (prevProduct && prevProduct._id === product._id) ? null : enhancedProduct
       );
     }
-
     // Clear any previous PDF errors when selecting a new product
     setPdfError(null);
   };
 
+  // Add a new function to generate PDF with QR code
+  const generatePdfWithQR = async (selectedProduct) => {
+    try {
+      console.log("Generating PDF with QR code");
+      
+      // Generate certificate number for QR code data
+      const certificateNo = `ED/CAL/${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}/${new Date().getMonth() > 3 ? 
+        `${new Date().getFullYear()}-${new Date().getFullYear() + 1 - 2000}` : 
+        `${new Date().getFullYear() - 1}-${new Date().getFullYear() - 2000}`}`;
+      
+      const jobNo = certificateNo.split('/')[2]; // Extract job number from certificate number
+      
+      // Create unique document ID
+      const documentId = `${selectedProduct._id}_${certificateNo.replace(/\//g, '_')}`;
+      
+      // Create the direct URL for the QR code
+      const viewUrl = `${window.location.origin}/view-calibration/${documentId}`;
+      console.log("QR code will link to:", viewUrl);
+      
+      // Create QR code data for storage
+      const qrData = {
+        productId: selectedProduct._id,
+        certificateNo: certificateNo,
+        jobNo: jobNo,
+        documentId: documentId,
+        type: "calibration_certificate",
+        url: viewUrl
+      };
+      
+      try {
+        // Generate QR code data URL with the direct URL for better compatibility
+        const qrCodeDataUrl = await QRCode.toDataURL(viewUrl, {
+          errorCorrectionLevel: 'M',
+          margin: 1,
+          width: 200,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        });
+        
+        console.log("QR code generated successfully with URL:", viewUrl);
+        
+        // Generate the PDF (first page only)
+        const doc = await generatePdf(selectedProduct, true, certificateNo);
+        
+        if (!doc) {
+          throw new Error("Failed to generate PDF");
+        }
+        
+        console.log("PDF generated successfully, now adding QR code");
+        
+        // Get page dimensions
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        
+        // Add QR code to bottom left of page
+        doc.addImage(qrCodeDataUrl, 'PNG', 20, pageHeight - 40, 30, 30);
+        
+        // Debug information about QR placement
+        console.log("QR code placed at coordinates:", {
+          x: 20,
+          y: pageHeight - 40,
+          width: 30,
+          height: 30,
+          pageHeight: pageHeight
+        });
+        
+        // Add text explaining the QR code
+        doc.setFontSize(8);
+        doc.setTextColor(0, 0, 0);
+        doc.text("Scan this QR code to view the complete calibration certificate", 55, pageHeight - 25);
+        
+        // Save the PDF
+        doc.save(`Calibration_Certificate_${certificateNo.replace(/\//g, '_')}.pdf`);
+        console.log("PDF with QR code saved successfully");
+        
+        // Store certificate data for QR code lookup
+        const certificateData = {
+          product: selectedProduct,
+          certificateNo: certificateNo,
+          jobNo: jobNo,
+          documentId: documentId,
+          timestamp: new Date().toISOString()
+        };
+        
+        localStorage.setItem(`certificate_${documentId}`, JSON.stringify(certificateData));
+        console.log("Certificate data stored for QR lookup with ID:", documentId);
+        
+      } catch (qrError) {
+        console.error("Error generating QR code:", qrError);
+        throw new Error("Failed to generate QR code: " + qrError.message);
+      }
+      
+    } catch (error) {
+      console.error("Error generating PDF with QR:", error);
+      setPdfError("Failed to generate PDF with QR code: " + error.message);
+    }
+  };
+  
   if (isLoading) {
     return (
       <div className='flex justify-center items-center h-64'>
@@ -147,18 +252,9 @@ const Ucompleted = () => {
                     Product: {product.name || product.description || `#${productIndex + 1}`}
                   </p>
 
-                  {/* Enhanced display of customer information */}
-                  {(product.customer ||
-                    product.customerName ||
-                    form.customerName ||
-                    form.customer) && (
-                    <p className='text-gray-700'>
-                      Customer:{" "}
-                      {product.customer ||
-                        product.customerName ||
-                        form.customerName ||
-                        form.customer}
-                    </p>
+                  {/* Display customer information if available */}
+                  {(product.customer || form.customerName) && (
+                    <p className="text-gray-700">Customer: {product.customer || form.customerName}</p>
                   )}
 
                   <div className='flex justify-end mt-2'>
@@ -199,22 +295,22 @@ const Ucompleted = () => {
                 />
                 <div className='flex justify-end mt-4'>
                   <button
-                    className='bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors'
+                    className='bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors mr-2'
                     onClick={() => {
                       console.log("Download button clicked");
-                      // Add debug logging before generating PDF
-                      console.log("Customer info before PDF generation:", {
-                        customerName: selectedProduct.customerName || selectedProduct.customer,
-                        customerAddress: selectedProduct.customerAddress || selectedProduct.address,
-                        productName:
-                          selectedProduct.name ||
-                          selectedProduct.productName ||
-                          selectedProduct.description,
-                      });
                       generatePdf(selectedProduct);
                     }}
                   >
                     Download Form
+                  </button>
+                  <button
+                    className='bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors'
+                    onClick={() => {
+                      console.log("Download with QR button clicked");
+                      generatePdfWithQR(selectedProduct);
+                    }}
+                  >
+                    Download with QR
                   </button>
                 </div>
               </div>
