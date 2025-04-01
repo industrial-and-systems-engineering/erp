@@ -185,6 +185,7 @@ const ErrorDetectorForm = () => {
         setTableRows([{ ...emptyRow }]);
         clearSignature();
         alert("Form submitted successfully!");
+        navigate("/user");
 
       })
       .catch((err) => {
