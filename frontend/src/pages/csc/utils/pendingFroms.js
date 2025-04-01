@@ -5,7 +5,7 @@ export const usePendingFormsStore = create((set) => ({
     pendingForms: [],
     setPendingForms: (pendingForms) => set({ pendingForms }),
 
-    fetchPendingForms: async() => {
+    fetchPendingForms: async () => {
         try {
             const response = await fetch("/api/technician/pending");
 
@@ -22,10 +22,10 @@ export const usePendingFormsStore = create((set) => ({
         }
     },
 
-    updateForm: async(fid, pid, details) => {
+    updateForm: async (fid, pid, details) => {
         console.log("updateForm called with fid:", fid, "pid:", pid, "details:", details);
         try {
-            const response = await fetch(`/api/technician/update/${pid}/${fid}`, {
+            const response = await fetch(`/api/technician/updateform/${fid}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -88,7 +88,7 @@ export const usePendingFormsStore = create((set) => ({
 
 
 
-    updateFormDetails: async(formId, details) => {
+    updateFormDetails: async (formId, details) => {
         try {
             if (!formId) {
                 return { success: false, message: "Form ID is required" };
@@ -131,7 +131,7 @@ export const usePendingFormsStore = create((set) => ({
                 // Otherwise, update the form details in the list.
                 set((state) => ({
                     pendingForms: state.pendingForms.map((form) =>
-                        form._id === formId ? {...form, ...details } : form
+                        form._id === formId ? { ...form, ...details } : form
                     )
                 }));
             }
@@ -145,7 +145,7 @@ export const usePendingFormsStore = create((set) => ({
 
 
 
-    markFormCompleted: async(formId, formData) => {
+    markFormCompleted: async (formId, formData) => {
         try {
             if (!formId) {
                 return {
