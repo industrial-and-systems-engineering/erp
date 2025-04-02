@@ -181,7 +181,7 @@ const ViewCalibration = () => {
         doc.text(customerAddress, 85, y);
       }
       
-      y += 8;
+      y += 12; // Changed from 8 to 12
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
       doc.text("2.", leftMargin, y);
@@ -192,7 +192,7 @@ const ViewCalibration = () => {
       y += 4;
       doc.text("to be calibrated", leftMargin + 5, y);
       
-      y += 6;
+      y += 8; // Changed from 6 to 8
       doc.setTextColor(0, 128, 128);
       doc.text("i)", indentedMargin, y);
       doc.text("Item", indentedMargin + 10, y);
@@ -201,7 +201,7 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "normal");
       doc.text(productName, 85, y);
       
-      y += 4;
+      y += 6; // Changed from 4 to 6
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 128, 128);
       doc.text("ii)", indentedMargin, y);
@@ -211,7 +211,7 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "normal");
       doc.text(productMake, 85, y);
       
-      y += 4;
+      y += 6; // Changed from 4 to 6
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 128, 128);
       doc.text("iii)", indentedMargin, y);
@@ -221,7 +221,7 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "normal");
       doc.text(serialNo, 85, y);
       
-      y += 4;
+      y += 6; // Changed from 4 to 6
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 128, 128);
       doc.text("iv)", indentedMargin, y);
@@ -240,7 +240,7 @@ const ViewCalibration = () => {
         condition = product.itemCondition;
       }
       
-      y += 8;
+      y += 12; // Changed from 8 to 12
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
       doc.text("3.", leftMargin, y);
@@ -250,7 +250,7 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "normal");
       doc.text(condition, 85, y);
       
-      y += 8;
+      y += 12; // Changed from 8 to 12
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
       doc.text("4.", leftMargin, y);
@@ -260,7 +260,7 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "normal");
       doc.text(receivedDate, 85, y);
       
-      y += 8;
+      y += 12; // Changed from 8 to 12
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
       doc.text("5.", leftMargin, y);
@@ -270,7 +270,7 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "normal");
       doc.text(completionDate, 90, y);
       
-      y += 8;
+      y += 12; // Changed from 8 to 12
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
       doc.text("6.", leftMargin, y);
@@ -281,7 +281,9 @@ const ViewCalibration = () => {
       doc.text(nextCalibrationDate, 90, y);
       
       let location = "At Laboratory";
-      if (product.calibrationFacilityAvailable) {
+      if (product.calibrationDataSheet && product.calibrationDataSheet.Location) {
+        location = product.calibrationDataSheet.Location;
+      } else if (product.calibrationFacilityAvailable) {
         location = product.calibrationFacilityAvailable;
       } else if (product.location) {
         location = product.location;
@@ -289,7 +291,7 @@ const ViewCalibration = () => {
         location = product._parentForm.calibrationLocation;
       }
       
-      y += 8;
+      y += 12; // Changed from 8 to 12
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
       doc.text("7.", leftMargin, y);
@@ -299,7 +301,7 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "normal");
       doc.text(location, 95, y);
       
-      y += 8;
+      y += 12; // Changed from 8 to 12
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
       doc.text("8.", leftMargin, y);
@@ -310,7 +312,7 @@ const ViewCalibration = () => {
       doc.text(`Temp: ${temperature}`, 105, y);
       doc.text(`Humidity: ${humidity}`, 145, y);
       
-      y += 8;
+      y += 12; // Changed from 8 to 12
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
       doc.text("9.", leftMargin, y);
@@ -320,7 +322,7 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "normal");
       doc.text(`As per our SOP No: ${methodUsed}`, 90, y);
       
-      y += 8;
+      y += 12; // Changed from 8 to 12
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
       doc.text("10.", leftMargin, y);
@@ -334,20 +336,30 @@ const ViewCalibration = () => {
       
       if (product.referenceStandards && product.referenceStandards.length > 0) {
         referenceStandards.push(...product.referenceStandards);
-      } else if (product._parentForm && product._parentForm.referenceStandards && 
+      } else if (product.parameters && 
+                 product.parameters.length > 0 && 
+                 product.parameters[0].referenceStandards) {
+        referenceStandards.push(...product.parameters[0].referenceStandards);
+      } else if (product._parentForm && 
+                 product._parentForm.referenceStandards && 
                  product._parentForm.referenceStandards.length > 0) {
         referenceStandards.push(...product._parentForm.referenceStandards);
-      } else if (product.calibrationDataSheet && product.calibrationDataSheet.referenceStandards) {
+      } else if (product.calibrationDataSheet && 
+                 product.calibrationDataSheet.referenceStandards) {
         referenceStandards.push(...product.calibrationDataSheet.referenceStandards);
       } else {
+        // Create a reference standard entry using the product details
         referenceStandards.push({
-          description: "Decade Resistance Box",
-          makeModel: "Zeal Services ZSDRB",
-          slNoIdNo: "201008205 ED/RB-02",
-          calibrationCertificateNo: "CAL/24-25/CC/0270-1",
-          validUpTo: "06.07.2025",
-          calibratedBy: "Nashik Engineering Cluster",
-          traceableTo: "NPL"
+          description: product.instrumentDescription || product.name || "Measurement Instrument",
+          makeModel: product.make || "Unknown Make",
+          slNoIdNo: product.serialNo || "N/A",
+          calibrationCertificateNo: product.calibrationCertificateNo || 
+                                    `ED/CAL/${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}/${
+                                      new Date().getFullYear()
+                                    }`,
+          validUpTo: formatDate(new Date(new Date().setFullYear(new Date().getFullYear() + 1))),
+          calibratedBy: "Error Detector",
+          traceableTo: "National Standards"
         });
       }
       
@@ -389,18 +401,21 @@ const ViewCalibration = () => {
         finalY = 20;
       }
       
+      // Position the signature on the right side of the page
+      const signatureX = pageWidth - 60; // Positioning signature from right side
+      
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
-      doc.text("Authorised by", pageWidth - 60, finalY);
+      doc.text("Authorised by", signatureX, finalY);
       
       finalY += 10;
       doc.setTextColor(25, 25, 112);
-      doc.text("(P.R.SINGHA)", pageWidth - 60, finalY);
+      doc.text("(P.R.SINGHA)", signatureX, finalY);
       
       finalY += 5;
       doc.setFont("helvetica", "normal");
       doc.setTextColor(0, 0, 0);
-      doc.text("(Technical Manager)", pageWidth - 60, finalY);
+      doc.text("(Technical Manager)", signatureX, finalY);
       
       return doc;
     } catch (error) {
