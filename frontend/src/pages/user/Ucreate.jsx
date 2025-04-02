@@ -10,14 +10,14 @@ const ErrorDetectorForm = () => {
 
   const defaultConditionOfProduct = "technician will enter";
   const defaultItemEnclosed = "labworker will enter";
-  const availableMethods = [
-    "ED/SOP/E-001(A) - Calibration of Ammeter",
-    "ED/SOP/E-002(S) - Calibration of Megger/DC Voltage/Resistance",
-    "ED/SOP/E-003(S) - Temperature Controller/Indicator/Recorder - Thermocouple & RTD",
-    "ED/SOP/E-004(S) - Calibration of Voltmeter",
-    "ED/SOP/E-005(S) - Measurement of AC/DC Voltage, Current, and DC Resistance",
-    "ED/SOP/E-006(S) - Temperature Calibrator/Source/Process Source - Thermocouples & RTD",
-  ];
+  // const availableMethods = [
+  //   "ED/SOP/E-001(A) - Calibration of Ammeter",
+  //   "ED/SOP/E-002(S) - Calibration of Megger/DC Voltage/Resistance",
+  //   "ED/SOP/E-003(S) - Temperature Controller/Indicator/Recorder - Thermocouple & RTD",
+  //   "ED/SOP/E-004(S) - Calibration of Voltmeter",
+  //   "ED/SOP/E-005(S) - Measurement of AC/DC Voltage, Current, and DC Resistance",
+  //   "ED/SOP/E-006(S) - Temperature Calibrator/Source/Process Source - Thermocouples & RTD",
+  // ];
 
   const [formData, setFormData] = useState({
     srfNo: "kpg/24-25/formno",
@@ -36,7 +36,7 @@ const ErrorDetectorForm = () => {
     reviewRequest: "",
     calibrationFacilityAvailable: "",
     calibrationServiceDoneByExternalAgency: "",
-    calibrationMethodUsed: "",
+    // calibrationMethodUsed: "",
     eSignature: "",
     signerName: "",
   });
@@ -60,7 +60,7 @@ const ErrorDetectorForm = () => {
         parameter: "",
         ranges: "",
         accuracy: "",
-        methodUsed: "",
+        // methodUsed: "",
         calibrationStatus: "",
         calibratedDate: "",
         remarks: "",
@@ -100,8 +100,8 @@ const ErrorDetectorForm = () => {
     const nonEmptyRows = tableRows.filter(
       (row) =>
         row.parameters[0].instrumentDescription &&
-        row.parameters[0].serialNo &&
-        row.parameters[0].methodUsed
+        row.parameters[0].serialNo 
+        //row.parameters[0].methodUsed
     );
 
     if (nonEmptyRows.length > 15) {
@@ -115,7 +115,7 @@ const ErrorDetectorForm = () => {
       ...row,
       instrumentDescription: row.parameters[0].instrumentDescription,
       serialNo: row.parameters[0].serialNo,
-      methodUsed: row.parameters[0].methodUsed,
+      //methodUsed: row.parameters[0].methodUsed,
       calibratedDate: row.calibratedDate ? new Date(row.calibratedDate).toISOString() : null,
     }));
     // console.log(formattedProducts);
@@ -391,7 +391,7 @@ const ErrorDetectorForm = () => {
                         <th className='px-3 py-3 text-xs font-medium text-left'>Ranges</th>
                         <th className='px-3 py-3 text-xs font-medium text-left'>Accuracy</th>
                         {/* NEW COLUMN for Method Used */}
-                        <th className='px-3 py-3 text-xs font-medium text-left'>Method Used</th>
+                        {/* <th className='px-3 py-3 text-xs font-medium text-left'>Method Used</th> */}
                       </tr>
                     </thead>
                     <tbody className='bg-white divide-y divide-gray-200'>
@@ -543,7 +543,7 @@ const ErrorDetectorForm = () => {
                           </td>
 
                           {/* NEW: Method Used */}
-                          <td className='px-2 py-2'>
+                          {/* <td className='px-2 py-2'>
                             <select
                               value={row.methodUsed}
                               onChange={(e) =>
@@ -575,7 +575,7 @@ const ErrorDetectorForm = () => {
                                 </option>
                               ))}
                             </select>
-                          </td>
+                          </td> */}
                         </tr>
                       ))}
                     </tbody>
