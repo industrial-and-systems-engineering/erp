@@ -36,7 +36,6 @@ const Ucompleted = () => {
     console.log("Selected product:", product);
     console.log("Parent form:", parentForm);
     
-    // Log key fields based on the actual structure we observed
     console.log("Product fields:", {
       instrumentDescription: product.instrumentDescription,
       make: product.make,
@@ -50,38 +49,31 @@ const Ucompleted = () => {
         srfNo: parentForm.srfNo
       });
       
-      // Create enhanced product with correct field mapping
       const enhancedProduct = {
         ...product,
         _parentForm: parentForm,
         
-        // Extract organization as customer name
         customerName: 
           parentForm.organization || 
           product.organization || 
           product.customerName || 
           product.customer,
         
-        // Extract address
         customerAddress: 
           parentForm.address || 
           product.address || 
           product.customerAddress,
         
-        // Use instrumentDescription as the primary product name
         name: 
           product.instrumentDescription || 
           product.name || 
           product.description,
         
-        // Other fields directly from the product
         make: product.make,
         serialNo: product.serialNo,
         
-        // Extract location information (new)
         location: product.calibrationFacilityAvailable || "At Laboratory",
         
-        // If there's a methodology in parameters, extract it
         method: product.parameters && product.parameters.length > 0 
                 ? product.parameters[0].methodUsed 
                 : null
@@ -93,13 +85,12 @@ const Ucompleted = () => {
         (prevProduct && prevProduct._id === product._id) ? null : enhancedProduct
       );
     } else {
-      // For products without a parent form
       const enhancedProduct = {
         ...product,
         customerName: product.organization || product.customerName || product.customer,
         customerAddress: product.address || product.customerAddress,
         name: product.instrumentDescription || product.name || product.description,
-        location: product.calibrationFacilityAvailable || "At Laboratory" // Add location information here too
+        location: product.calibrationFacilityAvailable || "At Laboratory"
       };
       
       console.log("Enhanced product without parent form:", enhancedProduct);
@@ -108,30 +99,40 @@ const Ucompleted = () => {
         (prevProduct && prevProduct._id === product._id) ? null : enhancedProduct
       );
     }
-    // Clear any previous PDF errors when selecting a new product
     setPdfError(null);
   };
 
-  // Add a new function to generate PDF with QR code
   const generatePdfWithQR = async (selectedProduct) => {
     try {
       console.log("Generating PDF with QR code");
       
-      // Generate certificate number for QR code data
+      if (!selectedProduct.referenceStandards || selectedProduct.referenceStandards.length === 0) {
+        selectedProduct.referenceStandards = [{
+          description: selectedProduct.instrumentDescription || selectedProduct.name || "Measurement Instrument",
+          makeModel: selectedProduct.make || "Unknown Make",
+          slNoIdNo: selectedProduct.serialNo || "N/A",
+          calibrationCertificateNo: selectedProduct.calibrationCertificateNo || 
+                                   `ED/CAL/${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}/${
+                                     new Date().getFullYear()
+                                   }`,
+          validUpTo: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+                     .toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: 'numeric'}).replace(/\//g, '.'),
+          calibratedBy: "Error Detector",
+          traceableTo: "National Standards"
+        }];
+      }
+      
       const certificateNo = `ED/CAL/${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}/${new Date().getMonth() > 3 ? 
         `${new Date().getFullYear()}-${new Date().getFullYear() + 1 - 2000}` : 
         `${new Date().getFullYear() - 1}-${new Date().getFullYear() - 2000}`}`;
       
-      const jobNo = certificateNo.split('/')[2]; // Extract job number from certificate number
+      const jobNo = certificateNo.split('/')[2];
       
-      // Create unique document ID
       const documentId = `${selectedProduct._id}_${certificateNo.replace(/\//g, '_')}`;
       
-      // Create the direct URL for the QR code
       const viewUrl = `${window.location.origin}/view-calibration/${documentId}`;
       console.log("QR code will link to:", viewUrl);
       
-      // Create QR code data for storage
       const qrData = {
         productId: selectedProduct._id,
         certificateNo: certificateNo,
@@ -142,7 +143,6 @@ const Ucompleted = () => {
       };
       
       try {
-        // Generate QR code data URL with the direct URL for better compatibility
         const qrCodeDataUrl = await QRCode.toDataURL(viewUrl, {
           errorCorrectionLevel: 'M',
           margin: 1,
@@ -155,7 +155,6 @@ const Ucompleted = () => {
         
         console.log("QR code generated successfully with URL:", viewUrl);
         
-        // Generate the PDF (first page only)
         const doc = await generatePdf(selectedProduct, true, certificateNo);
         
         if (!doc) {
@@ -164,14 +163,11 @@ const Ucompleted = () => {
         
         console.log("PDF generated successfully, now adding QR code");
         
-        // Get page dimensions
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         
-        // Add QR code to bottom left of page
         doc.addImage(qrCodeDataUrl, 'PNG', 20, pageHeight - 40, 30, 30);
         
-        // Debug information about QR placement
         console.log("QR code placed at coordinates:", {
           x: 20,
           y: pageHeight - 40,
@@ -180,16 +176,13 @@ const Ucompleted = () => {
           pageHeight: pageHeight
         });
         
-        // Add text explaining the QR code
         doc.setFontSize(8);
         doc.setTextColor(0, 0, 0);
         doc.text("Scan this QR code to view the complete calibration certificate", 55, pageHeight - 25);
         
-        // Save the PDF
         doc.save(`Calibration_Certificate_${certificateNo.replace(/\//g, '_')}.pdf`);
         console.log("PDF with QR code saved successfully");
         
-        // Store certificate data for QR code lookup
         const certificateData = {
           product: selectedProduct,
           certificateNo: certificateNo,
@@ -233,7 +226,6 @@ const Ucompleted = () => {
 
       {calibratedForms.length > 0 ? (
         <div className='grid grid-cols-1 md:grid-cols-4 gap-6'>
-          {/* Product List Sidebar */}
           <div className='bg-gray-50 rounded-lg shadow-md p-4 col-span-1 overflow-y-auto max-h-[600px]'>
             <h2 className='font-semibold text-lg mb-4 text-gray-700 border-b pb-2'>
               Completed Products
@@ -252,7 +244,6 @@ const Ucompleted = () => {
                     Product: {product.name || product.description || `#${productIndex + 1}`}
                   </p>
 
-                  {/* Display customer information if available */}
                   {(product.customer || form.customerName) && (
                     <p className="text-gray-700">Customer: {product.customer || form.customerName}</p>
                   )}
@@ -284,7 +275,6 @@ const Ucompleted = () => {
             )}
           </div>
 
-          {/* Product Details Panel */}
           <div className='col-span-3 bg-white rounded-lg shadow-md overflow-y-auto max-h-[600px]'>
             {selectedProduct ? (
               <div className='p-4'>

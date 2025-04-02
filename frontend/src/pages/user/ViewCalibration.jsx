@@ -334,20 +334,30 @@ const ViewCalibration = () => {
       
       if (product.referenceStandards && product.referenceStandards.length > 0) {
         referenceStandards.push(...product.referenceStandards);
-      } else if (product._parentForm && product._parentForm.referenceStandards && 
+      } else if (product.parameters && 
+                 product.parameters.length > 0 && 
+                 product.parameters[0].referenceStandards) {
+        referenceStandards.push(...product.parameters[0].referenceStandards);
+      } else if (product._parentForm && 
+                 product._parentForm.referenceStandards && 
                  product._parentForm.referenceStandards.length > 0) {
         referenceStandards.push(...product._parentForm.referenceStandards);
-      } else if (product.calibrationDataSheet && product.calibrationDataSheet.referenceStandards) {
+      } else if (product.calibrationDataSheet && 
+                 product.calibrationDataSheet.referenceStandards) {
         referenceStandards.push(...product.calibrationDataSheet.referenceStandards);
       } else {
+        // Create a reference standard entry using the product details
         referenceStandards.push({
-          description: "Decade Resistance Box",
-          makeModel: "Zeal Services ZSDRB",
-          slNoIdNo: "201008205 ED/RB-02",
-          calibrationCertificateNo: "CAL/24-25/CC/0270-1",
-          validUpTo: "06.07.2025",
-          calibratedBy: "Nashik Engineering Cluster",
-          traceableTo: "NPL"
+          description: product.instrumentDescription || product.name || "Measurement Instrument",
+          makeModel: product.make || "Unknown Make",
+          slNoIdNo: product.serialNo || "N/A",
+          calibrationCertificateNo: product.calibrationCertificateNo || 
+                                    `ED/CAL/${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}/${
+                                      new Date().getFullYear()
+                                    }`,
+          validUpTo: formatDate(new Date(new Date().setFullYear(new Date().getFullYear() + 1))),
+          calibratedBy: "Error Detector",
+          traceableTo: "National Standards"
         });
       }
       
@@ -389,18 +399,21 @@ const ViewCalibration = () => {
         finalY = 20;
       }
       
+      // Position the signature on the right side of the page
+      const signatureX = pageWidth - 60; // Positioning signature from right side
+      
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
-      doc.text("Authorised by", pageWidth - 60, finalY);
+      doc.text("Authorised by", signatureX, finalY);
       
       finalY += 10;
       doc.setTextColor(25, 25, 112);
-      doc.text("(P.R.SINGHA)", pageWidth - 60, finalY);
+      doc.text("(P.R.SINGHA)", signatureX, finalY);
       
       finalY += 5;
       doc.setFont("helvetica", "normal");
       doc.setTextColor(0, 0, 0);
-      doc.text("(Technical Manager)", pageWidth - 60, finalY);
+      doc.text("(Technical Manager)", signatureX, finalY);
       
       return doc;
     } catch (error) {
