@@ -20,7 +20,7 @@ const ErrorDetectorForm = () => {
   // ];
 
   const [formData, setFormData] = useState({
-    srfNo: "kpg/24-25/formno",
+    srfNo: "ED/24-25/formno",
     date: today,
     probableDate: today,
     organization: "",
