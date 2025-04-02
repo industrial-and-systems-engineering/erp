@@ -51,6 +51,7 @@ const ErrorDetectorForm = () => {
   const [signatureData, setSignatureData] = useState(null);
   const [isSignatureEmpty, setIsSignatureEmpty] = useState(true);
 
+  // First, update the emptyRow structure to better match the schema
   const emptyRow = {
     instrumentDescription: "",
     make: "",
@@ -60,7 +61,6 @@ const ErrorDetectorForm = () => {
         parameter: "",
         ranges: "",
         accuracy: "",
-        // methodUsed: "",
         calibrationStatus: "",
         calibratedDate: "",
         remarks: "",
@@ -69,6 +69,9 @@ const ErrorDetectorForm = () => {
   };
 
   const [tableRows, setTableRows] = useState([{ ...emptyRow }]);
+  const removeProduct = (indexToRemove) => {
+    setTableRows((prevRows) => prevRows.filter((_, index) => index !== indexToRemove));
+  };
 
   const clearSignature = () => {
     sigCanvas.current.clear();
@@ -89,6 +92,21 @@ const ErrorDetectorForm = () => {
       return;
     }
 
+    // Validate that each row has at least one parameter with required fields
+    const invalidRows = tableRows.filter(
+      (row) =>
+        row.instrumentDescription &&
+        row.serialNo &&
+        !row.parameters.some((param) => param.parameter && param.ranges && param.accuracy)
+    );
+
+    if (invalidRows.length > 0) {
+      alert(
+        "Each instrument must have at least one parameter with parameter name, ranges, and accuracy filled in."
+      );
+      return;
+    }
+
     const formattedFormData = {
       ...formData,
       eSignature: signatureData,
@@ -97,12 +115,8 @@ const ErrorDetectorForm = () => {
       decisionRules: decisionRules,
     };
 
-    const nonEmptyRows = tableRows.filter(
-      (row) =>
-        row.parameters[0].instrumentDescription &&
-        row.parameters[0].serialNo 
-        //row.parameters[0].methodUsed
-    );
+    // Filter out empty rows
+    const nonEmptyRows = tableRows.filter((row) => row.instrumentDescription && row.serialNo);
 
     if (nonEmptyRows.length > 15) {
       alert(
@@ -111,14 +125,14 @@ const ErrorDetectorForm = () => {
       return;
     }
 
+    // Format the products data to match the schema structure
     const formattedProducts = nonEmptyRows.map((row) => ({
-      ...row,
-      instrumentDescription: row.parameters[0].instrumentDescription,
-      serialNo: row.parameters[0].serialNo,
-      //methodUsed: row.parameters[0].methodUsed,
-      calibratedDate: row.calibratedDate ? new Date(row.calibratedDate).toISOString() : null,
+      instrumentDescription: row.instrumentDescription,
+      make: row.make,
+      serialNo: row.serialNo,
+      parameters: row.parameters.filter((param) => param.parameter && param.ranges),
     }));
-    // console.log(formattedProducts);
+
     const requestData = {
       form: formattedFormData,
       products: formattedProducts,
@@ -377,212 +391,295 @@ const ErrorDetectorForm = () => {
                 </div>
               </div>
 
-              <div className='bg-gray-50 rounded-lg border border-gray-200 overflow-hidden'>
+              <div className='bg-white rounded-xl shadow-lg overflow-hidden'>
                 <div className='overflow-x-auto'>
                   <table className='min-w-full divide-y divide-gray-200'>
                     <thead>
-                      <tr className='bg-blue-700 text-white'>
-                        <th className='px-3 py-3 text-xs font-medium text-left'>
-                          Instrument Description
+                      <tr className='bg-gradient-to-r from-blue-600 to-blue-700 text-white'>
+                        <th className='px-4 py-3.5 text-xs font-medium text-left tracking-wider'>
+                          Instrument
                         </th>
-                        <th className='px-3 py-3 text-xs font-medium text-left'>Make</th>
-                        <th className='px-3 py-3 text-xs font-medium text-left'>Serial No</th>
-                        <th className='px-3 py-3 text-xs font-medium text-left'>Parameter</th>
-                        <th className='px-3 py-3 text-xs font-medium text-left'>Ranges</th>
-                        <th className='px-3 py-3 text-xs font-medium text-left'>Accuracy</th>
-                        {/* NEW COLUMN for Method Used */}
-                        {/* <th className='px-3 py-3 text-xs font-medium text-left'>Method Used</th> */}
+                        <th className='px-4 py-3.5 text-xs font-medium text-left tracking-wider'>
+                          Make
+                        </th>
+                        <th className='px-4 py-3.5 text-xs font-medium text-left tracking-wider'>
+                          Serial No
+                        </th>
+                        <th className='px-4 py-3.5 text-xs font-medium text-left tracking-wider'>
+                          Parameters
+                        </th>
+                        <th className='px-4 py-3.5 text-xs font-medium text-left tracking-wider'>
+                          Actions
+                        </th>
                       </tr>
                     </thead>
-                    <tbody className='bg-white divide-y divide-gray-200'>
-                      {tableRows.map((row, index) => (
-                        <tr
-                          key={index}
-                          className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                        >
-                          {/* Instrument Description */}
-                          <td className='px-2 py-2'>
-                            <input
-                              type='text'
-                              value={row.parameters?.[0]?.instrumentDescription || ""}
-                              onChange={(e) =>
-                                setTableRows((prevRows) =>
-                                  prevRows.map((r, i) =>
-                                    i === index
-                                      ? {
-                                          ...r,
-                                          parameters: [
-                                            {
-                                              ...r.parameters[0],
-                                              instrumentDescription: e.target.value,
-                                            },
-                                          ],
-                                        }
-                                      : r
+                    <tbody className='divide-y divide-gray-200'>
+                      {tableRows.map((row, rowIndex) => (
+                        <React.Fragment key={rowIndex}>
+                          {/* Main instrument row */}
+                          <tr
+                            className={`${
+                              rowIndex % 2 === 0 ? "bg-white" : "bg-gray-50"
+                            } hover:bg-gray-100 transition-colors`}
+                          >
+                            <td className='px-4 py-4'>
+                              <input
+                                type='text'
+                                value={row.instrumentDescription || ""}
+                                onChange={(e) =>
+                                  setTableRows((prevRows) =>
+                                    prevRows.map((r, i) =>
+                                      i === rowIndex
+                                        ? { ...r, instrumentDescription: e.target.value }
+                                        : r
+                                    )
                                   )
-                                )
-                              }
-                              className='w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
-                            />
-                          </td>
-                          {/* make */}
-                          <td className='px-2 py-2'>
-                            <input
-                              type='text'
-                              value={row.make || ""}
-                              onChange={(e) =>
-                                setTableRows((prevRows) =>
-                                  prevRows.map((r, i) =>
-                                    i === index ? { ...r, make: e.target.value } : r
+                                }
+                                className='w-full p-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all'
+                                placeholder='Enter description'
+                              />
+                            </td>
+                            <td className='px-4 py-4'>
+                              <input
+                                type='text'
+                                value={row.make || ""}
+                                onChange={(e) =>
+                                  setTableRows((prevRows) =>
+                                    prevRows.map((r, i) =>
+                                      i === rowIndex ? { ...r, make: e.target.value } : r
+                                    )
                                   )
-                                )
-                              }
-                              className='w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
-                            />
-                          </td>
-
-                          {/* Serial No */}
-                          <td className='px-2 py-2'>
-                            <input
-                              type='text'
-                              value={row.parameters?.[0]?.serialNo || ""}
-                              onChange={(e) =>
-                                setTableRows((prevRows) =>
-                                  prevRows.map((r, i) =>
-                                    i === index
-                                      ? {
-                                          ...r,
-                                          parameters: [
-                                            {
-                                              ...r.parameters[0],
-                                              serialNo: e.target.value,
-                                            },
-                                          ],
-                                        }
-                                      : r
+                                }
+                                className='w-full p-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all'
+                                placeholder='Enter make'
+                              />
+                            </td>
+                            <td className='px-4 py-4'>
+                              <input
+                                type='text'
+                                value={row.serialNo || ""}
+                                onChange={(e) =>
+                                  setTableRows((prevRows) =>
+                                    prevRows.map((r, i) =>
+                                      i === rowIndex ? { ...r, serialNo: e.target.value } : r
+                                    )
                                   )
-                                )
-                              }
-                              className='w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
-                            />
-                          </td>
-
-                          {/* Parameter */}
-                          <td className='px-2 py-2'>
-                            <input
-                              type='text'
-                              value={row.parameters?.[0]?.parameter || ""}
-                              onChange={(e) =>
-                                setTableRows((prevRows) =>
-                                  prevRows.map((r, i) =>
-                                    i === index
-                                      ? {
-                                          ...r,
-                                          parameters: [
-                                            {
-                                              ...r.parameters[0],
-                                              parameter: e.target.value,
-                                            },
-                                          ],
-                                        }
-                                      : r
-                                  )
-                                )
-                              }
-                              className='w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
-                            />
-                          </td>
-
-                          {/* Ranges */}
-                          <td className='px-2 py-2'>
-                            <input
-                              type='text'
-                              value={row.parameters?.[0]?.ranges || ""}
-                              onChange={(e) =>
-                                setTableRows((prevRows) =>
-                                  prevRows.map((r, i) =>
-                                    i === index
-                                      ? {
-                                          ...r,
-                                          parameters: [
-                                            {
-                                              ...r.parameters[0],
-                                              ranges: e.target.value,
-                                            },
-                                          ],
-                                        }
-                                      : r
-                                  )
-                                )
-                              }
-                              className='w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
-                            />
-                          </td>
-
-                          {/* Accuracy */}
-                          <td className='px-2 py-2'>
-                            <input
-                              type='text'
-                              value={row.parameters?.[0]?.accuracy || ""}
-                              onChange={(e) =>
-                                setTableRows((prevRows) =>
-                                  prevRows.map((r, i) =>
-                                    i === index
-                                      ? {
-                                          ...r,
-                                          parameters: [
-                                            { ...r.parameters[0], accuracy: e.target.value },
-                                          ],
-                                        }
-                                      : r
-                                  )
-                                )
-                              }
-                              className='w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
-                            />
-                          </td>
-
-                          {/* NEW: Method Used */}
-                          {/* <td className='px-2 py-2'>
-                            <select
-                              value={row.methodUsed}
-                              onChange={(e) =>
-                                setTableRows((prevRows) =>
-                                  prevRows.map((r, i) =>
-                                    i === index
-                                      ? {
-                                          ...r,
-                                          parameters: [
-                                            {
-                                              ...r.parameters[0],
-                                              methodUsed: e.target.value,
-                                            },
-                                          ],
-                                        }
-                                      : r
-                                  )
-                                )
-                              }
-                              className='w-full p-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
-                            >
-                              <option value=''>-- Select Method --</option>
-                              {availableMethods.map((method, mIndex) => (
-                                <option
-                                  key={mIndex}
-                                  value={method}
+                                }
+                                className='w-full p-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all'
+                                placeholder='Enter serial no'
+                              />
+                            </td>
+                            <td className='px-4 py-4'>
+                              <button
+                                type='button'
+                                onClick={() => {
+                                  setTableRows((prevRows) =>
+                                    prevRows.map((r, i) =>
+                                      i === rowIndex
+                                        ? {
+                                            ...r,
+                                            parameters: [
+                                              ...r.parameters,
+                                              {
+                                                parameter: "",
+                                                ranges: "",
+                                                accuracy: "",
+                                                calibrationStatus: "",
+                                                calibratedDate: "",
+                                                remarks: "",
+                                              },
+                                            ],
+                                          }
+                                        : r
+                                    )
+                                  );
+                                }}
+                                className='px-3 py-2 bg-blue-600 text-white rounded-md text-xs hover:bg-blue-700 transition-colors flex items-center shadow-sm'
+                              >
+                                <svg
+                                  xmlns='http://www.w3.org/2000/svg'
+                                  className='h-4 w-4 mr-1'
+                                  viewBox='0 0 20 20'
+                                  fill='currentColor'
                                 >
-                                  {method}
-                                </option>
-                              ))}
-                            </select>
-                          </td> */}
-                        </tr>
+                                  <path
+                                    fillRule='evenodd'
+                                    d='M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z'
+                                    clipRule='evenodd'
+                                  />
+                                </svg>
+                                Add Parameter
+                              </button>
+                            </td>
+                            <td className='px-4 py-4'>
+                              <button
+                                type='button'
+                                onClick={() => removeProduct(rowIndex)}
+                                className='px-3 py-2 bg-red-600 text-white rounded-md text-xs hover:bg-red-700 transition-colors flex items-center shadow-sm'
+                              >
+                                <svg
+                                  xmlns='http://www.w3.org/2000/svg'
+                                  className='h-4 w-4 mr-1'
+                                  viewBox='0 0 20 20'
+                                  fill='currentColor'
+                                >
+                                  <path
+                                    fillRule='evenodd'
+                                    d='M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z'
+                                    clipRule='evenodd'
+                                  />
+                                </svg>
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+
+                          {/* Parameter rows - only show if there are parameters */}
+                          {row.parameters.length > 0 && (
+                            <tr>
+                              <td
+                                colSpan='5'
+                                className='p-0'
+                              >
+                                <div className='bg-blue-50 p-4 border-t border-b border-blue-100'>
+                                  <h4 className='text-sm font-medium text-blue-800 mb-3'>
+                                    Parameters
+                                  </h4>
+                                  <div className='grid gap-4'>
+                                    {row.parameters.map((param, paramIndex) => (
+                                      <div
+                                        key={paramIndex}
+                                        className='bg-white p-3 rounded-lg border border-blue-200 shadow-sm'
+                                      >
+                                        <div className='flex items-center justify-between mb-2'>
+                                          <div className='flex items-center'>
+                                            <span className='bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2'>
+                                              {paramIndex + 1}
+                                            </span>
+                                            <span className='font-medium text-sm'>
+                                              Parameter #{paramIndex + 1}
+                                            </span>
+                                          </div>
+                                          {row.parameters.length > 1 && (
+                                            <button
+                                              type='button'
+                                              onClick={() => {
+                                                setTableRows((prevRows) =>
+                                                  prevRows.map((r, i) =>
+                                                    i === rowIndex
+                                                      ? {
+                                                          ...r,
+                                                          parameters: r.parameters.filter(
+                                                            (_, pIdx) => pIdx !== paramIndex
+                                                          ),
+                                                        }
+                                                      : r
+                                                  )
+                                                );
+                                              }}
+                                              className='px-2 py-1 bg-red-100 text-red-600 rounded-md text-xs hover:bg-red-200 transition-colors'
+                                            >
+                                              Remove
+                                            </button>
+                                          )}
+                                        </div>
+                                        <div className='grid grid-cols-3 gap-3'>
+                                          <div>
+                                            <label className='block text-xs text-gray-500 mb-1'>
+                                              Parameter
+                                            </label>
+                                            <input
+                                              type='text'
+                                              value={param.parameter || ""}
+                                              onChange={(e) => {
+                                                setTableRows((prevRows) =>
+                                                  prevRows.map((r, i) =>
+                                                    i === rowIndex
+                                                      ? {
+                                                          ...r,
+                                                          parameters: r.parameters.map((p, pIdx) =>
+                                                            pIdx === paramIndex
+                                                              ? { ...p, parameter: e.target.value }
+                                                              : p
+                                                          ),
+                                                        }
+                                                      : r
+                                                  )
+                                                );
+                                              }}
+                                              placeholder='Parameter'
+                                              className='w-full p-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all'
+                                            />
+                                          </div>
+                                          <div>
+                                            <label className='block text-xs text-gray-500 mb-1'>
+                                              Ranges
+                                            </label>
+                                            <input
+                                              type='text'
+                                              value={param.ranges || ""}
+                                              onChange={(e) => {
+                                                setTableRows((prevRows) =>
+                                                  prevRows.map((r, i) =>
+                                                    i === rowIndex
+                                                      ? {
+                                                          ...r,
+                                                          parameters: r.parameters.map((p, pIdx) =>
+                                                            pIdx === paramIndex
+                                                              ? { ...p, ranges: e.target.value }
+                                                              : p
+                                                          ),
+                                                        }
+                                                      : r
+                                                  )
+                                                );
+                                              }}
+                                              placeholder='Ranges'
+                                              className='w-full p-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all'
+                                            />
+                                          </div>
+                                          <div>
+                                            <label className='block text-xs text-gray-500 mb-1'>
+                                              Accuracy
+                                            </label>
+                                            <input
+                                              type='text'
+                                              value={param.accuracy || ""}
+                                              onChange={(e) => {
+                                                setTableRows((prevRows) =>
+                                                  prevRows.map((r, i) =>
+                                                    i === rowIndex
+                                                      ? {
+                                                          ...r,
+                                                          parameters: r.parameters.map((p, pIdx) =>
+                                                            pIdx === paramIndex
+                                                              ? { ...p, accuracy: e.target.value }
+                                                              : p
+                                                          ),
+                                                        }
+                                                      : r
+                                                  )
+                                                );
+                                              }}
+                                              placeholder='Accuracy'
+                                              className='w-full p-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all'
+                                            />
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
                       ))}
                     </tbody>
                   </table>
                 </div>
 
-                <div className='p-4 bg-gray-100 border-t border-gray-200 flex flex-wrap justify-between items-center gap-4'>
+                <div className='p-5 bg-gray-50 border-t border-gray-200 flex flex-wrap justify-between items-center gap-4'>
                   <button
                     type='button'
                     onClick={() => {
@@ -592,11 +689,11 @@ const ErrorDetectorForm = () => {
                         alert("Maximum of 15 products per user allowed.");
                       }
                     }}
-                    className='px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center'
+                    className='px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center shadow-sm'
                   >
                     <svg
                       xmlns='http://www.w3.org/2000/svg'
-                      className='h-5 w-5 mr-1'
+                      className='h-5 w-5 mr-2'
                       viewBox='0 0 20 20'
                       fill='currentColor'
                     >
@@ -606,9 +703,9 @@ const ErrorDetectorForm = () => {
                         clipRule='evenodd'
                       />
                     </svg>
-                    Add Row
+                    Add Product
                   </button>
-                  <div className='text-sm text-gray-600 italic'>
+                  <div className='text-sm text-gray-600 italic bg-yellow-50 p-3 rounded-md border border-yellow-200'>
                     <span className='font-medium'>Note:</span> Job numbers will be assigned
                     automatically. (Max 15 products per user)
                   </div>

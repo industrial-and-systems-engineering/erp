@@ -32,7 +32,7 @@ const Tcard = ({ equipment, form, formOpen }) => {
       srfNo: form.srfNo || "",
       srfDate: form.createdAt ? new Date(form.createdAt).toLocaleDateString() : "",
       itemName: equipment.instrumentDescription || "",
-      makeModel: equipment.instrumentDescription || "",
+      makeModel: equipment.make || "",
       serialNo: equipment.serialNo || "",
       targetDate: form.probableDate ? new Date(form.probableDate).toLocaleDateString() : "",
     });

@@ -295,7 +295,7 @@ const CalDataSheet = ({ product, save, close, form }) => {
             <label className='block text-sm font-medium'>Name</label>
             <input
               type='text'
-              value={formData.calibrationProcedure}
+              value={formData.name}
               readOnly
               className='mt-1 block w-full border border-gray-300 rounded-md p-2'
             />

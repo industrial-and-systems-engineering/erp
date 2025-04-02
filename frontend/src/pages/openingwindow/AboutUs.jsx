@@ -12,9 +12,10 @@ const AboutUs = () => {
     <div className='bg-white'>
       {/* Hero Section */}
       <motion.div
-        initial='hidden'
-        animate='visible'
         variants={fadeIn}
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
         className='text-white py-24 px-4 text-center bg-blue-900'
       >
         <h1 className='text-3xl md:text-4xl font-bold mb-4'>Precision is Our Promise</h1>
