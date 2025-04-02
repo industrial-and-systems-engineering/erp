@@ -72,7 +72,9 @@ const Ucompleted = () => {
         make: product.make,
         serialNo: product.serialNo,
         
-        location: product.calibrationFacilityAvailable || "At Laboratory",
+        location: product.calibrationDataSheet && product.calibrationDataSheet.Location ? 
+                 product.calibrationDataSheet.Location : 
+                 (product.calibrationFacilityAvailable || "At Laboratory"),
         
         method: product.parameters && product.parameters.length > 0 
                 ? product.parameters[0].methodUsed 
@@ -90,7 +92,9 @@ const Ucompleted = () => {
         customerName: product.organization || product.customerName || product.customer,
         customerAddress: product.address || product.customerAddress,
         name: product.instrumentDescription || product.name || product.description,
-        location: product.calibrationFacilityAvailable || "At Laboratory"
+        location: product.calibrationDataSheet && product.calibrationDataSheet.Location ? 
+                product.calibrationDataSheet.Location : 
+                (product.calibrationFacilityAvailable || "At Laboratory")
       };
       
       console.log("Enhanced product without parent form:", enhancedProduct);

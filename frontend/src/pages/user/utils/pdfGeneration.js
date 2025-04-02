@@ -100,7 +100,10 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     }
 
     let location = "At Laboratory";
-    if (selectedProduct.calibrationFacilityAvailable) {
+    if (selectedProduct.calibrationDataSheet && selectedProduct.calibrationDataSheet.Location) {
+      location = selectedProduct.calibrationDataSheet.Location;
+      console.log("Using Location from calibration data sheet:", location);
+    } else if (selectedProduct.calibrationFacilityAvailable) {
       location = selectedProduct.calibrationFacilityAvailable;
       console.log("Using calibrationFacilityAvailable as location:", location);
     } else if (selectedProduct.location) {
@@ -253,7 +256,8 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       doc.text(certificate.address, 85, y);
     }
 
-    y += 10;
+    // Increase spacing between sections
+    y += 12; // Changed from 10 to 12
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("2.", leftMargin, y);
@@ -264,7 +268,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     y += 5;
     doc.text("to be calibrated", leftMargin + 5, y);
     
-    y += 7;
+    y += 8; // Changed from 6 to 8
     doc.setTextColor(0, 128, 128);
     doc.text("i)", indentedMargin, y);
     doc.text("Item", indentedMargin + 10, y);
@@ -273,7 +277,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "normal");
     doc.text(certificate.description, 85, y);
     
-    y += 5;
+    y += 6; // Changed from 5 to 6
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 128, 128);
     doc.text("ii)", indentedMargin, y);
@@ -283,7 +287,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "normal");
     doc.text(certificate.make, 85, y);
     
-    y += 5;
+    y += 6; // Changed from 5 to 6
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 128, 128);
     doc.text("iii)", indentedMargin, y);
@@ -293,7 +297,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "normal");
     doc.text(certificate.serialNo, 85, y);
     
-    y += 5;
+    y += 6; // Changed from 5 to 6
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 128, 128);
     doc.text("iv)", indentedMargin, y);
@@ -303,7 +307,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "normal");
     doc.text(certificate.range, 85, y);
 
-    y += 10;
+    y += 12; // Changed from 10 to 12
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("3.", leftMargin, y);
@@ -313,7 +317,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "normal");
     doc.text(certificate.condition, 85, y);
 
-    y += 10;
+    y += 12; // Changed from 10 to 12
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("4.", leftMargin, y);
@@ -323,7 +327,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "normal");
     doc.text(certificate.receivedDate, 85, y);
 
-    y += 10;
+    y += 12; // Changed from 10 to 12
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("5.", leftMargin, y);
@@ -333,7 +337,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "normal");
     doc.text(certificate.completionDate, 90, y);
 
-    y += 10;
+    y += 12; // Changed from 10 to 12
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("6.", leftMargin, y);
@@ -343,7 +347,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "normal");
     doc.text(certificate.nextCalibrationDate, 90, y);
 
-    y += 10;
+    y += 12; // Changed from 10 to 12
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("7.", leftMargin, y);
@@ -353,7 +357,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "normal");
     doc.text(certificate.location, 95, y);
 
-    y += 10;
+    y += 12; // Changed from 10 to 12
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("8.", leftMargin, y);
@@ -364,7 +368,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.text(`Temp: ${certificate.temperature}`, 105, y);
     doc.text(`Humidity: ${certificate.humidity}`, 135, y);
 
-    y += 10;
+    y += 12; // Changed from 10 to 12
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("9.", leftMargin, y);
@@ -374,7 +378,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "normal");
     doc.text(`As per our SOP No: ${certificate.method}`, 90, y);
 
-    y += 10;
+    y += 12; // Changed from 10 to 12
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("10.", leftMargin, y);
