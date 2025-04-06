@@ -5,10 +5,9 @@ const CcalDataSheet = ({ product, form }) => {
   // Compute header data directly from props
   const formData = {
     jobNo: product.jobNo,
-    recDate: "2025-03-24",
+    recDate: form.probableDate,
     srfNo: form.srfNo,
     ulrNo: form.URL_NO,
-    calibrationProcedure: "ET/Mech/Thermal",
     name: product.instrumentDescription,
     make: product.make,
     srNo: product.serialNo,
@@ -49,8 +48,8 @@ const CcalDataSheet = ({ product, form }) => {
           <div>
             <label className='block text-sm font-medium'>Rec. Date</label>
             <input
-              type='date'
-              value={formData.recDate}
+              type='text'
+              value={new Date(form.probableDate).toLocaleDateString()}
               readOnly
               className='mt-1 block w-full border border-gray-300 rounded-md p-2'
             />
@@ -81,7 +80,7 @@ const CcalDataSheet = ({ product, form }) => {
             <label className='block text-sm font-medium'>Name</label>
             <input
               type='text'
-              value={formData.calibrationProcedure}
+              value={formData.instrumentDescription}
               readOnly
               className='mt-1 block w-full border border-gray-300 rounded-md p-2'
             />

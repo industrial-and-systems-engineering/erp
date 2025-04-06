@@ -1,25 +1,52 @@
 import React, { useState } from "react";
 import { TrashIcon } from "@heroicons/react/24/solid";
+import { useForm } from "react-hook-form";
 
-const CalDataSheet = ({ product, save, close, form }) => {
+const CalDataSheet = ({ product, save, close, form, Data }) => {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+  } = useForm({
+    defaultValues: {
+      Location: Data.Location || "",
+      sensorType: Data.sensorType || "",
+      resolution: Data.resolution || "",
+      roomTemp: Data.roomTemp || "",
+      humidity: Data.humidity || "",
+      selectedMaster: "",
+      recDate: new Date().toISOString().split("T")[0],
+    },
+  });
+  const selectedMaster = watch("selectedMaster");
   const [formData, setFormData] = useState({
     jobNo: product.jobNo,
-    recDate: "2025-03-24",
     srfNo: form.srfNo,
     ulrNo: form.URL_NO,
-    calibrationProcedure: "ET/Mech/Thermal",
     name: product.instrumentDescription,
     make: product.make,
     srNo: product.serialNo,
   });
   const [newData, setNewData] = useState({
-    Location: "",
-    sensorType: "",
-    resolution: "",
-    roomTemp: "",
-    humidity: "",
-    detailsOfMasterUsed: [],
+    Location: Data.Location || "",
+    sensorType: Data.sensorType || "",
+    resolution: Data.resolution || "",
+    roomTemp: Data.roomTemp || "",
+    humidity: Data.humidity || "",
+    detailsOfMasterUsed: Data.detailsOfMasterUsed || [],
+    recDate: new Date().toISOString().split("T")[0],
   });
+  const [parameters, setParameters] = useState(
+    Data.parameters ||
+      product.parameters.map((param) => ({
+        ...param,
+        readings: param.readings.map((reading) => ({
+          ...reading,
+        })),
+      }))
+  );
   // Details of Master Used section
   const masterEquipment = [
     { name: "5½ Digit Multifunction Calibrator With Current Coil", serialNo: "20140557A ED/CC-02" },
@@ -53,8 +80,6 @@ const CalDataSheet = ({ product, save, close, form }) => {
     { name: "Temperature Calibrator", serialNo: "99431127 ED/TC-01" },
   ];
 
-  const [selectedMaster, setSelectedMaster] = useState("");
-
   const handleAddMaster = () => {
     if (selectedMaster) {
       const masterToAdd = masterEquipment.find((item) => item.name === selectedMaster);
@@ -66,7 +91,7 @@ const CalDataSheet = ({ product, save, close, form }) => {
           ...newData,
           detailsOfMasterUsed: [...newData.detailsOfMasterUsed, masterToAdd],
         });
-        setSelectedMaster("");
+        setValue("selectedMaster", ""); // Reset the select field
       }
     }
   };
@@ -79,20 +104,6 @@ const CalDataSheet = ({ product, save, close, form }) => {
       detailsOfMasterUsed: updatedMasters,
     });
   };
-
-  const [parameters, setParameters] = useState(
-    product.parameters.map((param) => ({
-      ...param,
-      readings: param.readings.map((reading) => ({
-        ...reading,
-        masterCertUncertainty: 0,
-        ducResolution: 0,
-        masterAccuracy: 0,
-        stability: 0,
-      })),
-    }))
-  );
-
   // Calculation functions for each reading
   const calculateReadingMean = (readings) => {
     const numericReadings = ["r1", "r2", "r3", "r4", "r5"]
@@ -104,7 +115,6 @@ const CalDataSheet = ({ product, save, close, form }) => {
     const mean = numericReadings.reduce((acc, val) => acc + val, 0) / numericReadings.length;
     return mean;
   };
-
   const calculateStdDev = (readings) => {
     const numericReadings = ["r1", "r2", "r3", "r4", "r5"]
       .map((key) => parseFloat(readings[key]))
@@ -118,7 +128,6 @@ const CalDataSheet = ({ product, save, close, form }) => {
 
     return Math.sqrt(variance);
   };
-
   const calculateStdUncertainty = (readings) => {
     const stdDev = parseFloat(calculateStdDev(readings));
     const numericReadings = ["r1", "r2", "r3", "r4", "r5"]
@@ -127,7 +136,6 @@ const CalDataSheet = ({ product, save, close, form }) => {
 
     return numericReadings.length > 0 ? stdDev / Math.sqrt(numericReadings.length) : "";
   };
-
   const calculateUC = (reading) => {
     const u1 = parseFloat(reading.masterCertUncertainty) / 2 || 0;
     const u2 = parseFloat(reading.ducResolution) / (2 * Math.sqrt(3)) || 0;
@@ -144,7 +152,6 @@ const CalDataSheet = ({ product, save, close, form }) => {
     );
     return uc;
   };
-
   const calculateEDof = (reading) => {
     const stdUncertainty = parseFloat(calculateStdUncertainty(reading)) || 0;
     const combinedUncertainty = parseFloat(calculateUC(reading)) || 0;
@@ -153,7 +160,6 @@ const CalDataSheet = ({ product, save, close, form }) => {
 
     return 4 * (Math.pow(combinedUncertainty, 4) / Math.pow(stdUncertainty, 4));
   };
-
   const calculateUE = (reading) => {
     const uc = parseFloat(calculateUC(reading)) || 0;
     const edof = parseFloat(calculateEDof(reading)) || 0;
@@ -200,21 +206,41 @@ const CalDataSheet = ({ product, save, close, form }) => {
     }
     return ((uc * kAt95CL * 100) / rNameValue).toFixed(4);
   };
-
-  // Update reading calculations
   const handleReadingChange = (paramIndex, readingIndex, field, value) => {
     const newParameters = [...parameters];
+
+    // Validate numeric inputs for readings
+    if (
+      [
+        "rName",
+        "r1",
+        "r2",
+        "r3",
+        "r4",
+        "r5",
+        "masterCertUncertainty",
+        "ducResolution",
+        "masterAccuracy",
+        "stability",
+        "repeatibility",
+      ].includes(field)
+    ) {
+      // Allow only numbers and decimal point
+      if (value !== "" && !/^-?\d*\.?\d*$/.test(value)) {
+        alert("Please enter a valid number format");
+        return; // Don't update if not a valid number format
+      }
+    }
+
     newParameters[paramIndex].readings[readingIndex][field] = value;
 
     // Automatically calculate mean and UC
     const updatedReading = newParameters[paramIndex].readings[readingIndex];
     updatedReading.mean = calculateReadingMean(updatedReading);
-    // updatedReading.uc = calculateUC(updatedReading);
     updatedReading.uc = calculateUE(updatedReading);
 
     setParameters(newParameters);
   };
-
   const addStdReading = (paramIndex) => {
     const newReadings = [...parameters];
     newReadings[paramIndex].readings.push({
@@ -248,7 +274,34 @@ const CalDataSheet = ({ product, save, close, form }) => {
   return (
     <div className='border-2 border-gray-300 rounded-lg p-4'>
       <h1 className='text-2xl font-bold text-center mb-6'>ERROR DETECTOR</h1>
-      <form className='space-y-4'>
+      <form
+        className='space-y-4'
+        onSubmit={handleSubmit((data) => {
+          // Validate all readings have at least name, unit and one reading
+          const isReadingsValid = parameters.every((param) =>
+            param.readings.every(
+              (reading) =>
+                reading.rName &&
+                reading.rUnit &&
+                (reading.r1 || reading.r2 || reading.r3 || reading.r4 || reading.r5)
+            )
+          );
+
+          if (!isReadingsValid) {
+            alert("Please ensure all readings have a name, unit, and at least one reading value");
+            return;
+          }
+          if (newData.detailsOfMasterUsed.length === 0) {
+            alert("Please add at least one master equipment");
+            return;
+          }
+          save({
+            parameters: parameters,
+            ...data,
+            detailsOfMasterUsed: newData.detailsOfMasterUsed,
+          });
+        })}
+      >
         {/* Header Information */}
         <div className='grid grid-cols-2 gap-4'>
           <div>
@@ -264,7 +317,7 @@ const CalDataSheet = ({ product, save, close, form }) => {
             <label className='block text-sm font-medium'>Rec. Date</label>
             <input
               type='date'
-              value={formData.recDate}
+              value={newData.recDate}
               readOnly
               className='mt-1 block w-full border border-gray-300 rounded-md p-2'
             />
@@ -316,25 +369,44 @@ const CalDataSheet = ({ product, save, close, form }) => {
             />
           </div>
           <div>
-            <label className='block text-sm font-medium'>Location</label>
+            <div className='flex space-x-2'>
+              <label className='block text-sm font-medium'>Location</label>
+              {errors.Location && (
+                <span className='text-red-500 text-sm'>{errors.Location.message}</span>
+              )}
+            </div>
             <input
+              {...register("Location", { required: "Location is required" })}
               type='text'
               value={newData.Location}
               onChange={(e) => setNewData((prev) => ({ ...prev, Location: e.target.value }))}
               className='mt-1 block w-full border border-gray-300 rounded-md p-2'
               placeholder='Enter Location'
             />
-            <label className='block text-sm font-medium'>Sensor Type</label>
+            <div className='flex space-x-2'>
+              <label className='block text-sm font-medium'>Sensor Type</label>
+              {errors.sensorType && (
+                <span className='text-red-500 text-sm'>{errors.sensorType.message}</span>
+              )}
+            </div>
             <input
               type='text'
+              {...register("sensorType", { required: "Sensor Type is required" })}
               value={newData.sensorType}
               onChange={(e) => setNewData((prev) => ({ ...prev, sensorType: e.target.value }))}
               className='mt-1 block w-full border border-gray-300 rounded-md p-2'
               placeholder='Enter Sensor Type'
             />
-            <label className='block text-sm font-medium'>Resolution</label>
+
+            <div className='flex space-x-2'>
+              <label className='block text-sm font-medium'>Resolution</label>
+              {errors.resolution && (
+                <span className='text-red-500 text-sm'>{errors.resolution.message}</span>
+              )}
+            </div>
             <input
               type='text'
+              {...register("resolution", { required: "Resolution is required" })}
               value={newData.resolution}
               onChange={(e) => setNewData((prev) => ({ ...prev, resolution: e.target.value }))}
               className='mt-1 block w-full border border-gray-300 rounded-md p-2'
@@ -347,34 +419,52 @@ const CalDataSheet = ({ product, save, close, form }) => {
         <h2 className='text-lg font-bold mt-6'>Environmental Conditions</h2>
         <div className='grid grid-cols-2 gap-4 mt-4'>
           <div>
-            <label className='block text-sm font-medium'>Room Temp (°C)</label>
+            <label className='block text-sm font-medium'>Room Temperature (°C)</label>
             <input
+              {...register("roomTemp", {
+                required: "Room Temperature is required",
+                pattern: {
+                  value: /^-?\d+(\.\d+)?$/,
+                  message: "Please enter a valid number",
+                },
+              })}
               type='text'
               value={newData.roomTemp}
               onChange={(e) => setNewData((prev) => ({ ...prev, roomTemp: e.target.value }))}
               className='mt-1 block w-full border border-gray-300 rounded-md p-2'
               placeholder='Enter Room Temp'
             />
+            {errors.roomTemp && (
+              <span className='text-red-500 text-sm'>{errors.roomTemp.message}</span>
+            )}
           </div>
           <div>
             <label className='block text-sm font-medium'>Humidity (%)</label>
             <input
               type='text'
+              {...register("humidity", {
+                required: "Humidity is required",
+                pattern: {
+                  value: /^(100|[1-9]?\d)$/,
+                  message: "Please enter a valid percentage (0-100)",
+                },
+              })}
               value={newData.humidity}
               onChange={(e) => setNewData((prev) => ({ ...prev, humidity: e.target.value }))}
               className='mt-1 block w-full border border-gray-300 rounded-md p-2'
               placeholder='Enter Humidity'
             />
+            {errors.humidity && (
+              <span className='text-red-500 text-sm'>{errors.humidity.message}</span>
+            )}
           </div>
         </div>
-        {/* details of master used */}
         {/* details of master used */}
         <h2 className='text-lg font-bold mt-6'>Details of Master Used</h2>
         <div className='mt-4'>
           <div className='flex space-x-2 mb-4'>
             <select
-              value={selectedMaster}
-              onChange={(e) => setSelectedMaster(e.target.value)}
+              {...register("selectedMaster")}
               className='flex-grow border border-gray-300 rounded-md p-2'
             >
               <option value=''>Select Master Equipment</option>
@@ -387,6 +477,7 @@ const CalDataSheet = ({ product, save, close, form }) => {
                 </option>
               ))}
             </select>
+
             <button
               type='button'
               onClick={handleAddMaster}
@@ -395,6 +486,9 @@ const CalDataSheet = ({ product, save, close, form }) => {
               Add
             </button>
           </div>
+          {errors.selectedMaster && (
+            <span className='text-red-500 text-sm'>{errors.selectedMaster.message}</span>
+          )}
 
           {newData.detailsOfMasterUsed.length > 0 && (
             <div className='border rounded-md p-4 mb-4'>
@@ -757,10 +851,7 @@ const CalDataSheet = ({ product, save, close, form }) => {
               Cancel
             </button>
             <button
-              type='button'
-              onClick={() => {
-                save({ parameters: parameters, ...newData });
-              }}
+              type='submit'
               className='bg-blue-500 object-bottom text-white px-6 py-2 rounded hover:bg-blue-600 cursor-pointer'
             >
               Save
