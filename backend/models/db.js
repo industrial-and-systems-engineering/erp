@@ -28,7 +28,7 @@ const ProductSchema = new Schema(
         parameter: { type: String, required: true },
         ranges: { type: String, required: true },
         accuracy: { type: String, required: true },
-        methodUsed: { type: String, required: true },
+        // methodUsed: { type: String},
         calibrationStatus: { type: String },
         calibratedDate: { type: Date, default: Date.now() },
         remarks: { type: String },
@@ -54,7 +54,8 @@ const ProductSchema = new Schema(
         }
       }]
     },
-    isCalibrated: { type: Boolean, default: false }
+    isCalibrated: { type: Boolean, default: false },
+    csccalibrated: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

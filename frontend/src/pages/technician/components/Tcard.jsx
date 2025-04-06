@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { usePendingFormsStore } from "../utils/pendingForms";
 import CalDataSheet from "./CalDataSheet";
+import { set } from "mongoose";
 
 const Tcard = ({ equipment, form, formOpen }) => {
   const { updateForm, fetchPendingForms } = usePendingFormsStore();
   const [newData, setNewData] = useState({});
-  // State to store the parameters data
   const [parameters, setParameters] = useState([...equipment.parameters]);
-  // State to show/hide the pop-up/modal for new observation
   const [showCalDataSheet, setCalDataSheetStatus] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
+  const [parameterErrors, setParameterErrors] = useState({});
+  const [CDSerrors, setCDSErrors] = useState({ isValid: true });
+  const [CDSValid, setCDSValid] = useState(false);
 
   const [formData, setFormData] = useState({
     ulrNo: form.URL_NO || "",
@@ -22,8 +25,6 @@ const Tcard = ({ equipment, form, formOpen }) => {
     targetDate: form.probableDate ? new Date(form.probableDate).toLocaleDateString() : "",
   });
 
-  console.log(parameters);
-
   useEffect(() => {
     setFormData({
       ulrNo: form.URL_NO || "",
@@ -32,12 +33,11 @@ const Tcard = ({ equipment, form, formOpen }) => {
       srfNo: form.srfNo || "",
       srfDate: form.createdAt ? new Date(form.createdAt).toLocaleDateString() : "",
       itemName: equipment.instrumentDescription || "",
-      makeModel: equipment.instrumentDescription || "",
+      makeModel: equipment.make || "",
       serialNo: equipment.serialNo || "",
       targetDate: form.probableDate ? new Date(form.probableDate).toLocaleDateString() : "",
     });
 
-    // Reset parameters when equipment changes
     setParameters([...equipment.parameters]);
   }, [equipment, form]);
 
@@ -47,33 +47,73 @@ const Tcard = ({ equipment, form, formOpen }) => {
       ...prevState,
       [name]: value,
     }));
+
+    // Clear error for the field being changed
+    setFormErrors((prevErrors) => ({ ...prevErrors, [name]: null }));
   };
 
   const handleParameterChange = (e, index) => {
     const { name, value } = e.target;
 
-    // Create a new copy of the parameters array
     const updatedParameters = [...parameters];
-
-    // Update the specific parameter at the given index
     updatedParameters[index] = {
       ...updatedParameters[index],
       [name]: value,
     };
-
-    // Set the updated parameters array
     setParameters(updatedParameters);
 
-    // Also update newData with the latest parameters
     setNewData((prevData) => ({
       ...prevData,
       parameters: updatedParameters,
     }));
+
+    // Clear error for the parameter being changed
+    setParameterErrors((prevErrors) => ({
+      ...prevErrors,
+      [index]: { ...prevErrors[index], [name]: null },
+    }));
   };
 
-  // Update the form with the new parameters data
+  const validateParameters = () => {
+    let errors = {};
+    let isValid = true;
+
+    parameters.forEach((parameter, index) => {
+      let paramErrors = {};
+      if (!parameter.calibrationStatus) {
+        paramErrors.calibrationStatus = "Calibration Status is required";
+        isValid = false;
+      }
+      if (!parameter.calibratedDate) {
+        paramErrors.calibratedDate = "Calibrated Date is required";
+        isValid = false;
+      }
+      if (!parameter.remarks) {
+        paramErrors.remarks = "Remarks is required";
+        isValid = false;
+      }
+      errors[index] = paramErrors;
+    });
+
+    setParameterErrors(errors);
+    return isValid;
+  };
+  const validateCDS = () => {
+    if (!CDSValid) {
+      setCDSErrors({ errors: "Please fill the Calibration Data Sheet", isValid: false });
+      return false;
+    }
+    setCDSErrors({ isValid: true });
+    return true;
+  };
   const handleUpdateClick = async () => {
-    // Make sure we're sending the updated parameters
+    const areParametersValid = validateParameters();
+    const cdsValid = validateCDS();
+    if (!areParametersValid || !cdsValid) {
+      alert("Please correct the errors before updating.");
+      return;
+    }
+
     const dataToUpdate = {
       ...newData,
       parameters: parameters,
@@ -90,10 +130,8 @@ const Tcard = ({ equipment, form, formOpen }) => {
     }
   };
 
-  // Save the new observation to the list (frontend only)
   const handleSaveNewObservation = (readingData) => {
     setParameters((prevParameters) => {
-      // Merge the updated parameters from readingData
       const updatedParameters = readingData.parameters || prevParameters;
       return updatedParameters;
     });
@@ -102,7 +140,7 @@ const Tcard = ({ equipment, form, formOpen }) => {
       ...prevData,
       ...readingData,
     }));
-
+    setCDSValid(true);
     console.log("New observation data:", readingData);
     setCalDataSheetStatus(false);
   };
@@ -124,7 +162,6 @@ const Tcard = ({ equipment, form, formOpen }) => {
                 <h2 className='text-lg font-medium border px-0.5'>Job Card</h2>
               </div>
             </div>
-
             <form>
               {/* Job Card Information */}
               <div className=''>
@@ -135,7 +172,7 @@ const Tcard = ({ equipment, form, formOpen }) => {
                       type='text'
                       name='ulrNo'
                       value={formData.ulrNo}
-                      readOnly
+                      onChange={handleChange}
                       className='ml-2   '
                     />
                   </p>
@@ -230,7 +267,6 @@ const Tcard = ({ equipment, form, formOpen }) => {
                   </p>
                 </div>
               </div>
-
               <h1 className='block font-semibold mb-2'>Parameters to be calibrated :</h1>
               <div className='overflow-x-auto'>
                 <table className='w-full border-collapse border-2 border-black'>
@@ -260,6 +296,11 @@ const Tcard = ({ equipment, form, formOpen }) => {
                             onChange={(e) => handleParameterChange(e, index)}
                             className='w-full p-1'
                           />
+                          {parameterErrors[index]?.calibrationStatus && (
+                            <span className='text-red-500'>
+                              {parameterErrors[index].calibrationStatus}
+                            </span>
+                          )}
                         </td>
                         <td className='border border-black p-1'>
                           <input
@@ -269,6 +310,11 @@ const Tcard = ({ equipment, form, formOpen }) => {
                             onChange={(e) => handleParameterChange(e, index)}
                             className='w-full p-1'
                           />
+                          {parameterErrors[index]?.calibratedDate && (
+                            <span className='text-red-500'>
+                              {parameterErrors[index].calibratedDate}
+                            </span>
+                          )}
                         </td>
                         <td className='border border-black p-1'>
                           <input
@@ -278,6 +324,9 @@ const Tcard = ({ equipment, form, formOpen }) => {
                             onChange={(e) => handleParameterChange(e, index)}
                             className='w-full p-1'
                           />
+                          {parameterErrors[index]?.remarks && (
+                            <span className='text-red-500'>{parameterErrors[index].remarks}</span>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -298,6 +347,9 @@ const Tcard = ({ equipment, form, formOpen }) => {
                 >
                   Show Calibration Data Sheet
                 </button>
+                {!CDSerrors.isValid && (
+                  <span className='text-red-500 ml-2'>Please fill the Calibration Data Sheet</span>
+                )}
               </div>
 
               {/* Submit and Issued By Section */}
@@ -327,6 +379,7 @@ const Tcard = ({ equipment, form, formOpen }) => {
         <CalDataSheet
           product={equipment}
           save={handleSaveNewObservation}
+          Data={newData}
           close={setCalDataSheetStatus}
           form={form}
         />

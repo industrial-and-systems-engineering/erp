@@ -25,7 +25,7 @@ export const usePendingFormsStore = create((set) => ({
     updateForm: async (fid, pid, details) => {
         console.log("updateForm called with fid:", fid, "pid:", pid, "details:", details);
         try {
-            const response = await fetch(`/api/technician/updateform/${fid}`, {
+            const response = await fetch(`/api/technician/update/${fid}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",

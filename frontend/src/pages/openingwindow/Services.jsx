@@ -204,25 +204,25 @@ const Services = () => {
   };
 
   return (
-    <div className='bg-gradient-to-b from-blue-100 to-purple-100 min-h-screen py-20 px-4 sm:px-6 lg:px-8'>
+    <div className='min-h-screen py-20 px-4 sm:px-6 lg:px-8'>
       <div className='max-w-7xl mx-auto'>
         <motion.h2
           className='text-4xl font-extrabold text-center text-gray-900 mb-12'
-          initial={{ opacity: 0, y: -50 }}
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.6 }}
         >
           Our Comprehensive Calibration Services
         </motion.h2>
 
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-8 mb-12'>
+        <div className='grid grid-cols-1 md:grid-cols-1 gap-8 mb-12'>
           {serviceCategories.map((category, index) => (
             <motion.div
               key={category.id}
               className='bg-white rounded-lg shadow-lg overflow-hidden'
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
             >
               <motion.div
                 className='bg-blue-600 text-white p-4 flex items-center justify-between cursor-pointer'
@@ -281,9 +281,12 @@ const Services = () => {
                   <motion.div
                     className='mt-3 text-blue-600 font-medium text-center cursor-pointer'
                     whileHover={{ scale: 1.05 }}
-                    onClick={() => toggleCategory(category.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleCategory(category.id);
+                    }}
                   >
-                    + {category.services.length - 6} more services
+                    + {Math.max(category.services.length - 6, 0)} more services
                   </motion.div>
                 </div>
               )}

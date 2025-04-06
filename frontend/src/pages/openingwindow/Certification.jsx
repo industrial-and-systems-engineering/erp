@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import PDFModal from "./components/PDFModal";
 
 const Certification = () => {
   const [showCertificatePDF, setShowCertificatePDF] = useState(false);
@@ -70,39 +71,14 @@ const Certification = () => {
     animate: { opacity: 1, y: 0, transition: { duration: 0.6 } },
   };
 
-  const PDFModal = ({ isOpen, onClose, title, pdfUrl }) => {
-    if (!isOpen) return null;
-
-    return (
-      <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4'>
-        <div className='bg-white p-4 rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col'>
-          <div className='flex justify-between items-center mb-4'>
-            <h2 className='text-2xl font-bold'>{title}</h2>
-            <button
-              onClick={onClose}
-              className='text-2xl hover:text-red-600'
-            >
-              &times;
-            </button>
-          </div>
-          <iframe
-            src={pdfUrl}
-            className='w-full flex-grow h-[70vh]'
-            title={title}
-          />
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className='bg-gradient-to-b from-gray-50 to-blue-50 py-20'>
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
         <motion.div
           className='text-center mb-12'
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8 }}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
         >
           <h2 className='text-3xl font-extrabold text-gray-900 sm:text-4xl'>
             Our Accreditations & Certifications
@@ -165,7 +141,7 @@ const Certification = () => {
 
                 <div className='mt-6 flex flex-wrap gap-3'>
                   <motion.button
-                    className='px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors'
+                    className='px-4 py-2 cursor-pointer bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors'
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setShowCertificatePDF(true)}
@@ -173,7 +149,7 @@ const Certification = () => {
                     View Certificate
                   </motion.button>
                   <motion.button
-                    className='px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors'
+                    className='px-4 py-2 cursor-pointer bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors'
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setShowScopePDF(true)}
