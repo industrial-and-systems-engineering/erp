@@ -80,7 +80,7 @@ const CcalDataSheet = ({ product, form }) => {
             <label className='block text-sm font-medium'>Name</label>
             <input
               type='text'
-              value={formData.instrumentDescription}
+              value={formData.name}
               readOnly
               className='mt-1 block w-full border border-gray-300 rounded-md p-2'
             />

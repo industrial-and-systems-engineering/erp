@@ -52,7 +52,6 @@ const UserNavbar = ({ setFormData }) => {
 
   // Navigation items
   const navItems = [
-    { name: "Home", path: "/user", icon: HomeIcon },
     { name: "Completed Products", path: "/user/completed", icon: CheckCircleIcon },
     { name: "Pending Form", path: "/user/pending", icon: ClipboardDocumentListIcon },
     { name: "Create Form", path: "/user/create", icon: DocumentPlusIcon },

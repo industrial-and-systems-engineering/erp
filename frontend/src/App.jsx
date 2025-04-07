@@ -56,7 +56,10 @@ const App = () => {
         </Route>
 
         {/* Add the ViewCalibration route at the top level */}
-        <Route path='/view-calibration/:documentId' element={<ViewCalibration />} />
+        <Route
+          path='/view-calibration/:documentId'
+          element={<ViewCalibration />}
+        />
 
         <Route
           path='/user'
@@ -64,10 +67,6 @@ const App = () => {
         >
           <Route
             path=''
-            element={<Uhomepage />}
-          />
-          <Route
-            path='completed'
             element={<Ucompleted />}
           />
           <Route
