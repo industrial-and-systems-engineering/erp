@@ -78,6 +78,19 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       }).replace(/\//g, '.');
     };
 
+    // Function to format range with kV unit if no unit exists
+    const formatRange = (rangeValue) => {
+      if (!rangeValue) return "Full Range";
+      
+      // If the range already includes a unit, leave it as is
+      if (/[a-zA-Z]/.test(rangeValue)) {
+        return rangeValue;
+      }
+      
+      // Otherwise, append "kV" as the unit
+      return `${rangeValue} kV`;
+    };
+
     const certificateNo = customCertificateNo || `ED/CAL/${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}/${new Date().getMonth() > 3 ? 
                           `${new Date().getFullYear()}-${new Date().getFullYear() + 1 - 2000}` : 
                           `${new Date().getFullYear() - 1}-${new Date().getFullYear() - 2000}`}`;
@@ -100,10 +113,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     }
 
     let location = "At Laboratory";
-    if (selectedProduct.calibrationDataSheet && selectedProduct.calibrationDataSheet.Location) {
-      location = selectedProduct.calibrationDataSheet.Location;
-      console.log("Using Location from calibration data sheet:", location);
-    } else if (selectedProduct.calibrationFacilityAvailable) {
+    if (selectedProduct.calibrationFacilityAvailable) {
       location = selectedProduct.calibrationFacilityAvailable;
       console.log("Using calibrationFacilityAvailable as location:", location);
     } else if (selectedProduct.location) {
@@ -162,7 +172,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       make: productMake,
       serialNo: serialNo,
       range: selectedProduct.parameters && selectedProduct.parameters.length > 0 ? 
-             selectedProduct.parameters[0].ranges || "Full Range" : "Full Range",
+             formatRange(selectedProduct.parameters[0].ranges || "Full Range") : "Full Range",
       condition: condition,
       receivedDate: formatDate(selectedProduct._parentForm && selectedProduct._parentForm.date),
       completionDate: formatDate(),
@@ -182,57 +192,130 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
 
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
+    
+    // Create a light blue background for the entire page
     doc.setFillColor(240, 248, 255);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    
+    // Add a greenish background to the top section ending just above the CALIBRATION CERTIFICATE heading
+    doc.setFillColor(140, 205, 162); // #8CCDA2
+    doc.rect(0, 0, pageWidth, 22, 'F'); // Height ends just before the heading at y=26
 
+    // Add a matching greenish background to the bottom of the page
+    doc.setFillColor(140, 205, 162); // #8CCDA2
+    doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+
+    // Add office contact information at the bottom in pink color
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(187, 107, 158); // Same pink color as accreditation text
+    doc.text("Office: 53/2, Haridevpur Road, Kolkata - 700 082, West Bengal, India", pageWidth / 2, pageHeight - 13, { align: "center" });
+    doc.text("Mobile: 9830532452, E-mail: errordetector268@gmail.com / errordetector268@yahoo.com / calibrationerror94@gmail.com", pageWidth / 2, pageHeight - 7, { align: "center" });
+
+    // Add the logo images in the top right corner
+    try {
+      // Load and place the first image (cc.png)
+      const ccImg = new Image();
+      ccImg.src = '/cc.png'; // Adjust path as needed based on your project structure
+      doc.addImage(ccImg, 'PNG', pageWidth - 60, 5, 25, 15);
+      
+      // Load and place the second image (ilac-mra.png)
+      const ilacImg = new Image();
+      ilacImg.src = '/ilac-mra.png'; // Adjust path as needed based on your project structure
+      doc.addImage(ilacImg, 'PNG', pageWidth - 30, 5, 25, 15);
+    } catch (imgError) {
+      console.error("Error adding logo images:", imgError);
+    }
+
+    try {
+      // Add company logo in the top left corner
+      const dImg = new Image();
+      dImg.src = '/Dupdated.png'; // Changed from D.png to Dupdated.png
+      doc.addImage(dImg, 'PNG', 10, 5, 25, 15);
+    } catch (imgError) {
+      console.error("Error adding D logo:", imgError);
+    }
+
+    // Add company name and title
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 102, 204);
-    doc.setFontSize(16);
-    doc.text("CALIBRATION CERTIFICATE", 105, 15, { align: "center" });
+    doc.setFontSize(14);
+    doc.text("ERROR DETECTOR", pageWidth / 2, 10, { align: "center" });
+    
+    // Add accreditation text with border
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "italic");
+    const accreditationText = "An ISO/IEC 17025:2017 Accredited Calibration Lab by NABL";
+    const textWidth = doc.getStringUnitWidth(accreditationText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+    
+    // Position the box to avoid overlap with logos
+    const boxX = pageWidth/2 - 15 - textWidth/2 - 3;
+    const boxY = 12;
+    const boxWidth = textWidth + 6;
+    const boxHeight = 6;
+    
+    doc.setDrawColor(0, 102, 204);
+    doc.setLineWidth(0.5);
+    doc.rect(boxX, boxY, boxWidth, boxHeight);
+    
+    // Set text color to #BB6B9E (187,107,158) for the accreditation text
+    doc.setTextColor(187, 107, 158); // Set specific RGB values for color #BB6B9E
+    doc.text(accreditationText, pageWidth/2 - 15, 15, { align: "center" });
+    
+    // Reset text color back to default
+    doc.setTextColor(0, 0, 0);
+    
+    // Add the CALIBRATION CERTIFICATE heading
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(14);
+    doc.text("CALIBRATION CERTIFICATE", pageWidth / 2, 26, { align: "center" });
+    
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(25, 118, 210);
     
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(10);
     
     doc.setFont("helvetica", "bold");
     doc.setTextColor(25, 118, 210);
-    doc.text("Calibration Certificate No.", 20, 25);
+    doc.text("Calibration Certificate No.", 20, 35); // Moved down from 30 to 35
     doc.setTextColor(0, 0, 0);
-    doc.text(":", 80, 25);
+    doc.text(":", 80, 35); // Moved down from 30 to 35
     doc.setFont("helvetica", "normal");
-    doc.text(certificate.certificateNo, 85, 25);
+    doc.text(certificate.certificateNo, 85, 35); // Moved down from 30 to 35
     
     doc.setFont("helvetica", "bold");
     doc.setTextColor(25, 118, 210);
-    doc.text("Date of Issue", 140, 25);
+    doc.text("Date of Issue", 140, 35); // Moved down from 30 to 35
     doc.setTextColor(0, 0, 0);
-    doc.text(":", 165, 25);
+    doc.text(":", 165, 35); // Moved down from 30 to 35
     doc.setFont("helvetica", "normal");
-    doc.text(certificate.issueDate, 170, 25);
+    doc.text(certificate.issueDate, 170, 35); // Moved down from 30 to 35
     
     doc.setFont("helvetica", "bold");
     doc.setTextColor(25, 118, 210);
-    doc.text("Service Request Form No", 20, 30);
+    doc.text("Service Request Form No", 20, 40); // Moved down from 35 to 40
     doc.setTextColor(0, 0, 0);
-    doc.text(":", 80, 30);
+    doc.text(":", 80, 40); // Moved down from 35 to 40
     doc.setFont("helvetica", "normal");
-    doc.text(certificate.serviceRequestFormNo, 85, 30);
+    doc.text(certificate.serviceRequestFormNo, 85, 40); // Moved down from 35 to 40
     
     doc.setFont("helvetica", "bold");
     doc.setTextColor(25, 118, 210);
-    doc.text("Page", 140, 30);
+    doc.text("Page", 140, 40); // Moved down from 35 to 40
     doc.setTextColor(0, 0, 0);
-    doc.text(":", 165, 30);
+    doc.text(":", 165, 40); // Moved down from 35 to 40
     doc.setFont("helvetica", "normal");
-    doc.text("01 of 02 pages", 170, 30);
+    doc.text("01 of 02 pages", 170, 40); // Moved down from 35 to 40
     
     doc.setTextColor(0, 0, 0);
     const currentYear = new Date().getFullYear().toString().slice(-2);
-    doc.text(`ULR-CC3731${currentYear}000000502F`, 20, 35);
+    doc.text(`ULR-CC3731${currentYear}000000502F`, 20, 45); // Moved down from 40 to 45
     
-    let y = 45;
+    let y = 55; // Increased starting y-position from 50 to 55
     const leftMargin = 20;
     const indentedMargin = leftMargin + 5;
-
+    
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("1.", leftMargin, y);
@@ -256,8 +339,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       doc.text(certificate.address, 85, y);
     }
 
-    // Increase spacing between sections
-    y += 12; // Changed from 10 to 12
+    y += 8; // Reduced from 12 to 8
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("2.", leftMargin, y);
@@ -268,7 +350,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     y += 5;
     doc.text("to be calibrated", leftMargin + 5, y);
     
-    y += 8; // Changed from 6 to 8
+    y += 6; // Reduced from 7 to 6
     doc.setTextColor(0, 128, 128);
     doc.text("i)", indentedMargin, y);
     doc.text("Item", indentedMargin + 10, y);
@@ -277,7 +359,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "normal");
     doc.text(certificate.description, 85, y);
     
-    y += 6; // Changed from 5 to 6
+    y += 5; // Maintained at 5
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 128, 128);
     doc.text("ii)", indentedMargin, y);
@@ -287,7 +369,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "normal");
     doc.text(certificate.make, 85, y);
     
-    y += 6; // Changed from 5 to 6
+    y += 5; // Maintained at 5
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 128, 128);
     doc.text("iii)", indentedMargin, y);
@@ -297,7 +379,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "normal");
     doc.text(certificate.serialNo, 85, y);
     
-    y += 6; // Changed from 5 to 6
+    y += 5; // Maintained at 5
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 128, 128);
     doc.text("iv)", indentedMargin, y);
@@ -307,7 +389,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "normal");
     doc.text(certificate.range, 85, y);
 
-    y += 12; // Changed from 10 to 12
+    y += 8; // Adjusted spacing
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("3.", leftMargin, y);
@@ -317,7 +399,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "normal");
     doc.text(certificate.condition, 85, y);
 
-    y += 12; // Changed from 10 to 12
+    y += 8; // Reduced from 12 to 8
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("4.", leftMargin, y);
@@ -327,7 +409,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "normal");
     doc.text(certificate.receivedDate, 85, y);
 
-    y += 12; // Changed from 10 to 12
+    y += 8; // Reduced from 12 to 8
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("5.", leftMargin, y);
@@ -337,7 +419,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "normal");
     doc.text(certificate.completionDate, 90, y);
 
-    y += 12; // Changed from 10 to 12
+    y += 8; // Reduced from 12 to 8
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("6.", leftMargin, y);
@@ -347,7 +429,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "normal");
     doc.text(certificate.nextCalibrationDate, 90, y);
 
-    y += 12; // Changed from 10 to 12
+    y += 8; // Reduced from 12 to 8
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("7.", leftMargin, y);
@@ -357,7 +439,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "normal");
     doc.text(certificate.location, 95, y);
 
-    y += 12; // Changed from 10 to 12
+    y += 8; // Reduced from 12 to 8
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("8.", leftMargin, y);
@@ -368,7 +450,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.text(`Temp: ${certificate.temperature}`, 105, y);
     doc.text(`Humidity: ${certificate.humidity}`, 135, y);
 
-    y += 12; // Changed from 10 to 12
+    y += 8; // Reduced from 12 to 8
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("9.", leftMargin, y);
@@ -378,7 +460,8 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "normal");
     doc.text(`As per our SOP No: ${certificate.method}`, 90, y);
 
-    y += 12; // Changed from 10 to 12
+    y += 10; // Slight increase before the reference standards section
+    
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("10.", leftMargin, y);
@@ -419,18 +502,18 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       }
     });
 
-    let finalY = doc.previousAutoTable ? doc.previousAutoTable.finalY + 15 : y + 30;
+    let finalY = doc.previousAutoTable ? doc.previousAutoTable.finalY + 20 : y + 40; // Increased from +15 to +20
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     
     const rightMargin = pageWidth - 50;
     doc.text("Authorised by", rightMargin, finalY);
     
-    finalY += 15;
+    finalY += 7; // Reduced from 15 to 7
     doc.setTextColor(25, 25, 112);
     doc.text("(P.R.SINGHA)", rightMargin, finalY);
     
-    finalY += 7;
+    finalY += 5; // Reduced from 10 to 5
     doc.setFont("helvetica", "normal");
     doc.setTextColor(0, 0, 0);
     doc.text("(Technical Manager)", rightMargin, finalY);
@@ -470,7 +553,8 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
     
     const qrSize = 30;
     const qrX = 20;
-    const qrY = pageHeight - qrSize - 10;
+    // Position QR code higher to avoid overlap with the green bottom region
+    const qrY = pageHeight - qrSize - 20; // Changed from 10 to 25
     
     console.log("QR code dimensions:", {
       pageWidth,
@@ -502,40 +586,114 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
     const pageHeight = doc.internal.pageSize.height;
     const margin = 20;
     
+    // Create a light blue background for the entire page
     doc.setFillColor(240, 248, 255);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    
+    // Add a greenish background to the top section ending just above the CALIBRATION RESULTS heading
+    doc.setFillColor(140, 205, 162); // #8CCDA2
+    doc.rect(0, 0, pageWidth, 22, 'F'); // Height ends just before the heading
+    
+    // Add a matching greenish background to the bottom of the page
+    doc.setFillColor(140, 205, 162); // #8CCDA2
+    doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+    
+    // Add the logo images in the top right corner
+    try {
+      // Load and place the first image (cc.png)
+      const ccImg = new Image();
+      ccImg.src = '/cc.png'; // Adjust path as needed based on your project structure
+      doc.addImage(ccImg, 'PNG', pageWidth - 60, 5, 25, 15);
+      
+      // Load and place the second image (ilac-mra.png)
+      const ilacImg = new Image();
+      ilacImg.src = '/ilac-mra.png'; // Adjust path as needed based on your project structure
+      doc.addImage(ilacImg, 'PNG', pageWidth - 30, 5, 25, 15);
+    } catch (imgError) {
+      console.error("Error adding logo images:", imgError);
+    }
+    
+    try {
+      // Add company logo in the top left corner
+      const dImg = new Image();
+      dImg.src = '/Dupdated.png'; // Changed from D.png to Dupdated.png
+      doc.addImage(dImg, 'PNG', 10, 5, 25, 15);
+    } catch (imgError) {
+      console.error("Error adding D logo:", imgError);
+    }
+
+    // Add company name and header
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 102, 204);
+    doc.setFontSize(14);
+    doc.text("ERROR DETECTOR", pageWidth / 2, 10, { align: "center" });
+    
+    // Add accreditation text with border
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "italic");
+    const accreditationText = "An ISO/IEC 17025:2017 Accredited Calibration Lab by NABL";
+    const textWidth = doc.getStringUnitWidth(accreditationText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+    
+    // Position the box to avoid overlap with logos
+    const boxX = pageWidth/2 - 15 - textWidth/2 - 3;
+    const boxY = 12;
+    const boxWidth = textWidth + 6;
+    const boxHeight = 6;
+    
+    doc.setDrawColor(0, 102, 204);
+    doc.setLineWidth(0.5);
+    doc.rect(boxX, boxY, boxWidth, boxHeight);
+    
+    // Set text color to #BB6B9E (187,107,158) for the accreditation text
+    doc.setTextColor(187, 107, 158); // Set specific RGB values for color #BB6B9E
+    doc.text(accreditationText, pageWidth/2 - 15, 15, { align: "center" });
+    
+    // Reset text color back to default black
+    doc.setTextColor(0, 0, 0);
     
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 102, 204);
     doc.setFontSize(16);
-    doc.text("CALIBRATION CERTIFICATE", pageWidth / 2, 15, { align: "center" });
     
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(11);
-    doc.text(`Calibration Certificate No. : ${certificateNo}`, margin, 25);
-    doc.text(`Job No: ${jobNo}`, margin, 30);
+    doc.text(`Calibration Certificate No. : ${certificateNo}`, margin, 30);
+    doc.text(`Job No: ${jobNo}`, margin, 35);
     const currentYear = new Date().getFullYear().toString().slice(-2);
-    doc.text(`ULR-CC3731${currentYear}000000502F`, margin, 35);
+    doc.text(`ULR-CC3731${currentYear}000000502F`, margin, 40);
     
     const today = new Date();
     const formattedDate = `${today.getDate().toString().padStart(2, '0')}.${(today.getMonth() + 1).toString().padStart(2, '0')}.${today.getFullYear()}`;
     
-    doc.text(`Date of Issue: ${formattedDate}`, margin + 100, 25);
-    doc.text(`Meter Serial no: ${product.serialNo || "N/A"}`, margin + 100, 30);
-    doc.text("Page: 02 of 02 Pages", margin + 100, 35);
+    doc.text(`Date of Issue: ${formattedDate}`, margin + 100, 30);
+    doc.text(`Meter Serial no: ${product.serialNo || "N/A"}`, margin + 100, 35);
+    doc.text("Page: 02 of 02 Pages", margin + 100, 40);
     
     doc.setFontSize(14);
-    doc.text("CALIBRATION RESULTS", pageWidth / 2, 45, { align: "center" });
+    doc.text("CALIBRATION RESULTS", pageWidth / 2, 65, { align: "center" }); // Moved down
     
     let tableData = [];
     
     let parameterDetails = "N/A";
     let rangeDetails = "N/A";
     
+    // Format range with kV unit if not already present
+    const formatRange = (rangeValue) => {
+      if (!rangeValue) return "Full Range";
+      
+      // If the range already includes a unit, leave it as is
+      if (/[a-zA-Z]/.test(rangeValue)) {
+        return rangeValue;
+      }
+      
+      // Otherwise, append "kV" as the unit
+      return `${rangeValue} kV`;
+    };
+    
     if (product.parameters && product.parameters.length > 0) {
       const parameter = product.parameters[0];
       parameterDetails = parameter.parameter || "DC high resistance @1000 Volt";
-      rangeDetails = parameter.ranges || "1000 M.ohm";
+      rangeDetails = formatRange(parameter.ranges || "Full Range");
       
       if (parameter.readings && parameter.readings.length > 0) {
         tableData = parameter.readings.map((reading, index) => {
@@ -601,7 +759,7 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
     console.log("Calibration results table data:", tableData);
     
     doc.autoTable({
-      startY: 50,
+      startY: 55,
       head: [["Sl.No.", "Parameter, range and Least count", "*DUC Value set at", "Standard value applied to reach *DUC value", "(±) Measurement uncertainty At 95% **C.L where k=2"]],
       body: tableData,
       theme: 'grid',
@@ -633,7 +791,7 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
     doc.text("Checked by", pageWidth / 2 - 15, tableEndY);
     doc.text("Authorised by", pageWidth - 60, tableEndY);
     
-    tableEndY += 20;
+    tableEndY += 7; // Reduced from 20 to 7
     doc.setFont("helvetica", "bold");
     doc.text("Technical Manager", pageWidth - 60, tableEndY);
     
@@ -663,6 +821,13 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
     tableEndY += 10;
     doc.setFont("helvetica", "bold");
     doc.text("****------END OF CALIBRATION CERTIFICATE-----****", pageWidth / 2, tableEndY, { align: "center" });
+    
+    // Add office contact information at the bottom in pink color
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(187, 107, 158); // Same pink color as accreditation text
+    doc.text("Office: 53/2, Haridevpur Road, Kolkata - 700 082, West Bengal, India", pageWidth / 2, pageHeight - 13, { align: "center" });
+    doc.text("Mobile: 9830532452, E-mail: errordetector268@gmail.com / errordetector268@yahoo.com / calibrationerror94@gmail.com", pageWidth / 2, pageHeight - 7, { align: "center" });
     
     return doc;
   } catch (error) {

@@ -72,9 +72,7 @@ const Ucompleted = () => {
         make: product.make,
         serialNo: product.serialNo,
         
-        location: product.calibrationDataSheet && product.calibrationDataSheet.Location ? 
-                 product.calibrationDataSheet.Location : 
-                 (product.calibrationFacilityAvailable || "At Laboratory"),
+        location: product.calibrationFacilityAvailable || "At Laboratory",
         
         method: product.parameters && product.parameters.length > 0 
                 ? product.parameters[0].methodUsed 
@@ -92,9 +90,7 @@ const Ucompleted = () => {
         customerName: product.organization || product.customerName || product.customer,
         customerAddress: product.address || product.customerAddress,
         name: product.instrumentDescription || product.name || product.description,
-        location: product.calibrationDataSheet && product.calibrationDataSheet.Location ? 
-                product.calibrationDataSheet.Location : 
-                (product.calibrationFacilityAvailable || "At Laboratory")
+        location: product.calibrationFacilityAvailable || "At Laboratory"
       };
       
       console.log("Enhanced product without parent form:", enhancedProduct);
@@ -170,11 +166,77 @@ const Ucompleted = () => {
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         
-        doc.addImage(qrCodeDataUrl, 'PNG', 20, pageHeight - 40, 30, 30);
+        // Add D.png to the top left corner
+        try {
+          // Add company logo in the top left corner
+          const dImg = new Image();
+          dImg.src = '/Dupdated.png'; // Changed from D.png to Dupdated.png
+          doc.addImage(dImg, 'PNG', 10, 5, 25, 15);
+        } catch (imgError) {
+          console.error("Error adding D logo to QR code page:", imgError);
+        }
+        
+        // Make sure the logo images are added to the page with QR in the correct order
+        try {
+          // Load ilac-mra first (on the left)
+          const ilacImg = new Image();
+          ilacImg.src = '/ilac-mra.png';
+          
+          // Load cc logo second (on the right)
+          const ccImg = new Image();
+          ccImg.src = '/cc.png';
+          
+          // Add both images to the PDF in the correct order
+          doc.addImage(ilacImg, 'PNG', pageWidth - 60, 5, 25, 15);
+          doc.addImage(ccImg, 'PNG', pageWidth - 30, 5, 25, 15);
+          
+          console.log("Logo images added to QR code page");
+        } catch (imgError) {
+          console.error("Error adding logo images to QR code page:", imgError);
+        }
+        
+        // Add company name and accreditation text above the main heading on the QR code page
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 102, 204);
+        doc.setFontSize(14); // Increased from 12 to 14
+        doc.text("ERROR DETECTOR", pageWidth / 2, 10, { align: "center" });
+        
+        // Draw blue border around the accreditation text
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "italic");
+        const accreditationText = "An ISO/IEC 17025:2017 Accredited Calibration Lab by NABL";
+        const textWidth = doc.getStringUnitWidth(accreditationText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+        
+        // Adjust positioning to move box to the left
+        const boxX = pageWidth/2 - 15 - textWidth/2 - 3; // Added -15 to move it left
+        const boxY = 12;
+        const boxWidth = textWidth + 6; // 3px padding on each side
+        const boxHeight = 6; // Adjust height as needed
+        
+        // Draw the border (blue rectangle)
+        doc.setDrawColor(0, 102, 204); // Blue border color
+        doc.setLineWidth(0.5);
+        doc.rect(boxX, boxY, boxWidth, boxHeight);
+        
+        // Set text color to #BB6B9E (187,107,158) for the accreditation text
+        doc.setTextColor(187, 107, 158); // Use the same specific color as in pdfGeneration.js
+        doc.text(accreditationText, pageWidth/2 - 15, 15, { align: "center" }); // Added -15 to move it left
+        
+        // Reset text color back to default black for other text
+        doc.setTextColor(0, 0, 0);
+        
+        // Only keep this instance of the CALIBRATION CERTIFICATE heading
+        doc.setFont("helvetica", "normal"); // Changed from bold to normal
+        doc.setFontSize(14); // Reduced from 16 to 14
+        doc.text("CALIBRATION CERTIFICATE", pageWidth / 2, 26, { align: "center" });
+        
+        // Now add QR code after adding the headers
+        // Position it higher above the green bottom region - adjusted for larger green region
+        doc.addImage(qrCodeDataUrl, 'PNG', 20, pageHeight - 60, 30, 30);
         
         console.log("QR code placed at coordinates:", {
           x: 20,
-          y: pageHeight - 40,
+          y: pageHeight - 60, // Changed from pageHeight - 55 to pageHeight - 60
           width: 30,
           height: 30,
           pageHeight: pageHeight
@@ -182,7 +244,7 @@ const Ucompleted = () => {
         
         doc.setFontSize(8);
         doc.setTextColor(0, 0, 0);
-        doc.text("Scan this QR code to view the complete calibration certificate", 55, pageHeight - 25);
+        doc.text("Scan this QR code to view the complete calibration certificate", 55, pageHeight - 45);
         
         doc.save(`Calibration_Certificate_${certificateNo.replace(/\//g, '_')}.pdf`);
         console.log("PDF with QR code saved successfully");

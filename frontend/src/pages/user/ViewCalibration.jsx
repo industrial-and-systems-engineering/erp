@@ -79,8 +79,20 @@ const ViewCalibration = () => {
         methodUsed = product.parameters[0].methodUsed.split(" - ")[0];
       }
       
+      const formatRange = (rangeValue) => {
+        if (!rangeValue) return "Full Range";
+        
+        // If the range already includes a unit, leave it as is
+        if (/[a-zA-Z]/.test(rangeValue)) {
+          return rangeValue;
+        }
+        
+        // Otherwise, append "kV" as the unit
+        return `${rangeValue} kV`;
+      };
+      
       const range = product.parameters && product.parameters.length > 0 ? 
-                   product.parameters[0].ranges || "Full Range" : "Full Range";
+                   formatRange(product.parameters[0].ranges || "Full Range") : "Full Range";
       
       const formatDate = (date) => {
         if (!date) return new Date().toLocaleDateString('en-GB', {
@@ -111,50 +123,120 @@ const ViewCalibration = () => {
       doc.setFillColor(240, 248, 255);
       doc.rect(0, 0, pageWidth, pageHeight, 'F');
       
+      // Add greenish background at the top
+      doc.setFillColor(140, 205, 162); // #8CCDA2
+      doc.rect(0, 0, pageWidth, 22, 'F');
+      
+      // Add matching greenish background to the bottom of the page - increased height from 15 to 20
+      doc.setFillColor(140, 205, 162); // #8CCDA2
+      doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+      
+      // Add office contact information at the bottom in pink color with increased font size
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5); // Increased from 7 to 8.5
+      doc.setTextColor(187, 107, 158); // Same pink color as accreditation text
+      doc.text("Office: 53/2, Haridevpur Road, Kolkata - 700 082, West Bengal, India", pageWidth / 2, pageHeight - 13, { align: "center" });
+      doc.text("Mobile: 9830532452, E-mail: errordetector268@gmail.com / errordetector268@yahoo.com / calibrationerror94@gmail.com", pageWidth / 2, pageHeight - 7, { align: "center" });
+      
+      // Add D.png to the top left corner
+      try {
+        // Add company logo in the top left corner
+        const dImg = new Image();
+        dImg.src = '/Dupdated.png'; // Changed from D.png to Dupdated.png
+        doc.addImage(dImg, 'PNG', 10, 5, 25, 15);
+      } catch (imgError) {
+        console.error("Error adding D logo:", imgError);
+      }
+      
+      // Add the logo images in the top right corner with ilac-mra first
+      try {
+        // Load and place the first image (ilac-mra.png) on the left
+        const ilacImg = new Image();
+        ilacImg.src = '/ilac-mra.png'; // Adjust path as needed based on your project structure
+        doc.addImage(ilacImg, 'PNG', pageWidth - 60, 5, 25, 15);
+        
+        // Load and place the second image (cc.png) on the right
+        const ccImg = new Image();
+        ccImg.src = '/cc.png'; // Adjust path as needed based on your project structure
+        doc.addImage(ccImg, 'PNG', pageWidth - 30, 5, 25, 15);
+      } catch (imgError) {
+        console.error("Error adding logo images:", imgError);
+      }
+      
+      // Add company name and accreditation text above the main heading
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 102, 204);
-      doc.setFontSize(16);
-      doc.text("CALIBRATION CERTIFICATE", pageWidth / 2, 15, { align: "center" });
+      doc.setFontSize(14); // Increased from 12 to 14
+      doc.text("ERROR DETECTOR", pageWidth / 2, 10, { align: "center" });
+      
+      // Draw blue border around the accreditation text
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "italic");
+      const accreditationText = "An ISO/IEC 17025:2017 Accredited Calibration Lab by NABL";
+      const textWidth = doc.getStringUnitWidth(accreditationText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+      
+      // Adjust positioning to move box to the left
+      const boxX = pageWidth/2 - 15 - textWidth/2 - 3; // Added -15 to move it left
+      const boxY = 12;
+      const boxWidth = textWidth + 6; // 3px padding on each side
+      const boxHeight = 6; // Adjust height as needed
+      
+      // Draw the border (blue rectangle)
+      doc.setDrawColor(0, 102, 204); // Blue border color
+      doc.setLineWidth(0.5);
+      doc.rect(boxX, boxY, boxWidth, boxHeight);
+      
+      // Add the text inside the border - use the same adjusted position with the specific color
+      doc.setTextColor(187, 107, 158); // Set the specific color #BB6B9E
+      doc.text(accreditationText, pageWidth/2 - 15, 15, { align: "center" }); // Added -15 to move it left
+      
+      // Reset to black for other text
+      doc.setTextColor(0, 0, 0);
+      
+      // Main heading with slightly larger spacing below the accreditation text
+      doc.setFont("helvetica", "normal"); // Changed from bold to normal
+      doc.setFontSize(14); // Reduced from 16 to 14
+      doc.text("CALIBRATION CERTIFICATE", pageWidth / 2, 26, { align: "center" });
       
       doc.setFontSize(10);
       
       doc.setFont("helvetica", "bold");
       doc.setTextColor(25, 118, 210);
-      doc.text("Calibration Certificate No.", 20, 25);
+      doc.text("Calibration Certificate No.", 20, 35); // Moved down from 25 to 35
       doc.setTextColor(0, 0, 0);
-      doc.text(":", 80, 25);
+      doc.text(":", 80, 35); // Moved down from 25 to 35
       doc.setFont("helvetica", "normal");
-      doc.text(certificateNo, 85, 25);
+      doc.text(certificateNo, 85, 35); // Moved down from 25 to 35
       
       doc.setFont("helvetica", "bold");
       doc.setTextColor(25, 118, 210);
-      doc.text("Date of Issue", 140, 25);
+      doc.text("Date of Issue", 140, 35); // Moved down from 25 to 35
       doc.setTextColor(0, 0, 0);
-      doc.text(":", 165, 25);
+      doc.text(":", 165, 35); // Moved down from 25 to 35
       doc.setFont("helvetica", "normal");
-      doc.text(issueDate, 170, 25);
+      doc.text(issueDate, 170, 35); // Moved down from 25 to 35
       
       doc.setFont("helvetica", "bold");
       doc.setTextColor(25, 118, 210);
-      doc.text("Service Request Form No", 20, 30);
+      doc.text("Service Request Form No", 20, 40); // Moved down from 30 to 40
       doc.setTextColor(0, 0, 0);
-      doc.text(":", 80, 30);
+      doc.text(":", 80, 40); // Moved down from 30 to 40
       doc.setFont("helvetica", "normal");
-      doc.text(srfNo, 85, 30);
+      doc.text(srfNo, 85, 40); // Moved down from 30 to 40
       
       doc.setFont("helvetica", "bold");
       doc.setTextColor(25, 118, 210);
-      doc.text("Page", 140, 30);
+      doc.text("Page", 140, 40); // Moved down from 30 to 40
       doc.setTextColor(0, 0, 0);
-      doc.text(":", 165, 30);
+      doc.text(":", 165, 40); // Moved down from 30 to 40
       doc.setFont("helvetica", "normal");
-      doc.text("01 of 02 pages", 170, 30);
+      doc.text("01 of 02 pages", 170, 40); // Moved down from 30 to 40
       
       doc.setTextColor(0, 0, 0);
       const currentYear = new Date().getFullYear().toString().slice(-2);
-      doc.text(`ULR-CC3731${currentYear}000000502F`, 20, 35);
+      doc.text(`ULR-CC3731${currentYear}000000502F`, 20, 45); // Moved down from 35 to 45
       
-      let y = 45;
+      let y = 55; // Increased starting position from 45 to 55
       const leftMargin = 20;
       const indentedMargin = leftMargin + 5;
       
@@ -181,7 +263,7 @@ const ViewCalibration = () => {
         doc.text(customerAddress, 85, y);
       }
       
-      y += 12; // Changed from 8 to 12
+      y += 10; // Increased spacing
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
       doc.text("2.", leftMargin, y);
@@ -192,7 +274,7 @@ const ViewCalibration = () => {
       y += 4;
       doc.text("to be calibrated", leftMargin + 5, y);
       
-      y += 8; // Changed from 6 to 8
+      y += 6; // Reduced from 10 to 6
       doc.setTextColor(0, 128, 128);
       doc.text("i)", indentedMargin, y);
       doc.text("Item", indentedMargin + 10, y);
@@ -201,7 +283,7 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "normal");
       doc.text(productName, 85, y);
       
-      y += 6; // Changed from 4 to 6
+      y += 4; // Maintained at 4
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 128, 128);
       doc.text("ii)", indentedMargin, y);
@@ -211,7 +293,7 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "normal");
       doc.text(productMake, 85, y);
       
-      y += 6; // Changed from 4 to 6
+      y += 4; // Maintained at 4
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 128, 128);
       doc.text("iii)", indentedMargin, y);
@@ -221,7 +303,7 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "normal");
       doc.text(serialNo, 85, y);
       
-      y += 6; // Changed from 4 to 6
+      y += 4; // Maintained at 4
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 128, 128);
       doc.text("iv)", indentedMargin, y);
@@ -240,7 +322,7 @@ const ViewCalibration = () => {
         condition = product.itemCondition;
       }
       
-      y += 12; // Changed from 8 to 12
+      y += 10; // Increased spacing
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
       doc.text("3.", leftMargin, y);
@@ -250,7 +332,7 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "normal");
       doc.text(condition, 85, y);
       
-      y += 12; // Changed from 8 to 12
+      y += 8; // Reduced from 10 to 8
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
       doc.text("4.", leftMargin, y);
@@ -260,7 +342,7 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "normal");
       doc.text(receivedDate, 85, y);
       
-      y += 12; // Changed from 8 to 12
+      y += 8; // Reduced from 10 to 8
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
       doc.text("5.", leftMargin, y);
@@ -270,7 +352,7 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "normal");
       doc.text(completionDate, 90, y);
       
-      y += 12; // Changed from 8 to 12
+      y += 8; // Reduced from 10 to 8
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
       doc.text("6.", leftMargin, y);
@@ -281,9 +363,7 @@ const ViewCalibration = () => {
       doc.text(nextCalibrationDate, 90, y);
       
       let location = "At Laboratory";
-      if (product.calibrationDataSheet && product.calibrationDataSheet.Location) {
-        location = product.calibrationDataSheet.Location;
-      } else if (product.calibrationFacilityAvailable) {
+      if (product.calibrationFacilityAvailable) {
         location = product.calibrationFacilityAvailable;
       } else if (product.location) {
         location = product.location;
@@ -291,7 +371,7 @@ const ViewCalibration = () => {
         location = product._parentForm.calibrationLocation;
       }
       
-      y += 12; // Changed from 8 to 12
+      y += 8; // Reduced from 10 to 8
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
       doc.text("7.", leftMargin, y);
@@ -301,7 +381,7 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "normal");
       doc.text(location, 95, y);
       
-      y += 12; // Changed from 8 to 12
+      y += 8; // Reduced from 10 to 8
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
       doc.text("8.", leftMargin, y);
@@ -312,7 +392,7 @@ const ViewCalibration = () => {
       doc.text(`Temp: ${temperature}`, 105, y);
       doc.text(`Humidity: ${humidity}`, 145, y);
       
-      y += 12; // Changed from 8 to 12
+      y += 8; // Reduced from 10 to 8
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
       doc.text("9.", leftMargin, y);
@@ -322,15 +402,7 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "normal");
       doc.text(`As per our SOP No: ${methodUsed}`, 90, y);
       
-      y += 12; // Changed from 8 to 12
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(70, 130, 180);
-      doc.text("10.", leftMargin, y);
-      doc.setTextColor(0, 0, 0);
-      doc.text("Details of Reference Standard used for calibration", leftMargin + 5, y);
-      y += 4;
-      doc.text("(Traceable to National/International Standards)", leftMargin + 5, y);
-      y += 6;
+      y += 10; // Slight increase before the reference standards section
       
       const referenceStandards = [];
       
@@ -394,7 +466,7 @@ const ViewCalibration = () => {
         }
       });
       
-      let finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : y + 40;
+      let finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 20 : y + 40; // Increased spacing
       
       if (finalY > pageHeight - 30) {
         doc.addPage();
@@ -408,14 +480,27 @@ const ViewCalibration = () => {
       doc.setTextColor(70, 130, 180);
       doc.text("Authorised by", signatureX, finalY);
       
-      finalY += 10;
+      finalY += 7; // Reduced from 15 to 7
       doc.setTextColor(25, 25, 112);
       doc.text("(P.R.SINGHA)", signatureX, finalY);
       
-      finalY += 5;
+      finalY += 5; // Reduced from 10 to 5
       doc.setFont("helvetica", "normal");
       doc.setTextColor(0, 0, 0);
       doc.text("(Technical Manager)", signatureX, finalY);
+      
+      // For calibration results page, also add QR code if available from previous page
+      if (product.qrCodeDataUrl) {
+        try {
+          // Position it above the green footer - adjusted for new green region height
+          doc.addImage(product.qrCodeDataUrl, 'PNG', 20, pageHeight - 60, 30, 30);
+          doc.setFontSize(8);
+          doc.setTextColor(0, 0, 0);
+          doc.text("Scan this QR code to view the complete calibration certificate", 55, pageHeight - 45);
+        } catch (qrError) {
+          console.error("Error adding QR code to certificate page:", qrError);
+        }
+      }
       
       return doc;
     } catch (error) {
