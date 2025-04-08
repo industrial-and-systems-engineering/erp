@@ -197,6 +197,9 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFillColor(240, 248, 255);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
     
+    // Add watermark to the page
+    addWatermark(doc, '/watermarkupd.png');
+    
     // Add a greenish background to the top section ending just above the CALIBRATION CERTIFICATE heading
     doc.setFillColor(140, 205, 162); // #8CCDA2
     doc.rect(0, 0, pageWidth, 22, 'F'); // Height ends just before the heading at y=26
@@ -204,6 +207,13 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     // Add a matching greenish background to the bottom of the page
     doc.setFillColor(140, 205, 162); // #8CCDA2
     doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+
+    // Add watermark to the page
+    try {
+      addWatermark(doc, '/watermarkupd.png');
+    } catch (watermarkError) {
+      console.error("Error adding watermark:", watermarkError);
+    }
 
     // Add office contact information at the bottom in pink color
     doc.setFont("helvetica", "normal");
@@ -394,7 +404,25 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setTextColor(70, 130, 180);
     doc.text("3.", leftMargin, y);
     doc.setTextColor(0, 0, 0);
-    doc.text("Condition of the item", leftMargin + 5, y);
+    doc.text("Characterisation and Condition of the item", leftMargin + 5, y);
+    y += 5;
+    
+    // Add characterization
+    doc.setTextColor(0, 128, 128);
+    doc.text("i)", indentedMargin, y);
+    doc.text("Characterisation", indentedMargin + 10, y);
+    doc.setTextColor(0, 0, 0);
+    doc.text(":", 80, y);
+    doc.setFont("helvetica", "normal");
+    doc.text("Not Applicable", 85, y);
+    
+    // Add condition
+    y += 5;
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 128, 128);
+    doc.text("ii)", indentedMargin, y);
+    doc.text("Condition", indentedMargin + 10, y);
+    doc.setTextColor(0, 0, 0);
     doc.text(":", 80, y);
     doc.setFont("helvetica", "normal");
     doc.text(certificate.condition, 85, y);
@@ -518,6 +546,9 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setTextColor(0, 0, 0);
     doc.text("(Technical Manager)", rightMargin, finalY);
 
+    // Add watermark to the page
+    addWatermark(doc, '/watermarkupd.png');
+
     if (returnDoc) {
       console.log("Returning PDF document for further processing");
       return doc;
@@ -554,7 +585,7 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
     const qrSize = 30;
     const qrX = 20;
     // Position QR code higher to avoid overlap with the green bottom region
-    const qrY = pageHeight - qrSize - 20; // Changed from 10 to 25
+    const qrY = pageHeight - qrSize - 25; // Position to avoid overlap with footer
     
     console.log("QR code dimensions:", {
       pageWidth,
@@ -564,15 +595,28 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
       qrSize
     });
     
-    doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+    // Get current page number
+    const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
     
-    if (text) {
-      doc.setFontSize(8);
-      doc.setTextColor(0, 0, 0);
-      doc.text(text, qrX + qrSize + 5, qrY + qrSize/2);
+    // Get total number of pages in the document
+    const totalPages = doc.internal.getNumberOfPages();
+    
+    // Add QR code to all pages
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+      
+      if (text) {
+        doc.setFontSize(8);
+        doc.setTextColor(0, 0, 0);
+        doc.text(text, qrX + qrSize + 5, qrY + qrSize/2);
+      }
     }
     
-    console.log("QR code added successfully");
+    // Return to the original page
+    doc.setPage(currentPage);
+    
+    console.log("QR code added successfully to all pages");
     return doc;
   } catch (error) {
     console.error("Error adding QR code to PDF:", error);
@@ -590,6 +634,9 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
     doc.setFillColor(240, 248, 255);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
     
+    // Add watermark to the page
+    addWatermark(doc, '/watermarkupd.png');
+    
     // Add a greenish background to the top section ending just above the CALIBRATION RESULTS heading
     doc.setFillColor(140, 205, 162); // #8CCDA2
     doc.rect(0, 0, pageWidth, 22, 'F'); // Height ends just before the heading
@@ -597,6 +644,13 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
     // Add a matching greenish background to the bottom of the page
     doc.setFillColor(140, 205, 162); // #8CCDA2
     doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+    
+    // Add watermark to the page
+    try {
+      addWatermark(doc, '/watermarkupd.png');
+    } catch (watermarkError) {
+      console.error("Error adding watermark to calibration results page:", watermarkError);
+    }
     
     // Add the logo images in the top right corner
     try {
@@ -621,7 +675,7 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
     } catch (imgError) {
       console.error("Error adding D logo:", imgError);
     }
-
+    
     // Add company name and header
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 102, 204);
@@ -829,9 +883,52 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
     doc.text("Office: 53/2, Haridevpur Road, Kolkata - 700 082, West Bengal, India", pageWidth / 2, pageHeight - 13, { align: "center" });
     doc.text("Mobile: 9830532452, E-mail: errordetector268@gmail.com / errordetector268@yahoo.com / calibrationerror94@gmail.com", pageWidth / 2, pageHeight - 7, { align: "center" });
     
+    // Add watermark to the calibration results page
+    addWatermark(doc, '/watermarkupd.png');
+    
     return doc;
   } catch (error) {
     console.error("Error generating calibration results:", error);
     return null;
+  }
+}
+
+/**
+ * Adds a watermark image to the center of the current page
+ * @param {jsPDF} doc - The jsPDF document instance
+ * @param {string} watermarkPath - Path to the watermark image
+ */
+export function addWatermark(doc, watermarkPath) {
+  try {
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    
+    // Create watermark image
+    const watermarkImg = new Image();
+    watermarkImg.src = watermarkPath;
+    
+    // Calculate center position - adjusted upward by 20 units
+    const watermarkWidth = pageWidth * 0.6; // 60% of page width
+    const watermarkHeight = watermarkWidth * 0.75; // Approximate height based on typical image ratio
+    const x = (pageWidth - watermarkWidth) / 2;
+    const y = (pageHeight - watermarkHeight) / 2 - 20; // Shifted upward by 20 units
+    
+    // Add watermark with transparency using GState approach
+    // Create a graphics state with 10% opacity
+    const gState = new doc.GState({opacity: 0.1});
+    doc.setGState(gState);
+    
+    // Add the image with the transparency setting
+    doc.addImage(watermarkImg, 'PNG', x, y, watermarkWidth, watermarkHeight);
+    
+    // Reset to default graphics state (100% opacity) for subsequent drawings
+    const defaultGState = new doc.GState({opacity: 1.0});
+    doc.setGState(defaultGState);
+    
+    console.log("Watermark added successfully to page");
+    return doc;
+  } catch (error) {
+    console.error("Error adding watermark:", error);
+    return doc;
   }
 }
