@@ -6,7 +6,7 @@ export const useCompletedFormsStore = create((set) => ({
 
     fetchCompletedForms: async() => {
         try {
-            const response = await fetch("/api/technician/completed");
+            const response = await fetch("/api/csc/completed");
             if (!response.ok) {
                 throw new Error("Failed to fetch completed forms");
             }

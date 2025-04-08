@@ -3,10 +3,10 @@ const router = express.Router();
 const passport = require("passport");
 const Technician = require("../models/technician");
 const { srfForms, Product } = require("../models/db");
-router.get("/pending", async (req, res) => {
+router.get("/pending", async(req, res) => {
     try {
         const forms = await srfForms
-            .find({ requestStatus: false, formUpdated: false })
+            .find({ formUpdated: true })
             .populate({
                 path: "products",
                 match: { isCalibrated: false }
@@ -17,7 +17,7 @@ router.get("/pending", async (req, res) => {
     }
 });
 
-router.get("/completed", async (req, res) => {
+router.get("/completed", async(req, res) => {
     try {
         const PartiallyCompletedForms = await srfForms
             .find({ requestStatus: false })
@@ -37,15 +37,15 @@ router.get("/completed", async (req, res) => {
     }
 });
 
-router.put("/update/:pid/:fid", async (req, res) => {
+router.put("/update/:pid/:fid", async(req, res) => {
     const { pid, fid } = req.params;
     try {
         const updatedProduct = await Product.findByIdAndUpdate(
             pid, {
-            ...req.body,
-            isCalibrated: true,
-            calibratedDate: req.body.calibrationDate ? new Date(req.body.calibrationDate) : null,
-        }, { new: true }
+                ...req.body,
+                isCalibrated: true,
+                calibratedDate: req.body.calibrationDate ? new Date(req.body.calibrationDate) : null,
+            }, { new: true }
         );
         const form = await srfForms.findById(fid).populate("products");
         const allCalibrated = form.products.every(product => product.isCalibrated);
@@ -61,24 +61,24 @@ router.put("/update/:pid/:fid", async (req, res) => {
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
-}); 
+});
 
-router.put("/updateform/:fid", async (req, res) => {
+router.put("/updateform/:fid", async(req, res) => {
     const { fid } = req.params;
     try {
         const form = await srfForms.findByIdAndUpdate(
             fid, {
-            conditionOfProduct: req.body.conditionOfProduct,
-            itemEnclosed: req.body.itemEnclosed,
-            specialRequest: req.body.specialRequest,
-            decisionRules: req.body.decisionRules,
-            calibrationPeriodicity: req.body.calibrationPeriodicity,
-            reviewRequest: req.body.reviewRequest,
-            calibrationFacilityAvailable: req.body.calibrationFacilityAvailable,
-            calibrationServiceDoneByExternalAgency: req.body.calibrationServiceDoneByExternalAgency,
-            calibrationMethodUsed: req.body.calibrationMethodUsed,
-            formUpdated: true,
-        }, { new: true }
+                conditionOfProduct: req.body.conditionOfProduct,
+                itemEnclosed: req.body.itemEnclosed,
+                specialRequest: req.body.specialRequest,
+                decisionRules: req.body.decisionRules,
+                calibrationPeriodicity: req.body.calibrationPeriodicity,
+                reviewRequest: req.body.reviewRequest,
+                calibrationFacilityAvailable: req.body.calibrationFacilityAvailable,
+                calibrationServiceDoneByExternalAgency: req.body.calibrationServiceDoneByExternalAgency,
+                calibrationMethodUsed: req.body.calibrationMethodUsed,
+                formUpdated: true,
+            }, { new: true }
         ).populate("products");
 
         res.status(200).json({ success: true, data: form });

@@ -265,10 +265,10 @@ const Tpending = () => {
                       <h3 className="text-lg font-medium mb-2">Form Details</h3>
                       <p>
                         <span className="font-medium">SRF ID:</span>{" "}
-                        {selectedForm._id}
+                        {selectedForm.srfNo || "N/A"}
                       </p>
                       <p>
-                        <span className="font-medium">URL Number:</span>{" "}
+                        <span className="font-medium">ULR Number:</span>{" "}
                         {selectedForm.URL_NO || "N/A"}
                       </p>
                       <p>

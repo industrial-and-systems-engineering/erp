@@ -5,9 +5,9 @@ export const usePendingFormsStore = create((set) => ({
     pendingForms: [],
     setPendingForms: (pendingForms) => set({ pendingForms }),
 
-    fetchPendingForms: async () => {
+    fetchPendingForms: async() => {
         try {
-            const response = await fetch("/api/technician/pending");
+            const response = await fetch("/api/csc/pending");
 
             if (!response.ok) {
                 throw new Error(`Failed to fetch pending forms: ${response.status}`);
@@ -22,10 +22,10 @@ export const usePendingFormsStore = create((set) => ({
         }
     },
 
-    updateForm: async (fid, pid, details) => {
+    updateForm: async(fid, pid, details) => {
         console.log("updateForm called with fid:", fid, "pid:", pid, "details:", details);
         try {
-            const response = await fetch(`/api/technician/update/${fid}`, {
+            const response = await fetch(`/api/csc/update/${fid}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -55,27 +55,27 @@ export const usePendingFormsStore = create((set) => ({
             const updatedPendingForm = data.data;
             console.log(updatedPendingForm);
 
-            set((state) => {
-                console.log("Before update:", state.pendingForms);
-                const updatedForms = state.pendingForms.reduce((acc, form) => {
-                    if (form._id === fid) {
-                        console.log("Updating form:", form._id, "removing product:", pid);
-                        const remainingProducts = form.products.filter((product) => product._id !== pid);
-                        if (remainingProducts.length > 0) {
-                            acc.push({
-                                ...form,
-                                products: remainingProducts,
-                            });
-                        }
-                    } else {
-                        acc.push(form);
-                    }
-                    return acc;
-                }, []);
+            // set((state) => {
+            //     console.log("Before update:", state.pendingForms);
+            //     const updatedForms = state.pendingForms.reduce((acc, form) => {
+            //         if (form._id === fid) {
+            //             console.log("Updating form:", form._id, "removing product:", pid);
+            //             const remainingProducts = form.products.filter((product) => product._id !== pid);
+            //             if (remainingProducts.length > 0) {
+            //                 acc.push({
+            //                     ...form,
+            //                     products: remainingProducts,
+            //                 });
+            //             }
+            //         } else {
+            //             acc.push(form);
+            //         }
+            //         return acc;
+            //     }, []);
 
-                console.log("After update:", updatedForms);
-                return { pendingForms: updatedForms };
-            });
+            //     console.log("After update:", updatedForms);
+            //     return { pendingForms: updatedForms };
+            // });
             return { success: true, message: "PendingForms updated successfully" };
         } catch (error) {
             console.error("Error in updateForm:", error);
@@ -88,7 +88,7 @@ export const usePendingFormsStore = create((set) => ({
 
 
 
-    updateFormDetails: async (formId, details) => {
+    updateFormDetails: async(formId, details) => {
         try {
             if (!formId) {
                 return { success: false, message: "Form ID is required" };
@@ -131,7 +131,7 @@ export const usePendingFormsStore = create((set) => ({
                 // Otherwise, update the form details in the list.
                 set((state) => ({
                     pendingForms: state.pendingForms.map((form) =>
-                        form._id === formId ? { ...form, ...details } : form
+                        form._id === formId ? {...form, ...details } : form
                     )
                 }));
             }
@@ -145,7 +145,7 @@ export const usePendingFormsStore = create((set) => ({
 
 
 
-    markFormCompleted: async (formId, formData) => {
+    markFormCompleted: async(formId, formData) => {
         try {
             if (!formId) {
                 return {
