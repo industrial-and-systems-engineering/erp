@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { usePendingFormsStore } from "../utils/pendingForms";
 import CalDataSheet from "./CalDataSheet";
-import { set } from "mongoose";
 
 const Tcard = ({ equipment, form, formOpen }) => {
   const { updateForm, fetchPendingForms } = usePendingFormsStore();
@@ -171,6 +170,7 @@ const Tcard = ({ equipment, form, formOpen }) => {
                     <input
                       type='text'
                       name='ulrNo'
+                      readOnly
                       value={formData.ulrNo}
                       onChange={handleChange}
                       className='ml-2   '

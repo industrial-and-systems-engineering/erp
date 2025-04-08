@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import generatePdf, { generateCalibrationResults } from './utils/pdfGeneration.js';
+import generatePdf, { generateCalibrationResults, addWatermark } from './utils/pdfGeneration.js';
 
 const ViewCalibration = () => {
   const { documentId } = useParams();
@@ -10,25 +10,46 @@ const ViewCalibration = () => {
   const [certificateData, setCertificateData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   useEffect(() => {
-    try {
-      const storedData = localStorage.getItem(`certificate_${documentId}`);
-      
-      if (storedData) {
-        const parsedData = JSON.parse(storedData);
-        setCertificateData(parsedData);
-        generateCompleteCertificate(parsedData);
-      } else {
-        const allKeys = Object.keys(localStorage);
-        const certificateKeys = allKeys.filter(key => key.startsWith('certificate_'));
-        setError(`Certificate data not found for ID: ${documentId}. Please return to the original page and try again.`);
+    const fetchAndGenerateCertificate = async () => {
+      try {
+        setLoading(true);
+        const storedData = localStorage.getItem(`certificate_${documentId}`);
+        
+        if (storedData) {
+          const parsedData = JSON.parse(storedData);
+          setCertificateData(parsedData);
+          
+          // If this is the first time viewing the certificate via QR code,
+          // automatically generate the complete certificate
+          if (!parsedData.completeGenerated) {
+            setIsGeneratingPdf(true);
+            await generateCompleteCertificate(parsedData);
+            
+            // Update the flag in localStorage
+            const updatedData = {
+              ...parsedData,
+              completeGenerated: true
+            };
+            localStorage.setItem(`certificate_${documentId}`, JSON.stringify(updatedData));
+            setCertificateData(updatedData);
+            setIsGeneratingPdf(false);
+          }
+        } else {
+          const allKeys = Object.keys(localStorage);
+          const certificateKeys = allKeys.filter(key => key.startsWith('certificate_'));
+          setError(`Certificate data not found for ID: ${documentId}. Please return to the original page and try again.`);
+        }
+      } catch (err) {
+        setError("Error retrieving certificate data: " + err.message);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError("Error retrieving certificate data: " + err.message);
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    fetchAndGenerateCertificate();
   }, [documentId]);
 
   const generateCompleteCertificate = async (data) => {
@@ -38,9 +59,39 @@ const ViewCalibration = () => {
       await generateFirstPage(doc, product, certificateNo);
       doc.addPage();
       generateCalibrationResults(doc, product, certificateNo, jobNo);
+      
+      // Add watermark to both pages
+      try {
+        // Add watermark to first page
+        doc.setPage(1);
+        addWatermark(doc, '/watermarkupd.png');
+        
+        // Add watermark to second page
+        doc.setPage(2);
+        addWatermark(doc, '/watermarkupd.png');
+      } catch (watermarkError) {
+        console.error("Error adding watermark to merged PDF:", watermarkError);
+      }
+      
+      // If we have a QR code data URL, add it to both pages but WITHOUT the text
+      if (product.qrCodeDataUrl) {
+        // Add to first page
+        doc.setPage(1);
+        const pageWidth = doc.internal.pageSize.width;
+        const pageHeight = doc.internal.pageSize.height;
+        const qrSize = 30;
+        doc.addImage(product.qrCodeDataUrl, 'PNG', 20, pageHeight - 60, qrSize, qrSize);
+        
+        // Add to second page
+        doc.setPage(2);
+        doc.addImage(product.qrCodeDataUrl, 'PNG', 20, pageHeight - 60, qrSize, qrSize);
+      }
+      
       doc.save(`Complete_Calibration_Certificate_${certificateNo.replace(/\//g, '_')}.pdf`);
+      return true;
     } catch (error) {
       setError("Failed to generate complete certificate: " + error.message);
+      return false;
     }
   };
 
@@ -327,7 +378,25 @@ const ViewCalibration = () => {
       doc.setTextColor(70, 130, 180);
       doc.text("3.", leftMargin, y);
       doc.setTextColor(0, 0, 0);
-      doc.text("Condition of the item", leftMargin + 5, y);
+      doc.text("Characterisation and Condition of the item", leftMargin + 5, y);
+      y += 5;
+      
+      // Add characterization
+      doc.setTextColor(0, 128, 128);
+      doc.text("i)", indentedMargin, y);
+      doc.text("Characterisation", indentedMargin + 10, y);
+      doc.setTextColor(0, 0, 0);
+      doc.text(":", 80, y);
+      doc.setFont("helvetica", "normal");
+      doc.text("Not Applicable", 85, y);
+      
+      // Add condition
+      y += 5;
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 128, 128);
+      doc.text("ii)", indentedMargin, y);
+      doc.text("Condition", indentedMargin + 10, y);
+      doc.setTextColor(0, 0, 0);
       doc.text(":", 80, y);
       doc.setFont("helvetica", "normal");
       doc.text(condition, 85, y);
@@ -435,6 +504,15 @@ const ViewCalibration = () => {
         });
       }
       
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(70, 130, 180);
+      doc.text("10.", leftMargin, y);
+      doc.setTextColor(0, 0, 0);
+      doc.text("Details of Reference Standard used for calibration", leftMargin + 5, y);
+      y += 5;
+      doc.text("(Traceable to National/International Standards)", leftMargin + 5, y);
+      y += 8;
+      
       doc.autoTable({
         startY: y,
         head: [['SI no', 'Description', 'Make/Model', 'Slno/Idno', 'Calibration Certificate No', 'Valid up to', 'Calibrated By', 'Traceable to']],
@@ -494,13 +572,19 @@ const ViewCalibration = () => {
         try {
           // Position it above the green footer - adjusted for new green region height
           doc.addImage(product.qrCodeDataUrl, 'PNG', 20, pageHeight - 60, 30, 30);
-          doc.setFontSize(8);
-          doc.setTextColor(0, 0, 0);
-          doc.text("Scan this QR code to view the complete calibration certificate", 55, pageHeight - 45);
+          // No scan text for the first page in the merged PDF 
         } catch (qrError) {
           console.error("Error adding QR code to certificate page:", qrError);
         }
       }
+      
+      // Calculate center position for watermark - shifted upward by 20 units
+      const watermarkWidth = pageWidth * 0.6;
+      const watermarkHeight = watermarkWidth * 0.75;
+      const watermarkX = (pageWidth - watermarkWidth) / 2;
+      const watermarkY = (pageHeight - watermarkHeight) / 2 - 20; // Shifted upward by 20 units
+      
+      addWatermark(doc, '/watermarkupd.png');
       
       return doc;
     } catch (error) {
@@ -508,12 +592,14 @@ const ViewCalibration = () => {
     }
   };
 
-  if (loading) {
+  if (loading || isGeneratingPdf) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-700">Loading certificate data...</p>
+          <p className="mt-4 text-gray-700">
+            {isGeneratingPdf ? "Generating your complete certificate..." : "Loading certificate data..."}
+          </p>
         </div>
       </div>
     );
@@ -545,7 +631,9 @@ const ViewCalibration = () => {
           <div>
             <div className="mb-6 bg-green-50 p-4 rounded-lg border border-green-200">
               <p className="text-green-700 font-medium">
-                The complete calibration certificate has been generated and downloaded automatically.
+                {certificateData.completeGenerated 
+                  ? "The complete calibration certificate has been generated and downloaded automatically." 
+                  : "Your complete certificate is being generated now and will download automatically."}
               </p>
             </div>
             
@@ -560,15 +648,22 @@ const ViewCalibration = () => {
             </div>
             <div className="text-center">
               <button
-                onClick={() => generateCompleteCertificate(certificateData)}
+                onClick={() => {
+                  setIsGeneratingPdf(true);
+                  generateCompleteCertificate(certificateData).finally(() => {
+                    setIsGeneratingPdf(false);
+                  });
+                }}
                 className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                disabled={isGeneratingPdf}
               >
-                Download Certificate Again
+                {isGeneratingPdf ? "Generating..." : "Download Certificate Again"}
               </button>
               
               <button
                 onClick={() => navigate('/user/completed')}
                 className="ml-4 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                disabled={isGeneratingPdf}
               >
                 Return to Completed Products
               </button>

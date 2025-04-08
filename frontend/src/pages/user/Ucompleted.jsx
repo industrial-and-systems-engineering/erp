@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Ucard from './components/Ucard.jsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import generatePdf from './utils/pdfGeneration.js';
+import generatePdf, { generateCalibrationResults } from './utils/pdfGeneration.js';
 import QRCode from 'qrcode';
 
 const Ucompleted = () => {
@@ -104,7 +104,7 @@ const Ucompleted = () => {
 
   const generatePdfWithQR = async (selectedProduct) => {
     try {
-      console.log("Generating PDF with QR code");
+      console.log("Generating first page PDF with QR code");
       
       if (!selectedProduct.referenceStandards || selectedProduct.referenceStandards.length === 0) {
         selectedProduct.referenceStandards = [{
@@ -133,15 +133,6 @@ const Ucompleted = () => {
       const viewUrl = `${window.location.origin}/view-calibration/${documentId}`;
       console.log("QR code will link to:", viewUrl);
       
-      const qrData = {
-        productId: selectedProduct._id,
-        certificateNo: certificateNo,
-        jobNo: jobNo,
-        documentId: documentId,
-        type: "calibration_certificate",
-        url: viewUrl
-      };
-      
       try {
         const qrCodeDataUrl = await QRCode.toDataURL(viewUrl, {
           errorCorrectionLevel: 'M',
@@ -155,110 +146,49 @@ const Ucompleted = () => {
         
         console.log("QR code generated successfully with URL:", viewUrl);
         
+        // Create only the first page of the PDF document
         const doc = await generatePdf(selectedProduct, true, certificateNo);
         
         if (!doc) {
-          throw new Error("Failed to generate PDF");
+          throw new Error("Failed to generate PDF first page");
         }
         
-        console.log("PDF generated successfully, now adding QR code");
+        console.log("PDF first page generated successfully");
         
+        // Add QR code to the first page
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
+        const qrSize = 30;
         
-        // Add D.png to the top left corner
-        try {
-          // Add company logo in the top left corner
-          const dImg = new Image();
-          dImg.src = '/Dupdated.png'; // Changed from D.png to Dupdated.png
-          doc.addImage(dImg, 'PNG', 10, 5, 25, 15);
-        } catch (imgError) {
-          console.error("Error adding D logo to QR code page:", imgError);
-        }
-        
-        // Make sure the logo images are added to the page with QR in the correct order
-        try {
-          // Load ilac-mra first (on the left)
-          const ilacImg = new Image();
-          ilacImg.src = '/ilac-mra.png';
-          
-          // Load cc logo second (on the right)
-          const ccImg = new Image();
-          ccImg.src = '/cc.png';
-          
-          // Add both images to the PDF in the correct order
-          doc.addImage(ilacImg, 'PNG', pageWidth - 60, 5, 25, 15);
-          doc.addImage(ccImg, 'PNG', pageWidth - 30, 5, 25, 15);
-          
-          console.log("Logo images added to QR code page");
-        } catch (imgError) {
-          console.error("Error adding logo images to QR code page:", imgError);
-        }
-        
-        // Add company name and accreditation text above the main heading on the QR code page
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(0, 102, 204);
-        doc.setFontSize(14); // Increased from 12 to 14
-        doc.text("ERROR DETECTOR", pageWidth / 2, 10, { align: "center" });
-        
-        // Draw blue border around the accreditation text
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "italic");
-        const accreditationText = "An ISO/IEC 17025:2017 Accredited Calibration Lab by NABL";
-        const textWidth = doc.getStringUnitWidth(accreditationText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
-        
-        // Adjust positioning to move box to the left
-        const boxX = pageWidth/2 - 15 - textWidth/2 - 3; // Added -15 to move it left
-        const boxY = 12;
-        const boxWidth = textWidth + 6; // 3px padding on each side
-        const boxHeight = 6; // Adjust height as needed
-        
-        // Draw the border (blue rectangle)
-        doc.setDrawColor(0, 102, 204); // Blue border color
-        doc.setLineWidth(0.5);
-        doc.rect(boxX, boxY, boxWidth, boxHeight);
-        
-        // Set text color to #BB6B9E (187,107,158) for the accreditation text
-        doc.setTextColor(187, 107, 158); // Use the same specific color as in pdfGeneration.js
-        doc.text(accreditationText, pageWidth/2 - 15, 15, { align: "center" }); // Added -15 to move it left
-        
-        // Reset text color back to default black for other text
-        doc.setTextColor(0, 0, 0);
-        
-        // Only keep this instance of the CALIBRATION CERTIFICATE heading
-        doc.setFont("helvetica", "normal"); // Changed from bold to normal
-        doc.setFontSize(14); // Reduced from 16 to 14
-        doc.text("CALIBRATION CERTIFICATE", pageWidth / 2, 26, { align: "center" });
-        
-        // Now add QR code after adding the headers
-        // Position it higher above the green bottom region - adjusted for larger green region
-        doc.addImage(qrCodeDataUrl, 'PNG', 20, pageHeight - 60, 30, 30);
-        
-        console.log("QR code placed at coordinates:", {
-          x: 20,
-          y: pageHeight - 60, // Changed from pageHeight - 55 to pageHeight - 60
-          width: 30,
-          height: 30,
-          pageHeight: pageHeight
-        });
+        // Position QR code above the green footer
+        doc.addImage(qrCodeDataUrl, 'PNG', 20, pageHeight - 60, qrSize, qrSize);
         
         doc.setFontSize(8);
         doc.setTextColor(0, 0, 0);
         doc.text("Scan this QR code to view the complete calibration certificate", 55, pageHeight - 45);
         
-        doc.save(`Calibration_Certificate_${certificateNo.replace(/\//g, '_')}.pdf`);
-        console.log("PDF with QR code saved successfully");
+        // Save the first page PDF with a different name
+        doc.save(`Calibration_Certificate_FirstPage_${certificateNo.replace(/\//g, '_')}.pdf`);
+        console.log("First page PDF with QR code saved successfully");
         
+        // Store product and certificate data for second page generation later
         const certificateData = {
-          product: selectedProduct,
+          product: {
+            ...selectedProduct,
+            qrCodeDataUrl: qrCodeDataUrl // Include QR code in the product data
+          },
           certificateNo: certificateNo,
           jobNo: jobNo,
           documentId: documentId,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          completeGenerated: false // Flag to track if the complete certificate has been generated
         };
         
         localStorage.setItem(`certificate_${documentId}`, JSON.stringify(certificateData));
         console.log("Certificate data stored for QR lookup with ID:", documentId);
+        
+        // Show success message to the user
+        alert(`First page of certificate generated successfully. Scan the QR code to view and download the complete certificate.`);
         
       } catch (qrError) {
         console.error("Error generating QR code:", qrError);
@@ -340,12 +270,12 @@ const Ucompleted = () => {
               ))
             )}
           </div>
-
+          
           <div className='col-span-3 bg-white rounded-lg shadow-md overflow-y-auto max-h-[600px]'>
             {selectedProduct ? (
               <div className='p-4'>
                 <h1 className='text-xl font-bold mb-4 border-b pb-2'>Product Details</h1>
-                <Ucard
+                <Ucard 
                   key={cardKey}
                   equipment={selectedProduct}
                 />
