@@ -114,6 +114,8 @@ Create a `.env` file in the root directory and add the following environment var
 MONGO_URI=mongodb://localhost:27017/erpdevelopment
 PORT=8080
 SESSION_SECRET=thisshouldbeabettersecret!
+RAZORPAY_KEY_ID=rzp_test_T6N1vi1kjLuL9s
+RAZORPAY_SECRET=Dq0cBzdSwMRoJMbC6N4ZUpGn
 ```
 
 ## Technologies Used
