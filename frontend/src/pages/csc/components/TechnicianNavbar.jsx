@@ -9,10 +9,10 @@ import {
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useAuthStore } from "../../../utils/isloggedin.js";
+import { useAuthStore2 } from "../../../utils/isloggedin.js";
 
 const TechnicianNavbar = ({ setFormData }) => {
-  const { isAuthenticated, checkAuth } = useAuthStore();
+  const { isAuthenticated2, checkAuth2 } = useAuthStore2();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -20,10 +20,8 @@ const TechnicianNavbar = ({ setFormData }) => {
 
   // Check authentication on component mount
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
-
-  // Handle scroll event to change navbar appearance
+    checkAuth2();
+  }, [checkAuth2]);
   useEffect(() => {
     const handleScroll = () => {
       const isScrolled = window.scrollY > 10;
@@ -37,13 +35,11 @@ const TechnicianNavbar = ({ setFormData }) => {
       window.removeEventListener("scroll", handleScroll);
     };
   }, [scrolled]);
-
-  // Handle logout
   const handleLogout = async () => {
     try {
       await fetch("/api/user/logout", { method: "GET" });
-      checkAuth(false);
-      setFormData({ username: "", email: "", password: "", usertype: "Technician" });
+      checkAuth2(false);
+      setFormData({ username: "", email: "", password: "", usertype: "customerservicecell" });
       navigate("/");
     } catch (error) {
       console.error("Logout error:", error);
@@ -141,7 +137,7 @@ const TechnicianNavbar = ({ setFormData }) => {
 
         {/* Desktop sign out button */}
         <div className='hidden lg:flex lg:flex-1 lg:justify-end'>
-          {isAuthenticated && (
+          {isAuthenticated2 && (
             <button
               onClick={handleLogout}
               className={`flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
@@ -176,7 +172,7 @@ const TechnicianNavbar = ({ setFormData }) => {
                 {item.name}
               </Link>
             ))}
-            {isAuthenticated && (
+            {isAuthenticated2 && (
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);

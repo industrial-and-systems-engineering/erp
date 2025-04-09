@@ -10,10 +10,10 @@ import {
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useAuthStore } from "../../../utils/isloggedin.js";
+import { useAuthStore1 } from "../../../utils/isloggedin.js";
 
 const TechnicianNavbar = ({ setFormData }) => {
-  const { isAuthenticated, checkAuth } = useAuthStore();
+  const { isAuthenticated1, checkAuth1 } = useAuthStore1();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -21,8 +21,8 @@ const TechnicianNavbar = ({ setFormData }) => {
 
   // Check authentication on component mount
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    checkAuth1();
+  }, [checkAuth1]);
 
   // Handle scroll event to change navbar appearance
   useEffect(() => {
@@ -43,7 +43,7 @@ const TechnicianNavbar = ({ setFormData }) => {
   const handleLogout = async () => {
     try {
       await fetch("/api/user/logout", { method: "GET" });
-      checkAuth(false);
+      checkAuth1(false);
       setFormData({ username: "", email: "", password: "", usertype: "Technician" });
       navigate("/");
     } catch (error) {
@@ -142,7 +142,7 @@ const TechnicianNavbar = ({ setFormData }) => {
 
         {/* Desktop sign out button */}
         <div className='hidden lg:flex lg:flex-1 lg:justify-end'>
-          {isAuthenticated && (
+          {isAuthenticated1 && (
             <button
               onClick={handleLogout}
               className={`flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
@@ -177,7 +177,7 @@ const TechnicianNavbar = ({ setFormData }) => {
                 {item.name}
               </Link>
             ))}
-            {isAuthenticated && (
+            {isAuthenticated1 && (
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
