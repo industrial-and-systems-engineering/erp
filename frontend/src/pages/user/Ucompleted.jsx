@@ -11,6 +11,7 @@ const Ucompleted = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [pdfError, setPdfError] = useState(null);
   const [cardKey, setCardKey] = useState(0);
+  
 
   useEffect(() => {
     const fetchCalibratedForms = async () => {
@@ -208,7 +209,79 @@ const Ucompleted = () => {
       </div>
     );
   }
+    const amount= 5000;
+    const currency= "INR";
+    const receiptId= "qwsaq1";
 
+    const paymenthandler = async (e) => {
+      try {
+        const response = await fetch("http://localhost:8080/order", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amount,
+            currency,
+            receipt: receiptId,
+          }),
+        });
+    
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+    
+        const order = await response.json();
+        console.log(order);
+        var options = {
+          "key": "rzp_test_q2HP4Vw5ujXv4E", // Enter the Key ID generated from the Dashboard
+          amount, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
+          currency,
+          "name": "Acme Corp", //your business name
+          "description": "Test Transaction",
+          "image": "https://example.com/your_logo",
+          "order_id":order.id, //This is a sample Order ID. Pass the `id` obtained in the response of Step 1
+          "handler": async function (response){
+            const body={...response,};
+            const validateresponse=await fetch("http://localhost:8080/order/validate", {
+             method: "POST",
+             body: JSON.stringify(body),
+             headers: {
+                "Content-Type": "application/json",
+             },
+            });
+            const jsonres=await validateresponse.json();
+            console.log(jsonres);
+          },
+          "prefill": { //We recommend using the prefill parameter to auto-fill customer's contact information, especially their phone number
+              "name": "Gaurav Kumar", //your customer's name
+              "email": "gaurav.kumar@example.com", 
+              "contact": "9000090000"  //Provide the customer's phone number for better conversion rates 
+          },
+          "notes": {
+              "address": "Razorpay Corporate Office"
+          },
+          "theme": {
+              "color": "#3399cc"
+          }
+      };
+      var rzp1 = new window.Razorpay(options);
+      rzp1.on('payment.failed', function (response){
+              alert(response.error.code);
+              alert(response.error.description);
+              alert(response.error.source);
+              alert(response.error.step);
+              alert(response.error.reason);
+              alert(response.error.metadata.order_id);
+              alert(response.error.metadata.payment_id);
+      });
+      } catch (err) {
+        console.error("Payment handler error:", err);
+      }
+      rzp1.open();
+      e.preventDefault();
+    };
+    
   return (
     <div className='container py-10'>
       {pdfError && (
@@ -298,6 +371,16 @@ const Ucompleted = () => {
                   >
                     Download with QR
                   </button>
+                  
+                  <button
+                    className='bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors'
+                    onClick={() => {
+                      //console.log("Download with QR button clicked");
+                      paymenthandler();
+                    }}
+                  >
+                    pay
+                  </button>
                 </div>
               </div>
             ) : (
@@ -342,6 +425,8 @@ const Ucompleted = () => {
           <p className='text-gray-500'>There are currently no completed products to display.</p>
         </div>
       )}
+
+      {/* <button onClick={paymenthandler}>pay</button> */}
     </div>
   );
 };
