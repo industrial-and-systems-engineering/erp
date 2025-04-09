@@ -214,6 +214,8 @@ const Ucompleted = () => {
     const receiptId= "qwsaq1";
 
     const paymenthandler = async (e) => {
+
+      if(e && e.preventDefault) e.preventDefault();
       try {
         const response = await fetch("http://localhost:8080/order", {
           method: "POST",
@@ -234,7 +236,7 @@ const Ucompleted = () => {
         const order = await response.json();
         console.log(order);
         var options = {
-          "key": "rzp_test_q2HP4Vw5ujXv4E", // Enter the Key ID generated from the Dashboard
+          "key": "rzp_test_T6N1vi1kjLuL9s", // Enter the Key ID generated from the Dashboard
           amount, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
           currency,
           "name": "Acme Corp", //your business name
@@ -266,6 +268,7 @@ const Ucompleted = () => {
           }
       };
       var rzp1 = new window.Razorpay(options);
+      rzp1.open();
       rzp1.on('payment.failed', function (response){
               alert(response.error.code);
               alert(response.error.description);
@@ -278,8 +281,6 @@ const Ucompleted = () => {
       } catch (err) {
         console.error("Payment handler error:", err);
       }
-      rzp1.open();
-      e.preventDefault();
     };
     
   return (
@@ -374,9 +375,9 @@ const Ucompleted = () => {
                   
                   <button
                     className='bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors'
-                    onClick={() => {
+                    onClick={(e) => {
                       //console.log("Download with QR button clicked");
-                      paymenthandler();
+                      paymenthandler(e);
                     }}
                   >
                     pay
