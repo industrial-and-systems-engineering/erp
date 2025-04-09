@@ -728,9 +728,6 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
     
     let tableData = [];
     
-    let parameterDetails = "N/A";
-    let rangeDetails = "N/A";
-    
     // Format range with kV unit if not already present
     const formatRange = (rangeValue) => {
       if (!rangeValue) return "Full Range";
@@ -744,57 +741,57 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
       return `${rangeValue} kV`;
     };
     
+    // Check if product has parameters
     if (product.parameters && product.parameters.length > 0) {
-      const parameter = product.parameters[0];
-      parameterDetails = parameter.parameter || "DC high resistance @1000 Volt";
-      rangeDetails = formatRange(parameter.ranges || "Full Range");
+      let rowCounter = 1;
       
-      if (parameter.readings && parameter.readings.length > 0) {
-        tableData = parameter.readings.map((reading, index) => {
-          const ducValue = `${reading.rName || "N/A"} ${reading.rUnit || ""}`.trim();
-          
-          const stdValue = `${reading.mean || "N/A"} ${reading.rUnit || ""}`.trim();
-          
-          const uncertainty = reading.uc ? `${reading.uc}%` : "N/A";
-          
-          if (index === 0) {
-            return [
-              "1.", 
-              parameterDetails, 
-              ducValue, 
-              stdValue, 
-              uncertainty
-            ];
-          }
-          
-          return [
-            `${index + 1}.`, 
-            "", 
-            ducValue, 
-            stdValue, 
-            uncertainty
-          ];
-        });
+      // Process all parameters instead of just the first one
+      product.parameters.forEach((parameter, paramIndex) => {
+        const parameterDetails = parameter.parameter || "DC high resistance @1000 Volt";
+        const rangeDetails = formatRange(parameter.ranges || "Full Range");
         
-        if (tableData.length === 0) {
+        // If the parameter has readings
+        if (parameter.readings && parameter.readings.length > 0) {
+          // First row of each parameter includes the parameter name
+          parameter.readings.forEach((reading, readingIndex) => {
+            const ducValue = `${reading.rName || "N/A"} ${reading.rUnit || ""}`.trim();
+            const stdValue = `${reading.mean || "N/A"} ${reading.rUnit || ""}`.trim();
+            const uncertainty = reading.uc ? `${reading.uc}%` : "N/A";
+            
+            if (readingIndex === 0) {
+              tableData.push([
+                `${rowCounter}.`, 
+                readingIndex === 0 ? `${parameterDetails}${paramIndex > 0 ? ` (${rangeDetails})` : ''}` : "", 
+                ducValue, 
+                stdValue, 
+                uncertainty
+              ]);
+            } else {
+              tableData.push([
+                `${rowCounter}.`, 
+                "", 
+                ducValue, 
+                stdValue, 
+                uncertainty
+              ]);
+            }
+            rowCounter++;
+          });
+        } else {
+          // If parameter has no readings, add a single row for it
           tableData.push([
-            "1.", 
-            parameterDetails, 
+            `${rowCounter}.`, 
+            `${parameterDetails}${paramIndex > 0 ? ` (${rangeDetails})` : ''}`, 
             "N/A", 
             "N/A", 
             "N/A"
           ]);
+          rowCounter++;
         }
-      } else {
-        tableData.push([
-          "1.", 
-          parameterDetails, 
-          "N/A", 
-          "N/A", 
-          "N/A"
-        ]);
-      }
+      });
+      
     } else {
+      // Fallback for when no parameters are found - use default values
       console.warn("No calibration parameters found in product data, using default values");
       tableData = [
         ["1.", "DC high resistance @1000 Volt", "1 M.ohm", "1.0045 M.ohm", "5.75%"],

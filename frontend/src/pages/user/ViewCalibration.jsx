@@ -504,6 +504,20 @@ const ViewCalibration = () => {
         });
       }
       
+      // Make sure to process all parameters when constructing the list of parameters
+      // This ensures all data is available when generating the second page
+      if (product.parameters && product.parameters.length > 0) {
+        console.log(`Processing ${product.parameters.length} parameters for calibration results`);
+        
+        // Make sure each parameter has its readings properly set up
+        product.parameters.forEach((param, index) => {
+          if (!param.readings) {
+            console.log(`Parameter ${index + 1} (${param.parameter || 'Unnamed'}) has no readings, initializing empty array`);
+            param.readings = [];
+          }
+        });
+      }
+      
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
       doc.text("10.", leftMargin, y);
