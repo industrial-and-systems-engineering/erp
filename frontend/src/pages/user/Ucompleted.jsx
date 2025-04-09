@@ -189,7 +189,7 @@ const Ucompleted = () => {
         console.log("Certificate data stored for QR lookup with ID:", documentId);
         
         // Show success message to the user
-        alert(`First page of certificate generated successfully. Scan the QR code to view and download the complete certificate.`);
+        // alert(`First page of certificate generated successfully. Scan the QR code to view and download the complete certificate.`);
         
       } catch (qrError) {
         console.error("Error generating QR code:", qrError);
