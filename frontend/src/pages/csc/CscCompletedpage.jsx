@@ -138,12 +138,9 @@ const CscCompleted = () => {
                     <h3 className="text-lg font-medium mb-2">
                       Form Details
                     </h3>
+                   
                     <p>
-                      <span className="font-medium">SRF ID:</span>{" "}
-                      {selectedForm._id}
-                    </p>
-                    <p>
-                      <span className="font-medium">URL Number:</span>{" "}
+                      <span className="font-medium">ULR Number:</span>{" "}
                       {selectedForm.URL_NO || "N/A"}
                     </p>
                     <p>
@@ -216,36 +213,7 @@ const CscCompleted = () => {
                   )}
                 </div>
 
-                <h4 className="font-medium text-lg">Products List</h4>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full border-collapse border border-gray-200">
-                    <thead>
-                      <tr className="bg-gray-50">
-                        <th className="border border-gray-200 px-4 py-2 text-left">
-                          Job No.
-                        </th>
-                        <th className="border border-gray-200 px-4 py-2 text-left">
-                          Instrument Description
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedForm.products.map((product, index) => (
-                        <tr
-                          key={product._id}
-                          className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                        >
-                          <td className="border border-gray-200 px-4 py-2">
-                            {product.jobNo}
-                          </td>
-                          <td className="border border-gray-200 px-4 py-2">
-                            {product.instrumentDescription}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                
               </div>
             </div>
           ) : (
