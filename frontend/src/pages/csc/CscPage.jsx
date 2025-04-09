@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { useAuthStore } from "../../utils/isloggedin.js";
+import { useAuthStore2 } from "../../utils/isloggedin.js";
 import Footer from "../../components/Footer.jsx";
 import TechnicianNavbar from "./components/TechnicianNavbar.jsx";
 
@@ -12,15 +12,15 @@ const CscPage = () => {
     password: "",
     usertype: "customerservicecell",
   });
-  const { isAuthenticated, checkAuth } = useAuthStore();
+  const { isAuthenticated2, checkAuth2 } = useAuthStore2();
   const navigate = useNavigate();
   useEffect(() => {
     const verifyAuth = async () => {
-      await checkAuth();
+      await checkAuth2();
       setLoading(false);
     };
     verifyAuth();
-  }, [checkAuth]);
+  }, [checkAuth2]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -37,7 +37,7 @@ const CscPage = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        await checkAuth();
+        await checkAuth2();
         navigate("/csc/homepage", { state: { usernumber: data.usernumber } });
       } else {
         const errorData = await response.json();
@@ -51,7 +51,7 @@ const CscPage = () => {
   return (
     <>
       <div className="relative isolate px-6 pt-14 lg:px-8 min-h-screen">
-        {isAuthenticated ? (
+        {isAuthenticated2 ? (
           <div>
             <TechnicianNavbar setFormData={setFormData} />
             <Outlet />

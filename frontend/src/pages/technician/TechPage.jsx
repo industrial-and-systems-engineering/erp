@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Outlet, useNavigate, Link } from "react-router-dom";
 import TechnicianNavbar from "./components/TechnicianNavbar";
 import Footer from "../../components/Footer";
-import { useAuthStore } from "../../utils/isloggedin.js";
+import { useAuthStore1 } from "../../utils/isloggedin.js";
 
 const TechPage = () => {
   const [loading, setLoading] = useState(true);
@@ -12,15 +12,15 @@ const TechPage = () => {
     password: "",
     usertype: "Technician",
   });
-  const { isAuthenticated, checkAuth } = useAuthStore();
+  const { isAuthenticated1, checkAuth1 } = useAuthStore1();
   const navigate = useNavigate();
   useEffect(() => {
     const verifyAuth = async () => {
-      await checkAuth();
+      await checkAuth1();
       setLoading(false);
     };
     verifyAuth();
-  }, [checkAuth]);
+  }, [checkAuth1]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -38,7 +38,7 @@ const TechPage = () => {
 
       if (response.ok) {
         const data = await response.json();
-        await checkAuth();
+        await checkAuth1();
         navigate("/technician/homepage", { state: { usernumber: data.usernumber } });
       } else {
         const errorData = await response.json();
@@ -52,7 +52,7 @@ const TechPage = () => {
   return (
     <>
       <div className='relative isolate px-6 pt-14 lg:px-8 min-h-screen'>
-        {isAuthenticated ? (
+        {isAuthenticated1 ? (
           <div>
             <TechnicianNavbar setFormData={setFormData} />
             <Outlet />
