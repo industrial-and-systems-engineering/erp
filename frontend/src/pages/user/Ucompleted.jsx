@@ -11,7 +11,7 @@ const Ucompleted = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [pdfError, setPdfError] = useState(null);
   const [cardKey, setCardKey] = useState(0);
-  const [paymentStatus, setPaymentStatus] = useState({});
+  
 
   useEffect(() => {
     const fetchCalibratedForms = async () => {
@@ -104,11 +104,6 @@ const Ucompleted = () => {
   };
 
   const generatePdfWithQR = async (selectedProduct) => {
-    if (!paymentStatus[selectedProduct._id]) {
-      alert("Please complete payment before downloading the certificate with QR code.");
-      return;
-    }
-
     try {
       console.log("Generating first page PDF with QR code");
       
@@ -152,7 +147,8 @@ const Ucompleted = () => {
         
         console.log("QR code generated successfully with URL:", viewUrl);
         
-        const doc = await generatePdf(selectedProduct, true, certificateNo, true);
+        // Create only the first page of the PDF document
+        const doc = await generatePdf(selectedProduct, true, certificateNo);
         
         if (!doc) {
           throw new Error("Failed to generate PDF first page");
@@ -160,34 +156,40 @@ const Ucompleted = () => {
         
         console.log("PDF first page generated successfully");
         
+        // Add QR code to the first page
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         const qrSize = 30;
         
+        // Position QR code above the green footer
         doc.addImage(qrCodeDataUrl, 'PNG', 20, pageHeight - 60, qrSize, qrSize);
         
         doc.setFontSize(8);
         doc.setTextColor(0, 0, 0);
         doc.text("Scan this QR code to view the complete calibration certificate", 55, pageHeight - 45);
         
+        // Save the first page PDF with a different name
         doc.save(`Calibration_Certificate_FirstPage_${certificateNo.replace(/\//g, '_')}.pdf`);
         console.log("First page PDF with QR code saved successfully");
         
+        // Store product and certificate data for second page generation later
         const certificateData = {
           product: {
             ...selectedProduct,
-            isPaid: true,
-            qrCodeDataUrl: qrCodeDataUrl
+            qrCodeDataUrl: qrCodeDataUrl // Include QR code in the product data
           },
           certificateNo: certificateNo,
           jobNo: jobNo,
           documentId: documentId,
           timestamp: new Date().toISOString(),
-          completeGenerated: false
+          completeGenerated: false // Flag to track if the complete certificate has been generated
         };
         
         localStorage.setItem(`certificate_${documentId}`, JSON.stringify(certificateData));
         console.log("Certificate data stored for QR lookup with ID:", documentId);
+        
+        // Show success message to the user
+        // alert(`First page of certificate generated successfully. Scan the QR code to view and download the complete certificate.`);
         
       } catch (qrError) {
         console.error("Error generating QR code:", qrError);
@@ -200,99 +202,6 @@ const Ucompleted = () => {
     }
   };
   
-  const amount = 5000;
-  const currency = "INR";
-  const receiptId = "qwsaq1";
-
-  const paymenthandler = async (e) => {
-    try {
-      const productId = selectedProduct?._id;
-      if (!productId) {
-        console.error("No product selected for payment");
-        return;
-      }
-
-      const response = await fetch("http://localhost:8080/order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          amount,
-          currency,
-          receipt: receiptId,
-        }),
-      });
-  
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-  
-      const order = await response.json();
-      console.log(order);
-      var options = {
-        "key": "rzp_test_q2HP4Vw5ujXv4E",
-        amount,
-        currency,
-        "name": "Acme Corp",
-        "description": "Test Transaction",
-        "image": "https://example.com/your_logo",
-        "order_id": order.id,
-        "handler": async function (response) {
-          const body = {...response};
-          const validateresponse = await fetch("http://localhost:8080/order/validate", {
-            method: "POST",
-            body: JSON.stringify(body),
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
-          const jsonres = await validateresponse.json();
-          console.log(jsonres);
-          
-          if (jsonres.msg === "success") {
-            setPaymentStatus(prev => ({
-              ...prev,
-              [productId]: true
-            }));
-            
-            setSelectedProduct(prev => ({
-              ...prev,
-              isPaid: true
-            }));
-            
-            alert("Payment successful! You can now download the certificate with QR code.");
-          }
-        },
-        "prefill": {
-          "name": "Gaurav Kumar",
-          "email": "gaurav.kumar@example.com", 
-          "contact": "9000090000"
-        },
-        "notes": {
-          "address": "Razorpay Corporate Office"
-        },
-        "theme": {
-          "color": "#3399cc"
-        }
-      };
-      var rzp1 = new window.Razorpay(options);
-      rzp1.on('payment.failed', function (response){
-        alert(response.error.code);
-        alert(response.error.description);
-        alert(response.error.source);
-        alert(response.error.step);
-        alert(response.error.reason);
-        alert(response.error.metadata.order_id);
-        alert(response.error.metadata.payment_id);
-      });
-      rzp1.open();
-      e.preventDefault();
-    } catch (err) {
-      console.error("Payment handler error:", err);
-    }
-  };
-
   if (isLoading) {
     return (
       <div className='flex justify-center items-center h-64'>
@@ -300,6 +209,78 @@ const Ucompleted = () => {
       </div>
     );
   }
+    const amount= 5000;
+    const currency= "INR";
+    const receiptId= "qwsaq1";
+
+    const paymenthandler = async (e) => {
+      try {
+        const response = await fetch("http://localhost:8080/order", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amount,
+            currency,
+            receipt: receiptId,
+          }),
+        });
+    
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+    
+        const order = await response.json();
+        console.log(order);
+        var options = {
+          "key": "rzp_test_q2HP4Vw5ujXv4E", // Enter the Key ID generated from the Dashboard
+          amount, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
+          currency,
+          "name": "Acme Corp", //your business name
+          "description": "Test Transaction",
+          "image": "https://example.com/your_logo",
+          "order_id":order.id, //This is a sample Order ID. Pass the `id` obtained in the response of Step 1
+          "handler": async function (response){
+            const body={...response,};
+            const validateresponse=await fetch("http://localhost:8080/order/validate", {
+             method: "POST",
+             body: JSON.stringify(body),
+             headers: {
+                "Content-Type": "application/json",
+             },
+            });
+            const jsonres=await validateresponse.json();
+            console.log(jsonres);
+          },
+          "prefill": { //We recommend using the prefill parameter to auto-fill customer's contact information, especially their phone number
+              "name": "Gaurav Kumar", //your customer's name
+              "email": "gaurav.kumar@example.com", 
+              "contact": "9000090000"  //Provide the customer's phone number for better conversion rates 
+          },
+          "notes": {
+              "address": "Razorpay Corporate Office"
+          },
+          "theme": {
+              "color": "#3399cc"
+          }
+      };
+      var rzp1 = new window.Razorpay(options);
+      rzp1.on('payment.failed', function (response){
+              alert(response.error.code);
+              alert(response.error.description);
+              alert(response.error.source);
+              alert(response.error.step);
+              alert(response.error.reason);
+              alert(response.error.metadata.order_id);
+              alert(response.error.metadata.payment_id);
+      });
+      } catch (err) {
+        console.error("Payment handler error:", err);
+      }
+      rzp1.open();
+      e.preventDefault();
+    };
     
   return (
     <div className='container py-10'>
@@ -382,30 +363,24 @@ const Ucompleted = () => {
                     Download Form
                   </button>
                   <button
-                    className={`${paymentStatus[selectedProduct._id] ? 'bg-green-500 hover:bg-green-700' : 'bg-gray-400 cursor-not-allowed'} text-white px-4 py-2 rounded-lg transition-colors`}
+                    className='bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors'
                     onClick={() => {
-                      if (paymentStatus[selectedProduct._id]) {
-                        console.log("Download with QR button clicked");
-                        generatePdfWithQR(selectedProduct);
-                      } else {
-                        alert("Please complete payment before downloading the certificate with QR code");
-                      }
+                      console.log("Download with QR button clicked");
+                      generatePdfWithQR(selectedProduct);
                     }}
-                    disabled={!paymentStatus[selectedProduct._id]}
                   >
                     Download with QR
                   </button>
                   
-                  {!paymentStatus[selectedProduct._id] && (
-                    <button
-                      className='bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors'
-                      onClick={() => {
-                        paymenthandler();
-                      }}
-                    >
-                      Pay Now
-                    </button>
-                  )}
+                  <button
+                    className='bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors'
+                    onClick={() => {
+                      //console.log("Download with QR button clicked");
+                      paymenthandler();
+                    }}
+                  >
+                    pay
+                  </button>
                 </div>
               </div>
             ) : (
@@ -450,6 +425,8 @@ const Ucompleted = () => {
           <p className='text-gray-500'>There are currently no completed products to display.</p>
         </div>
       )}
+
+      {/* <button onClick={paymenthandler}>pay</button> */}
     </div>
   );
 };
