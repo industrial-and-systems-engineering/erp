@@ -55,8 +55,9 @@ const ViewCalibration = () => {
   const generateCompleteCertificate = async (data) => {
     try {
       const { product, certificateNo, jobNo } = data;
+      console.log(`Using job number ${jobNo} from stored certificate data for consistency`);
       const doc = new jsPDF();
-      await generateFirstPage(doc, product, certificateNo);
+      await generateFirstPage(doc, product, certificateNo, jobNo); // Pass jobNo to first page generation
       doc.addPage();
       generateCalibrationResults(doc, product, certificateNo, jobNo);
       
@@ -95,7 +96,7 @@ const ViewCalibration = () => {
     }
   };
 
-  const generateFirstPage = async (doc, product, certificateNo) => {
+  const generateFirstPage = async (doc, product, certificateNo, jobNo) => { // Add jobNo parameter
     try {
       let customerName = "Unknown Customer";
       if (product._parentForm && product._parentForm.organization) {
@@ -125,11 +126,6 @@ const ViewCalibration = () => {
       const productMake = product.make || "Unknown Make";
       const serialNo = product.serialNo || "N/A";
       
-      let methodUsed = "ED/SOP/E-002";
-      if (product.parameters && product.parameters.length > 0 && product.parameters[0].methodUsed) {
-        methodUsed = product.parameters[0].methodUsed.split(" - ")[0];
-      }
-      
       const formatRange = (rangeValue) => {
         if (!rangeValue) return "Full Range";
         
@@ -142,8 +138,10 @@ const ViewCalibration = () => {
         return `${rangeValue} kV`;
       };
       
-      const range = product.parameters && product.parameters.length > 0 ? 
+      // Get the range and add least count beside it
+      const rangeValue = product.parameters && product.parameters.length > 0 ? 
                    formatRange(product.parameters[0].ranges || "Full Range") : "Full Range";
+      const range = `${rangeValue}, Least count=0.2 kV`;
       
       const formatDate = (date) => {
         if (!date) return new Date().toLocaleDateString('en-GB', {
@@ -162,11 +160,32 @@ const ViewCalibration = () => {
       
       const issueDate = formatDate();
       const receivedDate = formatDate(product._parentForm && product._parentForm.date);
-      const completionDate = formatDate();
+      
+      // Try to get completion date from technician's calibration data
+      let completionDate = null;
+      if (product.parameters && product.parameters.length > 0) {
+        // Try to find the first parameter with a calibratedDate
+        for (const param of product.parameters) {
+          if (param.calibratedDate) {
+            completionDate = formatDate(param.calibratedDate);
+            console.log("Using calibratedDate from parameter:", completionDate);
+            break;
+          }
+        }
+      }
+      // Fallback to current date if no technician date is found
+      if (!completionDate) {
+        completionDate = formatDate();
+      }
+      
       const nextCalibrationDate = formatDate(new Date(new Date().setFullYear(new Date().getFullYear() + 1)));
       
       const temperature = product.roomTemp || "25±4°C";
       const humidity = product.humidity ? `${product.humidity}%` : "30 to 75% RH";
+      
+      // Make sure temperature has °C symbol
+      const formattedTemperature = temperature.includes("°C") ? temperature : 
+                                (temperature.includes("±") ? temperature.replace("±", "±") + "°C" : temperature + "°C");
       
       const pageWidth = doc.internal.pageSize.width;
       const pageHeight = doc.internal.pageSize.height;
@@ -259,6 +278,15 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "normal");
       doc.text(certificateNo, 85, 35); // Moved down from 25 to 35
       
+      // Add job number display
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(25, 118, 210);
+      doc.text("Job No", 20, 40); // Add job number below certificate number
+      doc.setTextColor(0, 0, 0);
+      doc.text(":", 80, 40); 
+      doc.setFont("helvetica", "normal");
+      doc.text(jobNo || certificateNo.split('/')[2], 85, 40); // Use provided jobNo or extract from certificate number
+      
       doc.setFont("helvetica", "bold");
       doc.setTextColor(25, 118, 210);
       doc.text("Date of Issue", 140, 35); // Moved down from 25 to 35
@@ -269,25 +297,25 @@ const ViewCalibration = () => {
       
       doc.setFont("helvetica", "bold");
       doc.setTextColor(25, 118, 210);
-      doc.text("Service Request Form No", 20, 40); // Moved down from 30 to 40
+      doc.text("Service Request Form No", 20, 45); // Move down by 5 to make room for job number
       doc.setTextColor(0, 0, 0);
-      doc.text(":", 80, 40); // Moved down from 30 to 40
+      doc.text(":", 80, 45); 
       doc.setFont("helvetica", "normal");
-      doc.text(srfNo, 85, 40); // Moved down from 30 to 40
+      doc.text(srfNo, 85, 45); 
       
       doc.setFont("helvetica", "bold");
       doc.setTextColor(25, 118, 210);
-      doc.text("Page", 140, 40); // Moved down from 30 to 40
+      doc.text("Page", 140, 45); // Move down by 5 to align with Service Request Form No
       doc.setTextColor(0, 0, 0);
-      doc.text(":", 165, 40); // Moved down from 30 to 40
+      doc.text(":", 165, 45); 
       doc.setFont("helvetica", "normal");
-      doc.text("01 of 02 pages", 170, 40); // Moved down from 30 to 40
+      doc.text("01 of 02 pages", 170, 45); 
       
       doc.setTextColor(0, 0, 0);
       const currentYear = new Date().getFullYear().toString().slice(-2);
-      doc.text(`ULR-CC3731${currentYear}000000502F`, 20, 45); // Moved down from 35 to 45
+      doc.text(`ULR-CC3731${currentYear}000000502F`, 20, 50); // Move down by 5 to maintain spacing
       
-      let y = 55; // Increased starting position from 45 to 55
+      let y = 60; // Increased starting position from 55 to 60 to account for added job number
       const leftMargin = 20;
       const indentedMargin = leftMargin + 5;
       
@@ -364,9 +392,13 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "normal");
       doc.text(range, 85, y);
       
-      let condition = "Satisfactory";
-      if (product._parentForm && product._parentForm.condition) {
+      let condition = "";
+      if (product._parentForm && product._parentForm.conditionOfProduct) {
+        condition = product._parentForm.conditionOfProduct;
+      } else if (product._parentForm && product._parentForm.condition) {
         condition = product._parentForm.condition;
+      } else if (product.conditionOfProduct) {
+        condition = product.conditionOfProduct;
       } else if (product.condition) {
         condition = product.condition;
       } else if (product.itemCondition) {
@@ -399,7 +431,7 @@ const ViewCalibration = () => {
       doc.setTextColor(0, 0, 0);
       doc.text(":", 80, y);
       doc.setFont("helvetica", "normal");
-      doc.text(condition, 85, y);
+      doc.text(condition || "Satisfactory", 85, y);  // Use the condition value from CSR or default to "Satisfactory"
       
       y += 8; // Reduced from 10 to 8
       doc.setFont("helvetica", "bold");
@@ -430,14 +462,21 @@ const ViewCalibration = () => {
       doc.text(":", 85, y);
       doc.setFont("helvetica", "normal");
       doc.text(nextCalibrationDate, 90, y);
-      
-      let location = "At Laboratory";
-      if (product.calibrationFacilityAvailable) {
+
+      let location = "";
+      // Check for location in various sources with improved priority
+      if (product.calibrationDataSheet && product.calibrationDataSheet.Location) {
+        location = product.calibrationDataSheet.Location;
+      } else if (product._parentForm && product._parentForm.calibrationFacilityAvailable) {
+        location = product._parentForm.calibrationFacilityAvailable;
+      } else if (product.calibrationFacilityAvailable) {
         location = product.calibrationFacilityAvailable;
       } else if (product.location) {
         location = product.location;
       } else if (product._parentForm && product._parentForm.calibrationLocation) {
         location = product._parentForm.calibrationLocation;
+      } else if (product._parentForm && product._parentForm.location) {
+        location = product._parentForm.location;
       }
       
       y += 8; // Reduced from 10 to 8
@@ -448,7 +487,7 @@ const ViewCalibration = () => {
       doc.text("Location where Calibration Performed", leftMargin + 5, y);
       doc.text(":", 90, y);
       doc.setFont("helvetica", "normal");
-      doc.text(location, 95, y);
+      doc.text(location || "", 95, y);  // Use the location value without hardcoded default
       
       y += 8; // Reduced from 10 to 8
       doc.setFont("helvetica", "bold");
@@ -458,7 +497,7 @@ const ViewCalibration = () => {
       doc.text("Environmental Condition during Calibration", leftMargin + 5, y);
       doc.text(":", 100, y);
       doc.setFont("helvetica", "normal");
-      doc.text(`Temp: ${temperature}`, 105, y);
+      doc.text(`Temp: ${formattedTemperature}`, 105, y);
       doc.text(`Humidity: ${humidity}`, 145, y);
       
       y += 8; // Reduced from 10 to 8
@@ -469,6 +508,19 @@ const ViewCalibration = () => {
       doc.text("Calibration Method Used", leftMargin + 5, y);
       doc.text(":", 85, y);
       doc.setFont("helvetica", "normal");
+      
+      // Define methodUsed variable to avoid "methodUsed is not defined" error
+      let methodUsed = "";
+      if (product._parentForm && product._parentForm.calibrationMethodUsed) {
+        methodUsed = product._parentForm.calibrationMethodUsed;
+      } else if (product.calibrationMethodUsed) {
+        methodUsed = product.calibrationMethodUsed;
+      } else if (product.parameters && product.parameters.length > 0 && product.parameters[0].methodUsed) {
+        methodUsed = product.parameters[0].methodUsed.split(" - ")[0];
+      } else {
+        methodUsed = "ED/SOP/E-002"; // Default value
+      }
+      
       doc.text(`As per our SOP No: ${methodUsed}`, 90, y);
       
       y += 10; // Slight increase before the reference standards section
@@ -495,7 +547,7 @@ const ViewCalibration = () => {
           makeModel: product.make || "Unknown Make",
           slNoIdNo: product.serialNo || "N/A",
           calibrationCertificateNo: product.calibrationCertificateNo || 
-                                    `ED/CAL/${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}/${
+                                    `ED/CAL/${jobNo}/${
                                       new Date().getFullYear()
                                     }`,
           validUpTo: formatDate(new Date(new Date().setFullYear(new Date().getFullYear() + 1))),

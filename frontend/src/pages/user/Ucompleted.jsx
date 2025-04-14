@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Ucard from './components/Ucard.jsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import generatePdf, { generateCalibrationResults } from './utils/pdfGeneration.js';
+import generatePdf, { generateCalibrationResults, generateSimplifiedCertificate } from './utils/pdfGeneration.js';
 import QRCode from 'qrcode';
 
 const Ucompleted = () => {
@@ -358,7 +358,7 @@ const Ucompleted = () => {
                     className='bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors mr-2'
                     onClick={() => {
                       console.log("Download button clicked");
-                      generatePdf(selectedProduct);
+                      generateSimplifiedCertificate(selectedProduct);
                     }}
                   >
                     Download Form
