@@ -211,9 +211,8 @@ const ErrorDetectorForm = () => {
   };
 
   return (
-    <div className='min-h-screen bg-gray-100'>
-      <UserNavbar />
-      <div className='container mx-auto px-4 py-8'>
+    <div>
+      <div>
         <div className='bg-white shadow-xl rounded-lg overflow-hidden border border-gray-200'>
           {/* Form Header */}
           <div className='bg-blue-700 text-white py-4 px-6'>

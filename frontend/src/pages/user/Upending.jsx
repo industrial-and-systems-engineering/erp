@@ -47,7 +47,7 @@ const Ucompleted = () => {
   }
 
   return (
-    <div className='container py-10'>
+    <div>
       {calibratedForms.length > 0 ? (
         <div className='grid grid-cols-1 md:grid-cols-4 gap-6'>
           {/* Product List Sidebar */}

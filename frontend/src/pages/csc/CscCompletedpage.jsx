@@ -44,7 +44,7 @@ const CscCompleted = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div>
       <h1 className="text-2xl font-bold my-6 mb-4 text-center">
         Completed SRF Forms
       </h1>

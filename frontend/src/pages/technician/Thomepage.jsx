@@ -12,7 +12,7 @@ const Thomepage = () => {
   }, [fetchCompletedForms, fetchPendingForms]);
 
   return (
-    <div className='container py-10'>
+    <div>
       <div className='mb-8'>
         <h1 className='text-3xl font-bold text-gray-800'>Technician Dashboard</h1>
         <p className='text-gray-600 mt-2'>
