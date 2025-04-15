@@ -214,18 +214,24 @@ const Ucompleted = () => {
     const receiptId= "qwsaq1";
 
     const paymenthandler = async (e) => {
-
-      if(e && e.preventDefault) e.preventDefault();
+      if (e && e.preventDefault) e.preventDefault();
       try {
+        // Make sure there is a selected product
+        if (!selectedProduct || !selectedProduct._id) {
+          throw new Error("No product selected");
+        }
+        
         const response = await fetch("http://localhost:8080/order", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
+          // Include productId in the request body
           body: JSON.stringify({
             amount,
             currency,
             receipt: receiptId,
+            productId: selectedProduct._id,  // Sending the product ID
           }),
         });
     
@@ -235,49 +241,51 @@ const Ucompleted = () => {
     
         const order = await response.json();
         console.log(order);
+    
         var options = {
-          "key": "rzp_test_T6N1vi1kjLuL9s", // Enter the Key ID generated from the Dashboard
-          amount, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
+          "key": "rzp_test_T6N1vi1kjLuL9s",
+          amount, // Amount is in currency subunits.
           currency,
-          "name": "Acme Corp", //your business name
+          "name": "Acme Corp",
           "description": "Test Transaction",
           "image": "https://example.com/your_logo",
-          "order_id":order.id, //This is a sample Order ID. Pass the `id` obtained in the response of Step 1
-          "handler": async function (response){
-            const body={...response,};
-            const validateresponse=await fetch("http://localhost:8080/order/validate", {
-             method: "POST",
-             body: JSON.stringify(body),
-             headers: {
+          "order_id": order.id,
+          "handler": async function (response) {
+            const body = { ...response };
+            const validateresponse = await fetch("http://localhost:8080/order/validate", {
+              method: "POST",
+              body: JSON.stringify(body),
+              headers: {
                 "Content-Type": "application/json",
-             },
+              },
             });
-            const jsonres=await validateresponse.json();
+            const jsonres = await validateresponse.json();
             console.log(jsonres);
           },
-          "prefill": { //We recommend using the prefill parameter to auto-fill customer's contact information, especially their phone number
-              "name": "Gaurav Kumar", //your customer's name
-              "email": "gaurav.kumar@example.com", 
-              "contact": "9000090000"  //Provide the customer's phone number for better conversion rates 
+          "prefill": {
+            "name": "Gaurav Kumar",
+            "email": "gaurav.kumar@example.com",
+            "contact": "9000090000"
           },
           "notes": {
-              "address": "Razorpay Corporate Office"
+            "address": "Razorpay Corporate Office"
           },
           "theme": {
-              "color": "#3399cc"
+            "color": "#3399cc"
           }
-      };
-      var rzp1 = new window.Razorpay(options);
-      rzp1.open();
-      rzp1.on('payment.failed', function (response){
-              alert(response.error.code);
-              alert(response.error.description);
-              alert(response.error.source);
-              alert(response.error.step);
-              alert(response.error.reason);
-              alert(response.error.metadata.order_id);
-              alert(response.error.metadata.payment_id);
-      });
+        };
+    
+        var rzp1 = new window.Razorpay(options);
+        rzp1.open();
+        rzp1.on('payment.failed', function (response) {
+          alert(response.error.code);
+          alert(response.error.description);
+          alert(response.error.source);
+          alert(response.error.step);
+          alert(response.error.reason);
+          alert(response.error.metadata.order_id);
+          alert(response.error.metadata.payment_id);
+        });
       } catch (err) {
         console.error("Payment handler error:", err);
       }
@@ -363,25 +371,26 @@ const Ucompleted = () => {
                   >
                     Download Form
                   </button>
-                  <button
-                    className='bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors'
-                    onClick={() => {
-                      console.log("Download with QR button clicked");
-                      generatePdfWithQR(selectedProduct);
-                    }}
-                  >
-                    Download with QR
-                  </button>
-                  
-                  <button
-                    className='bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors'
-                    onClick={(e) => {
-                      //console.log("Download with QR button clicked");
-                      paymenthandler(e);
-                    }}
-                  >
-                    pay
-                  </button>
+                  {!selectedProduct.ispaymentDone ? (
+    <button
+      className='bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors'
+      onClick={(e) => {
+        paymenthandler(e);
+      }}
+    >
+      Pay
+    </button>
+  ) : (
+    <button
+      className='bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors'
+      onClick={() => {
+        console.log("Download with QR button clicked");
+        generatePdfWithQR(selectedProduct);
+      }}
+    >
+      Download with QR
+    </button>
+  )}
                 </div>
               </div>
             ) : (
