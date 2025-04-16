@@ -40,12 +40,12 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
   });
   const [parameters, setParameters] = useState(
     Data.parameters ||
-      product.parameters.map((param) => ({
-        ...param,
-        readings: param.readings.map((reading) => ({
-          ...reading,
-        })),
-      }))
+    product.parameters.map((param) => ({
+      ...param,
+      readings: param.readings.map((reading) => ({
+        ...reading,
+      })),
+    }))
   );
   // Details of Master Used section
   const masterEquipment = [
@@ -145,10 +145,10 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
 
     const uc = Math.sqrt(
       Math.pow(stdUncertainty, 2) +
-        Math.pow(u1, 2) +
-        Math.pow(u2, 2) +
-        Math.pow(u3, 2) +
-        Math.pow(u5, 2)
+      Math.pow(u1, 2) +
+      Math.pow(u2, 2) +
+      Math.pow(u3, 2) +
+      Math.pow(u5, 2)
     );
     return uc;
   };
@@ -163,6 +163,7 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
   const calculateUE = (reading) => {
     const uc = parseFloat(calculateUC(reading)) || 0;
     const edof = parseFloat(calculateEDof(reading)) || 0;
+    const mean = parseFloat(calculateReadingMean(reading)) || 0;
     let kAt95CL = 2;
 
     if (edof < 30) {
@@ -204,7 +205,7 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
     if (reading.rUnit === "degC") {
       return (uc * kAt95CL).toFixed(4);
     }
-    return ((uc * kAt95CL * 100) / rNameValue).toFixed(4);
+    return ((uc * kAt95CL * 100) / mean).toFixed(4);
   };
   const handleReadingChange = (paramIndex, readingIndex, field, value) => {
     const newParameters = [...parameters];
@@ -424,7 +425,6 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
               {...register("roomTemp", {
                 required: "Room Temperature is required",
                 pattern: {
-                  value: /^-?\d+(\.\d+)?$/,
                   message: "Please enter a valid number",
                 },
               })}
@@ -444,8 +444,7 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
               type='text'
               {...register("humidity", {
                 required: "Humidity is required",
-                pattern: {
-                  value: /^(100|[1-9]?\d)$/,
+                pattern: {                  
                   message: "Please enter a valid percentage (0-100)",
                 },
               })}
