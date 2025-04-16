@@ -28,11 +28,11 @@ const Tcompleted = () => {
   };
 
   return (
-    <div className='container py-10'>
+    <div>
       {completedForms.length > 0 ? (
         <div className='grid grid-cols-1 md:grid-cols-4 gap-6'>
           {/* Equipment List Sidebar */}
-          <div className='bg-gray-50 rounded-lg shadow-md p-4 col-span-1 overflow-y-auto max-h-[600px]'>
+          <div className='bg-gray-50 rounded-lg shadow-md p-4 col-span-1 overflow-y-auto h-[87vh]'>
             <h2 className='font-semibold text-lg mb-4 text-gray-700 border-b pb-2'>
               Equipment List
             </h2>
@@ -41,11 +41,10 @@ const Tcompleted = () => {
               form.products.map((product) => (
                 <div
                   key={product._id}
-                  className={`bg-white p-4 rounded-lg shadow-sm my-3 border-l-4 transition-all duration-200 hover:shadow-md ${
-                    selectedEquipment && selectedEquipment._id === product._id
-                      ? "border-l-green-600"
-                      : "border-l-gray-300"
-                  }`}
+                  className={`bg-white p-4 rounded-lg shadow-sm my-3 border-l-4 transition-all duration-200 hover:shadow-md ${selectedEquipment && selectedEquipment._id === product._id
+                    ? "border-l-green-600"
+                    : "border-l-gray-300"
+                    }`}
                 >
                   <div className='flex justify-between items-center gap-2'>
                     <div>
@@ -53,11 +52,10 @@ const Tcompleted = () => {
                       <p className='text-sm text-gray-500'>{product.name || "Equipment"}</p>
                     </div>
                     <button
-                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                        selectedEquipment && selectedEquipment._id === product._id
-                          ? "bg-green-100 text-green-700"
-                          : "bg-gray-100 text-gray-700 hover:bg-green-50 hover:text-green-600"
-                      }`}
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${selectedEquipment && selectedEquipment._id === product._id
+                        ? "bg-green-100 text-green-700"
+                        : "bg-gray-100 text-gray-700 hover:bg-green-50 hover:text-green-600"
+                        }`}
                       onClick={() => toggleEquipmentDetails(product, form)}
                     >
                       {selectedEquipment && selectedEquipment._id === product._id ? (
@@ -79,7 +77,7 @@ const Tcompleted = () => {
           </div>
 
           {/* Equipment Details Panel */}
-          <div className='col-span-3 bg-white rounded-lg shadow-md overflow-y-auto max-h-[600px]'>
+          <div className='col-span-3 bg-white rounded-lg shadow-md overflow-y-auto h-[87vh]'>
             {selectedEquipment && selectedForm ? (
               <CTcard
                 key={cardKey} // Add key prop to force re-render

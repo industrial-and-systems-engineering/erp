@@ -10,19 +10,17 @@ const CTcard = ({ equipment, form }) => {
 
   return (
     <div>
-      <div className=' bg-white shadow-md rounded p-6'>
+      <div className='bg-white shadow-md rounded'>
         {/* Header Section */}
         <div className='mb-6 text-center'>
           <div className='grid-cols-2 border-t border-l border-r py-4'>
             <h1 className='text-3xl font-bold basis-2xl'>ERROR DETECTOR</h1>
           </div>
-
           <div className='grid grid-cols-2'>
             <h2 className='text-lg font-medium border px-0.5'>Format No : ED/FM/33</h2>
             <h2 className='text-lg font-medium border px-0.5'>Job Card</h2>
           </div>
         </div>
-
         <form>
           {/* Job Card Information */}
           <div>

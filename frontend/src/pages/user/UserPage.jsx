@@ -54,7 +54,9 @@ const UserPage = () => {
         {isAuthenticated ? (
           <div>
             <UserNavbar setFormData={setFormData} />
-            <Outlet />
+            <div className="py-10">
+              <Outlet />
+            </div>
           </div>
         ) : (
           <div className='flex justify-center items-center my-30'>

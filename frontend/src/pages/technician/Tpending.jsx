@@ -28,11 +28,11 @@ const Tpending = () => {
   };
 
   return (
-    <div className='container py-10'>
+    <div >
       {pendingForms.length > 0 ? (
         <div className='grid grid-cols-1 md:grid-cols-4 gap-6'>
           {/* Equipment List Sidebar */}
-          <div className='bg-gray-50 rounded-lg shadow-md p-4 col-span-1 overflow-y-auto max-h-[600px]'>
+          <div className='bg-gray-50 rounded-lg shadow-md p-4 col-span-1 overflow-y-auto h-[87vh]'>
             <h2 className='font-semibold text-lg mb-4 text-gray-700 border-b pb-2'>
               Equipment List
             </h2>
@@ -79,7 +79,7 @@ const Tpending = () => {
           </div>
 
           {/* Equipment Details Panel */}
-          <div className='col-span-3 bg-white rounded-lg shadow-md overflow-y-auto max-h-[600px]'>
+          <div className='col-span-3 bg-white rounded-lg shadow-md overflow-y-auto h-[87vh]'>
             {selectedEquipment && selectedForm ? (
               <Tcard
                 key={cardKey} // Add key prop to force re-render

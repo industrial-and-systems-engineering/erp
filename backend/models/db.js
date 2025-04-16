@@ -57,6 +57,7 @@ const ProductSchema = new Schema({
     isCalibrated: { type: Boolean, default: false },
     csccalibrated: { type: Boolean, default: false },
     ispaymentDone: { type: Boolean, default: false },
+    orderId: { type: String },
   },
   { timestamps: true }
 );

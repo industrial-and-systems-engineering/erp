@@ -133,46 +133,69 @@ app.use('/api/csc', Cscroutes);
 app.use('/api', Middlewareroutes);
 
 app.post("/order", async (req, res) => {
+    try {
+      const razorpay = new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID,
+        key_secret: process.env.RAZORPAY_SECRET,
+      });
+  
+      // Extract only the fields that Razorpay needs and separate productId
+      const { productId, amount, currency, receipt } = req.body;
+      // Build options for Razorpay orders.create
+      const options = { amount, currency, receipt };
+  
+      // Create the order with Razorpay using the correct options
+      const order = await razorpay.orders.create(options);
+      if (!order) {
+        return res.status(500).send("Error creating Razorpay order");
+      }
+  
+      // Update the product with the Razorpay order ID if productId exists
+      if (productId) {
+        await Product.findByIdAndUpdate(productId, { orderId: order.id });
+      }
+  
+      res.json(order);
+    } catch (err) {
+      console.error("Error in /order route:", err);
+      res.status(500).send("Error");
+    }
+  });
+  
 
-  try{
-  const razorpay=new Razorpay({
-    key_id:process.env.RAZORPAY_KEY_ID,
-    key_secret:process.env.RAZORPAY_SECRET,
-  })
-
-  const options=req.body;
-  const order=await razorpay.orders.create(options);
-  if(!order)
-  {
-    return res.status(500).send("Error");
-  }
-
-  res.json (order);
-} catch (err){
-    res.status(500).send("Error")
-}
-
-});
-
-app.post("/order/validate", (req, res) => {
-  const{razorpay_order_id,razorpay_payment_id,razorpay_signature}=req.body;
- const sha=crypto.createHmac("sha256",process.env.RAZORPAY_SECRET);
- sha.update(`${razorpay_order_id}|${razorpay_payment_id}`);
- const digest=sha.digest("hex");
-  if(digest===razorpay_signature)
-  {
-    res.json({
-      msg:"success",
-      orderId:razorpay_order_id,
-      paymentId:razorpay_payment_id,
-    });
-  }
-  else
-  {
-    return res.status(400).json({success:false});
-  }
-
-});
+app.post("/order/validate", async (req, res) => {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const sha = crypto.createHmac("sha256", process.env.RAZORPAY_SECRET);
+    sha.update(`${razorpay_order_id}|${razorpay_payment_id}`);
+    const digest = sha.digest("hex");
+  
+    if (digest === razorpay_signature) {
+      try {
+        const product = await Product.findOneAndUpdate(
+          { orderId: razorpay_order_id },
+          { $set: { ispaymentDone: true } },
+          { new: true }
+        );
+  
+        if (!product) {
+          return res.status(404).json({ msg: "Product not found for the given order" });
+        }
+  
+        res.json({
+          msg: "success",
+          orderId: razorpay_order_id,
+          paymentId: razorpay_payment_id,
+          product
+        });
+      } catch (error) {
+        console.error("Error updating product payment status:", error);
+        return res.status(500).json({ msg: "Server error while updating payment status" });
+      }
+    } else {
+      return res.status(400).json({ success: false, msg: "Payment validation failed" });
+    }
+  });
+  
 
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../frontend/dist')));
