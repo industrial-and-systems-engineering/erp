@@ -107,25 +107,11 @@ const Ucompleted = () => {
     try {
       console.log("Generating first page PDF with QR code");
       
-      if (!selectedProduct.referenceStandards || selectedProduct.referenceStandards.length === 0) {
-        selectedProduct.referenceStandards = [{
-          description: selectedProduct.instrumentDescription || selectedProduct.name || "Measurement Instrument",
-          makeModel: selectedProduct.make || "Unknown Make",
-          slNoIdNo: selectedProduct.serialNo || "N/A",
-          calibrationCertificateNo: selectedProduct.calibrationCertificateNo || 
-                                   `ED/CAL/${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}/${
-                                     new Date().getFullYear()
-                                   }`,
-          validUpTo: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-                     .toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: 'numeric'}).replace(/\//g, '.'),
-          calibratedBy: "Error Detector",
-          traceableTo: "National Standards"
-        }];
-      }
-      
-      const certificateNo = `ED/CAL/${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}/${new Date().getMonth() > 3 ? 
-        `${new Date().getFullYear()}-${new Date().getFullYear() + 1 - 2000}` : 
-        `${new Date().getFullYear() - 1}-${new Date().getFullYear() - 2000}`}`;
+      // Generate a consistent certificate number
+      const certificateNo = selectedProduct.certificateNo || 
+                         `ED/CAL/${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}/${new Date().getMonth() > 3 ? 
+                           `${new Date().getFullYear()}-${new Date().getFullYear() + 1 - 2000}` : 
+                           `${new Date().getFullYear() - 1}-${new Date().getFullYear() - 2000}`}`;
       
       const jobNo = certificateNo.split('/')[2];
       
@@ -135,17 +121,21 @@ const Ucompleted = () => {
       console.log("QR code will link to:", viewUrl);
       
       try {
-        const qrCodeDataUrl = await QRCode.toDataURL(viewUrl, {
-          errorCorrectionLevel: 'M',
+        // Generate QR code with smaller size and lower error correction for smaller file size
+        const QRCode = await import('qrcode');
+        let qrCodeDataUrl = await QRCode.toDataURL(viewUrl, {
+          errorCorrectionLevel: 'L', // Changed from 'M' to 'L' for smaller size
           margin: 1,
-          width: 200,
+          width: 150, // Reduced from 200 to 150
           color: {
             dark: '#000000',
             light: '#FFFFFF'
           }
         });
         
-        console.log("QR code generated successfully with URL:", viewUrl);
+        // Compress the QR code to reduce storage requirements
+        const { compressQrCodeDataUrl } = await import('./utils/pdfGeneration');
+        qrCodeDataUrl = await compressQrCodeDataUrl(qrCodeDataUrl);
         
         // Create only the first page of the PDF document
         const doc = await generatePdf(selectedProduct, true, certificateNo);
@@ -168,28 +158,63 @@ const Ucompleted = () => {
         doc.setTextColor(0, 0, 0);
         doc.text("Scan this QR code to view the complete calibration certificate", 55, pageHeight - 45);
         
-        // Save the first page PDF with a different name
         doc.save(`Calibration_Certificate_FirstPage_${certificateNo.replace(/\//g, '_')}.pdf`);
         console.log("First page PDF with QR code saved successfully");
         
-        // Store product and certificate data for second page generation later
-        const certificateData = {
-          product: {
-            ...selectedProduct,
-            qrCodeDataUrl: qrCodeDataUrl // Include QR code in the product data
-          },
+        // Store minimal certificate data to avoid storage quota issues
+        const tinyProduct = {
+          _id: selectedProduct._id,
+          name: selectedProduct.name || selectedProduct.instrumentDescription,
+          make: selectedProduct.make,
+          serialNo: selectedProduct.serialNo,
+          // Only store essential parameter data
+          parameters: selectedProduct.parameters ? 
+            selectedProduct.parameters.map(p => ({
+              parameter: p.parameter,
+              ranges: p.ranges,
+              // Keep only necessary reading data
+              readings: p.readings ? p.readings.map(r => ({
+                rName: r.rName, 
+                mean: r.mean,
+                uc: r.uc,
+                rUnit: r.rUnit
+              })) : []
+            })) : [],
+          qrCodeUrl: viewUrl, // Just store the URL instead of the data URL
+          // Store parent form essential data only
+          _parentForm: selectedProduct._parentForm ? {
+            organization: selectedProduct._parentForm.organization,
+            address: selectedProduct._parentForm.address,
+            conditionOfProduct: selectedProduct._parentForm.conditionOfProduct
+          } : null
+        };
+        
+        // Smaller data object
+        const tinyData = {
+          product: tinyProduct,
           certificateNo: certificateNo,
           jobNo: jobNo,
           documentId: documentId,
           timestamp: new Date().toISOString(),
-          completeGenerated: false // Flag to track if the complete certificate has been generated
+          completeGenerated: false
         };
         
-        localStorage.setItem(`certificate_${documentId}`, JSON.stringify(certificateData));
-        console.log("Certificate data stored for QR lookup with ID:", documentId);
-        
-        // Show success message to the user
-        // alert(`First page of certificate generated successfully. Scan the QR code to view and download the complete certificate.`);
+        try {
+          // Try with minimal data
+          localStorage.setItem(`certificate_${documentId}`, JSON.stringify(tinyData));
+          console.log("Minimal certificate data stored for QR lookup with ID:", documentId);
+        } catch (storageError) {
+          console.error("Could not store certificate data in localStorage:", storageError);
+          // If even minimal storage fails, use sessionStorage as fallback
+          try {
+            sessionStorage.setItem(`certificate_${documentId}`, JSON.stringify(tinyData));
+            console.log("Certificate data stored in sessionStorage as fallback");
+            alert("Note: Certificate data stored temporarily. Please complete the certificate generation before closing your browser.");
+          } catch (criticalError) {
+            console.error("All storage options failed:", criticalError);
+            alert("Warning: Storage space is very limited. The QR code has been generated, but you should download the complete certificate using the regular download button as well.");
+          }
+        }
         
       } catch (qrError) {
         console.error("Error generating QR code:", qrError);
@@ -199,6 +224,9 @@ const Ucompleted = () => {
     } catch (error) {
       console.error("Error generating PDF with QR:", error);
       setPdfError("Failed to generate PDF with QR code: " + error.message);
+      
+      // Alert the user with more specific information about the error
+      alert(`There was an error generating the PDF with QR code: ${error.message}\nPlease try using the regular Download button instead.`);
     }
   };
   

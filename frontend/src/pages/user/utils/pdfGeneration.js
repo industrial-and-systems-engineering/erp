@@ -173,45 +173,12 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       location = selectedProduct._parentForm.location;
       console.log("Using location from parent form:", location);
     }
-    // If no location found in any property, leave it empty for the PDF generation
-
-    const referenceStandards = [];
     
-    if (selectedProduct.referenceStandards && selectedProduct.referenceStandards.length > 0) {
-      referenceStandards.push(...selectedProduct.referenceStandards);
-      console.log("Using referenceStandards from product:", selectedProduct.referenceStandards);
-    } 
-    else if (selectedProduct.parameters && 
-             selectedProduct.parameters.length > 0 && 
-             selectedProduct.parameters[0].referenceStandards) {
-      referenceStandards.push(...selectedProduct.parameters[0].referenceStandards);
-      console.log("Using referenceStandards from parameters:", selectedProduct.parameters[0].referenceStandards);
+    // Default to "At laboratory" if location is empty or undefined
+    if (!location || location.trim() === "") {
+      location = "At laboratory";
+      console.log("No location found, defaulting to:", location);
     }
-    else if (selectedProduct._parentForm && 
-             selectedProduct._parentForm.referenceStandards && 
-             selectedProduct._parentForm.referenceStandards.length > 0) {
-      referenceStandards.push(...selectedProduct._parentForm.referenceStandards);
-      console.log("Using referenceStandards from parent form:", selectedProduct._parentForm.referenceStandards);
-    } 
-    else {
-      const referenceStandard = {
-        description: selectedProduct.instrumentDescription || selectedProduct.name || "Measurement Instrument",
-        makeModel: selectedProduct.make || "Unknown Make",
-        slNoIdNo: selectedProduct.serialNo || "N/A",
-        calibrationCertificateNo: selectedProduct.calibrationCertificateNo || 
-                                  `ED/CAL/${jobNo}/${
-                                    new Date().getFullYear()
-                                  }`,
-        validUpTo: formatDate(new Date(new Date().setFullYear(new Date().getFullYear() + 1))),
-        calibratedBy: "Error Detector",
-        traceableTo: "National Standards"
-      };
-      
-      referenceStandards.push(referenceStandard);
-      console.log("Created reference standard from product details:", referenceStandard);
-    }
-    
-    console.log("Final reference standards data:", referenceStandards);
 
     // Try to get completion date from technician's calibration data first
     let completionDate = null;
@@ -228,6 +195,74 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       completionDate = formatDate();
     }
     
+    // Parse the completion date string to create a Date object
+    const completionDateParts = completionDate.split('.');
+    const completionDateObj = new Date(
+      parseInt(completionDateParts[2]),
+      parseInt(completionDateParts[1]) - 1,
+      parseInt(completionDateParts[0])
+    );
+    
+    // Calculate next calibration date as 1 year from completion date
+    const nextCalibrationDateObj = new Date(completionDateObj);
+    nextCalibrationDateObj.setFullYear(completionDateObj.getFullYear() + 1);
+    const nextCalibrationDate = formatDate(nextCalibrationDateObj);
+    
+    // Calculate valid up to date as 11 months from completion date
+    const validUpToDateObj = new Date(completionDateObj);
+    validUpToDateObj.setMonth(completionDateObj.getMonth() + 11);
+    const validUpToDate = formatDate(validUpToDateObj);
+    
+    const referenceStandards = [];
+    
+    if (selectedProduct.referenceStandards && selectedProduct.referenceStandards.length > 0) {
+      // Make a deep copy and ensure each standard has the correct validUpTo date
+      referenceStandards.push(...selectedProduct.referenceStandards.map(std => ({
+        ...std,
+        validUpTo: validUpToDate // Always use validUpToDate from completion date
+      })));
+      console.log("Using referenceStandards from product:", selectedProduct.referenceStandards);
+    } 
+    else if (selectedProduct.parameters && 
+             selectedProduct.parameters.length > 0 && 
+             selectedProduct.parameters[0].referenceStandards) {
+      // Make a deep copy and ensure each standard has the correct validUpTo date
+      referenceStandards.push(...selectedProduct.parameters[0].referenceStandards.map(std => ({
+        ...std,
+        validUpTo: validUpToDate // Always use validUpToDate from completion date
+      })));
+      console.log("Using referenceStandards from parameters:", selectedProduct.parameters[0].referenceStandards);
+    }
+    else if (selectedProduct._parentForm && 
+             selectedProduct._parentForm.referenceStandards && 
+             selectedProduct._parentForm.referenceStandards.length > 0) {
+      // Make a deep copy and ensure each standard has the correct validUpTo date
+      referenceStandards.push(...selectedProduct._parentForm.referenceStandards.map(std => ({
+        ...std,
+        validUpTo: validUpToDate // Always use validUpToDate from completion date
+      })));
+      console.log("Using referenceStandards from parent form:", selectedProduct._parentForm.referenceStandards);
+    } 
+    else {
+      const referenceStandard = {
+        description: selectedProduct.instrumentDescription || selectedProduct.name || "Measurement Instrument",
+        makeModel: selectedProduct.make || "Unknown Make",
+        slNoIdNo: selectedProduct.serialNo || "N/A",
+        calibrationCertificateNo: selectedProduct.calibrationCertificateNo || 
+                                  `ED/CAL/${jobNo}/${
+                                    new Date().getFullYear()
+                                  }`,
+        validUpTo: validUpToDate, // This is correct - using validUpToDate from completion date
+        calibratedBy: "C and I Calibrations Pvt. Ltd", // Changed from "Error Detector"
+        traceableTo: "NPL" // Changed from "National Standards"
+      };
+      
+      referenceStandards.push(referenceStandard);
+      console.log("Created reference standard from product details:", referenceStandard);
+    }
+    
+    console.log("Final reference standards data:", referenceStandards);
+
     const certificate = {
       certificateNo: certificateNo,
       issueDate: formatDate(),
@@ -242,7 +277,8 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       condition: condition,
       receivedDate: formatDate(selectedProduct._parentForm && selectedProduct._parentForm.date),
       completionDate: completionDate,
-      nextCalibrationDate: formatDate(new Date(new Date().setFullYear(new Date().getFullYear() + 1))),
+      nextCalibrationDate: nextCalibrationDate, // Use calculated date instead of hardcoded 1 year
+      validUpToDate: validUpToDate, // Add valid up to date
       location: location,
       temperature: formattedTemperature,
       humidity: humidity,
@@ -541,7 +577,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
         ref.makeModel,
         ref.slNoIdNo,
         ref.calibrationCertificateNo,
-        ref.validUpTo,
+        ref.validUpTo || ref.validUpToDate || validUpToDate, // Handle multiple possible field names
         ref.calibratedBy,
         ref.traceableTo
       ]),
@@ -614,13 +650,6 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
     const qrX = 20;
     // Position QR code higher to avoid overlap with the green bottom region
     const qrY = pageHeight - qrSize - 25; // Position to avoid overlap with footer
-    console.log("QR code dimensions:", {
-      pageWidth,
-      pageHeight,
-      qrX,
-      qrY,
-      qrSize
-    });
     
     // Get current page number
     const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
@@ -629,11 +658,17 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
     // Add QR code to all pages
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
-      doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
-      if (text) {
-        doc.setFontSize(8);
-        doc.setTextColor(0, 0, 0);
-        doc.text(text, qrX + qrSize + 5, qrY + qrSize/2);
+      // Try to add the QR code image with error handling
+      try {
+        doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+        if (text) {
+          doc.setFontSize(8);
+          doc.setTextColor(0, 0, 0);
+          doc.text(text, qrX + qrSize + 5, qrY + qrSize/2);
+        }
+      } catch (imgError) {
+        console.error(`Error adding QR code to page ${i}:`, imgError);
+        // Continue with other pages even if one fails
       }
     }
     
@@ -643,7 +678,50 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
     return doc;
   } catch (error) {
     console.error("Error adding QR code to PDF:", error);
-    return doc;
+    return doc; // Return doc even if there's an error to allow PDF generation to continue
+  }
+}
+
+// Add a function to compress QR code data URL to reduce storage size
+export function compressQrCodeDataUrl(dataUrl) {
+  try {
+    // If the data URL is too large, reduce its quality or size
+    if (dataUrl && dataUrl.length > 50000) { // If larger than ~50KB
+      console.log("QR code data URL is large, compressing...");
+      
+      // Create a temporary canvas to resize the QR code
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      // Set up image loading
+      return new Promise((resolve, reject) => {
+        img.onload = function() {
+          // Make QR code smaller (150x150 instead of larger size)
+          canvas.width = 150;
+          canvas.height = 150;
+          
+          // Draw image with smoothing disabled to keep QR code readable
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(img, 0, 0, 150, 150);
+          
+          // Get compressed data URL with reduced quality
+          const compressedDataUrl = canvas.toDataURL('image/png', 0.6);
+          console.log(`Compressed QR code from ${dataUrl.length} to ${compressedDataUrl.length} bytes`);
+          
+          resolve(compressedDataUrl);
+        };
+        
+        img.onerror = reject;
+        img.src = dataUrl;
+      });
+    }
+    
+    // If not too large, return as is
+    return Promise.resolve(dataUrl);
+  } catch (error) {
+    console.error("Error compressing QR code:", error);
+    return Promise.resolve(dataUrl); // Return original on error
   }
 }
 
@@ -1066,43 +1144,12 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
       console.log("Using location from parent form:", location);
     }
 
-    // Reference standards
-    const referenceStandards = [];
-    
-    if (selectedProduct.referenceStandards?.length > 0) {
-      referenceStandards.push(...selectedProduct.referenceStandards);
-    } 
-    else if (selectedProduct.parameters?.length > 0 && 
-             selectedProduct.parameters[0].referenceStandards) {
-      referenceStandards.push(...selectedProduct.parameters[0].referenceStandards);
-    } 
-    else if (selectedProduct._parentForm?.referenceStandards?.length > 0) {
-      referenceStandards.push(...selectedProduct._parentForm.referenceStandards);
-    } 
-    else if (selectedProduct.calibrationDataSheet?.referenceStandards?.length > 0) {
-      referenceStandards.push(...selectedProduct.calibrationDataSheet.referenceStandards);
-    } 
-    else if (selectedProduct._parentForm?.calibrationDataSheet?.referenceStandards?.length > 0) {
-      referenceStandards.push(...selectedProduct._parentForm.calibrationDataSheet.referenceStandards);
-    } 
-    else {
-      // Create a reference standard entry using the product details
-      const referenceStandard = {
-        description: selectedProduct.instrumentDescription || selectedProduct.name || "Measurement Instrument",
-        makeModel: selectedProduct.make || "Unknown Make",
-        slNoIdNo: selectedProduct.serialNo || "N/A",
-        calibrationCertificateNo: selectedProduct.calibrationCertificateNo || 
-                                  `ED/CAL/${jobNo}/${
-                                    new Date().getFullYear()
-                                  }`,
-        validUpTo: formatDate(new Date(new Date().setFullYear(new Date().getFullYear() + 1))),
-        calibratedBy: "Error Detector",
-        traceableTo: "National Standards"
-      };
-      
-      referenceStandards.push(referenceStandard);
+    // Default to "At laboratory" if location is empty or undefined
+    if (!location || location.trim() === "") {
+      location = "At laboratory";
+      console.log("No location found, defaulting to:", location);
     }
-    
+
     // Try to get completion date from technician's calibration data first
     let completionDate = null;
     if (selectedProduct.parameters && selectedProduct.parameters.length > 0) {
@@ -1115,6 +1162,81 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     // Fallback to current date if no technician date is found
     if (!completionDate) {
       completionDate = formatDate();
+    }
+    
+    // Parse the completion date string to create a Date object
+    const completionDateParts = completionDate.split('.');
+    const completionDateObj = new Date(
+      parseInt(completionDateParts[2]),
+      parseInt(completionDateParts[1]) - 1,
+      parseInt(completionDateParts[0])
+    );
+    
+    // Calculate next calibration date as 1 year from completion date
+    const nextCalibrationDateObj = new Date(completionDateObj);
+    nextCalibrationDateObj.setFullYear(completionDateObj.getFullYear() + 1);
+    const nextCalibrationDate = formatDate(nextCalibrationDateObj);
+    
+    // Calculate valid up to date as 11 months from completion date
+    const validUpToDateObj = new Date(completionDateObj);
+    validUpToDateObj.setMonth(completionDateObj.getMonth() + 11);
+    const validUpToDate = formatDate(validUpToDateObj);
+
+    // Reference standards
+    const referenceStandards = [];
+    
+    if (selectedProduct.referenceStandards?.length > 0) {
+      // Make a deep copy and ensure each standard has the correct validUpTo date
+      referenceStandards.push(...selectedProduct.referenceStandards.map(std => ({
+        ...std,
+        validUpTo: validUpToDate // Always use validUpToDate from completion date
+      })));
+    } 
+    else if (selectedProduct.parameters?.length > 0 && 
+             selectedProduct.parameters[0].referenceStandards) {
+      // Make a deep copy and ensure each standard has the correct validUpTo date
+      referenceStandards.push(...selectedProduct.parameters[0].referenceStandards.map(std => ({
+        ...std,
+        validUpTo: validUpToDate // Always use validUpToDate from completion date
+      })));
+    } 
+    else if (selectedProduct._parentForm?.referenceStandards?.length > 0) {
+      // Make a deep copy and ensure each standard has the correct validUpTo date
+      referenceStandards.push(...selectedProduct._parentForm.referenceStandards.map(std => ({
+        ...std,
+        validUpTo: validUpToDate // Always use validUpToDate from completion date
+      })));
+    } 
+    else if (selectedProduct.calibrationDataSheet?.referenceStandards?.length > 0) {
+      // Make a deep copy and ensure each standard has the correct validUpTo date
+      referenceStandards.push(...selectedProduct.calibrationDataSheet.referenceStandards.map(std => ({
+        ...std,
+        validUpTo: validUpToDate // Always use validUpToDate from completion date
+      })));
+    } 
+    else if (selectedProduct._parentForm?.calibrationDataSheet?.referenceStandards?.length > 0) {
+      // Make a deep copy and ensure each standard has the correct validUpTo date
+      referenceStandards.push(...selectedProduct._parentForm.calibrationDataSheet.referenceStandards.map(std => ({
+        ...std,
+        validUpTo: validUpToDate // Always use validUpToDate from completion date
+      })));
+    } 
+    else {
+      // Create a reference standard entry using the product details
+      const referenceStandard = {
+        description: selectedProduct.instrumentDescription || selectedProduct.name || "Measurement Instrument",
+        makeModel: selectedProduct.make || "Unknown Make",
+        slNoIdNo: selectedProduct.serialNo || "N/A",
+        calibrationCertificateNo: selectedProduct.calibrationCertificateNo || 
+                                  `ED/CAL/${jobNo}/${
+                                    new Date().getFullYear()
+                                  }`,
+        validUpTo: validUpToDate, // This is correct
+        calibratedBy: "C and I Calibrations Pvt. Ltd", 
+        traceableTo: "NPL" 
+      };
+      
+      referenceStandards.push(referenceStandard);
     }
     
     // Prepare certificate data
@@ -1134,7 +1256,8 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
       condition: condition,
       receivedDate: formatDate(selectedProduct._parentForm?.date),
       completionDate: completionDate,
-      nextCalibrationDate: formatDate(new Date(new Date().setFullYear(new Date().getFullYear() + 1))),
+      nextCalibrationDate: nextCalibrationDate, // Use calculated date
+      validUpToDate: validUpToDate, // Add valid up to date
       location: location,
       temperature: formattedTemperature,
       humidity: humidity,
@@ -1316,13 +1439,13 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
       head: [['SI no', 'Description', 'Make/Model', 'Slno/Idno', 'Calibration Certificate No', 'Valid up to', 'Calibrated By', 'Traceable to']],
       body: certificate.referenceStandards.map((ref, index) => [
         `${index + 1}.`,
-        ref.description,
-        ref.makeModel,
-        ref.slNoIdNo,
-        ref.calibrationCertificateNo,
-        ref.validUpTo,
-        ref.calibratedBy,
-        ref.traceableTo
+        ref.description || "N/A",
+        ref.makeModel || "N/A",
+        ref.slNoIdNo || "N/A",
+        ref.calibrationCertificateNo || "N/A",
+        ref.validUpTo || ref.validUpToDate || validUpToDate, // Handle multiple possible field names
+        ref.calibratedBy || "N/A",
+        ref.traceableTo || "N/A"
       ]),
       theme: 'grid',
       styles: { 

@@ -16,8 +16,46 @@ const ViewCalibration = () => {
     const fetchAndGenerateCertificate = async () => {
       try {
         setLoading(true);
-        const storedData = localStorage.getItem(`certificate_${documentId}`);
+        // First try getting data from localStorage with exact ID
+        let storedData = localStorage.getItem(`certificate_${documentId}`);
         
+        // If not found, try sessionStorage
+        if (!storedData) {
+          storedData = sessionStorage.getItem(`certificate_${documentId}`);
+          console.log("Checking sessionStorage for certificate data");
+        }
+        
+        // If still not found, try looking for a partial match in localStorage
+        if (!storedData) {
+          console.log("Certificate not found with exact ID, searching for partial matches...");
+          const allKeys = Object.keys(localStorage);
+          const certificateKeys = allKeys.filter(key => key.startsWith('certificate_'));
+          
+          // The documentId format is typically: mongoId_certificateNo with certificateNo having / replaced by _
+          // Try to match by the mongoId part or the certificate number part
+          const documentIdParts = documentId.split('_');
+          const mongoIdPart = documentIdParts[0];
+          
+          for (const key of certificateKeys) {
+            if (key.includes(mongoIdPart)) {
+              console.log(`Found partial match with key: ${key}`);
+              storedData = localStorage.getItem(key);
+              break;
+            }
+            
+            // If certificate format is ED_CAL_XXXX_YYYY-ZZ, try matching that part
+            if (documentIdParts.length >= 4) {
+              const certNumberPart = documentIdParts.slice(1).join('_');
+              if (key.includes(certNumberPart)) {
+                console.log(`Found match by certificate number part: ${key}`);
+                storedData = localStorage.getItem(key);
+                break;
+              }
+            }
+          }
+        }
+        
+        // If found data in any storage
         if (storedData) {
           const parsedData = JSON.parse(storedData);
           setCertificateData(parsedData);
@@ -33,16 +71,38 @@ const ViewCalibration = () => {
               ...parsedData,
               completeGenerated: true
             };
-            localStorage.setItem(`certificate_${documentId}`, JSON.stringify(updatedData));
-            setCertificateData(updatedData);
+            
+            // Don't store the QR code data URL in localStorage to avoid quota issues
+            if (updatedData.product && updatedData.product.qrCodeDataUrl) {
+              delete updatedData.product.qrCodeDataUrl;
+            }
+            
+            try {
+              localStorage.setItem(`certificate_${documentId}`, JSON.stringify(updatedData));
+              setCertificateData(updatedData);
+            } catch (storageError) {
+              console.warn("Could not update localStorage due to quota limits", storageError);
+              // Continue without updating localStorage
+            }
+            
             setIsGeneratingPdf(false);
           }
         } else {
+          // If still not found, provide more helpful error message
+          console.error(`Certificate data not found for ID: ${documentId}`);
           const allKeys = Object.keys(localStorage);
           const certificateKeys = allKeys.filter(key => key.startsWith('certificate_'));
-          setError(`Certificate data not found for ID: ${documentId}. Please return to the original page and try again.`);
+          console.log(`Available certificate keys: ${JSON.stringify(certificateKeys)}`);
+          
+          setError(`Certificate data not found for ID: ${documentId}. This may be because:
+          1. The certificate was generated on a different device
+          2. Your browser's storage was cleared
+          3. The certificate has expired from storage
+          
+          Please return to the original page and regenerate the certificate.`);
         }
       } catch (err) {
+        console.error("Error retrieving certificate data:", err);
         setError("Error retrieving certificate data: " + err.message);
       } finally {
         setLoading(false);
@@ -56,8 +116,29 @@ const ViewCalibration = () => {
     try {
       const { product, certificateNo, jobNo } = data;
       console.log(`Using job number ${jobNo} from stored certificate data for consistency`);
+      
+      // Make sure we have the QR code data
+      if (!product.qrCodeDataUrl && product.qrCodeUrl) {
+        try {
+          // If we only have the URL but not the data URL, try to regenerate the QR code
+          console.log("Regenerating QR code from stored URL");
+          const QRCode = await import('qrcode');
+          product.qrCodeDataUrl = await QRCode.toDataURL(product.qrCodeUrl, {
+            errorCorrectionLevel: 'M',
+            margin: 1,
+            width: 200,
+            color: {
+              dark: '#000000',
+              light: '#FFFFFF'
+            }
+          });
+        } catch (qrError) {
+          console.error("Failed to regenerate QR code:", qrError);
+        }
+      }
+      
       const doc = new jsPDF();
-      await generateFirstPage(doc, product, certificateNo, jobNo); // Pass jobNo to first page generation
+      await generateFirstPage(doc, product, certificateNo, jobNo);
       doc.addPage();
       generateCalibrationResults(doc, product, certificateNo, jobNo);
       
@@ -74,18 +155,29 @@ const ViewCalibration = () => {
         console.error("Error adding watermark to merged PDF:", watermarkError);
       }
       
-      // If we have a QR code data URL, add it to both pages but WITHOUT the text
+      // Add QR code to both pages in consistent position
       if (product.qrCodeDataUrl) {
-        // Add to first page
-        doc.setPage(1);
-        const pageWidth = doc.internal.pageSize.width;
-        const pageHeight = doc.internal.pageSize.height;
-        const qrSize = 30;
-        doc.addImage(product.qrCodeDataUrl, 'PNG', 20, pageHeight - 60, qrSize, qrSize);
-        
-        // Add to second page
-        doc.setPage(2);
-        doc.addImage(product.qrCodeDataUrl, 'PNG', 20, pageHeight - 60, qrSize, qrSize);
+        try {
+          console.log("Adding QR code to both pages of merged PDF");
+          const pageHeight = doc.internal.pageSize.height;
+          const qrSize = 30;
+          const qrX = 20;
+          const qrY = pageHeight - 60; // Position above the green footer
+          
+          // Add to first page
+          doc.setPage(1);
+          doc.addImage(product.qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+          console.log("QR code added to page 1");
+          
+          // Add to second page
+          doc.setPage(2);
+          doc.addImage(product.qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+          console.log("QR code added to page 2");
+        } catch (qrError) {
+          console.error("Failed to add QR code to merged PDF:", qrError);
+        }
+      } else {
+        console.warn("No QR code data URL available for the merged PDF");
       }
       
       doc.save(`Complete_Calibration_Certificate_${certificateNo.replace(/\//g, '_')}.pdf`);
@@ -96,7 +188,7 @@ const ViewCalibration = () => {
     }
   };
 
-  const generateFirstPage = async (doc, product, certificateNo, jobNo) => { // Add jobNo parameter
+  const generateFirstPage = async (doc, product, certificateNo, jobNo) => {
     try {
       let customerName = "Unknown Customer";
       if (product._parentForm && product._parentForm.organization) {
@@ -178,7 +270,23 @@ const ViewCalibration = () => {
         completionDate = formatDate();
       }
       
-      const nextCalibrationDate = formatDate(new Date(new Date().setFullYear(new Date().getFullYear() + 1)));
+      // Parse the completion date string to create a Date object
+      const completionDateParts = completionDate.split('.');
+      const completionDateObj = new Date(
+        parseInt(completionDateParts[2]),
+        parseInt(completionDateParts[1]) - 1,
+        parseInt(completionDateParts[0])
+      );
+      
+      // Calculate next calibration date as 1 year from completion date
+      const nextCalibrationDateObj = new Date(completionDateObj);
+      nextCalibrationDateObj.setFullYear(completionDateObj.getFullYear() + 1);
+      const nextCalibrationDate = formatDate(nextCalibrationDateObj);
+      
+      // Calculate valid up to date as 11 months from completion date
+      const validUpToDateObj = new Date(completionDateObj);
+      validUpToDateObj.setMonth(completionDateObj.getMonth() + 11);
+      const validUpToDate = formatDate(validUpToDateObj);
       
       const temperature = product.roomTemp || "25±4°C";
       const humidity = product.humidity ? `${product.humidity}%` : "30 to 75% RH";
@@ -479,6 +587,11 @@ const ViewCalibration = () => {
         location = product._parentForm.location;
       }
       
+      // Default to "At laboratory" if location is empty or undefined
+      if (!location || location.trim() === "") {
+        location = "At laboratory";
+      }
+      
       y += 8; // Reduced from 10 to 8
       doc.setFont("helvetica", "bold");
       doc.setTextColor(70, 130, 180);
@@ -487,7 +600,7 @@ const ViewCalibration = () => {
       doc.text("Location where Calibration Performed", leftMargin + 5, y);
       doc.text(":", 90, y);
       doc.setFont("helvetica", "normal");
-      doc.text(location || "", 95, y);  // Use the location value without hardcoded default
+      doc.text(location, 95, y);  // Now using the location with default value if empty
       
       y += 8; // Reduced from 10 to 8
       doc.setFont("helvetica", "bold");
@@ -528,18 +641,42 @@ const ViewCalibration = () => {
       const referenceStandards = [];
       
       if (product.referenceStandards && product.referenceStandards.length > 0) {
-        referenceStandards.push(...product.referenceStandards);
+        // Make a deep copy and ensure each standard has the correct validUpTo date
+        referenceStandards.push(...product.referenceStandards.map(std => ({
+          ...std,
+          validUpTo: validUpToDate, // Always use validUpToDate from completion date
+          calibratedBy: "C and I Calibrations Pvt. Ltd", // Always hardcode this value
+          traceableTo: "NPL" // Always hardcode this value
+        })));
       } else if (product.parameters && 
                  product.parameters.length > 0 && 
                  product.parameters[0].referenceStandards) {
-        referenceStandards.push(...product.parameters[0].referenceStandards);
+        // Make a deep copy and ensure each standard has the correct validUpTo date
+        referenceStandards.push(...product.parameters[0].referenceStandards.map(std => ({
+          ...std,
+          validUpTo: validUpToDate, // Always use validUpToDate from completion date
+          calibratedBy: "C and I Calibrations Pvt. Ltd", // Always hardcode this value
+          traceableTo: "NPL" // Always hardcode this value
+        })));
       } else if (product._parentForm && 
                  product._parentForm.referenceStandards && 
                  product._parentForm.referenceStandards.length > 0) {
-        referenceStandards.push(...product._parentForm.referenceStandards);
+        // Make a deep copy and ensure each standard has the correct validUpTo date
+        referenceStandards.push(...product._parentForm.referenceStandards.map(std => ({
+          ...std,
+          validUpTo: validUpToDate, // Always use validUpToDate from completion date
+          calibratedBy: "C and I Calibrations Pvt. Ltd", // Always hardcode this value
+          traceableTo: "NPL" // Always hardcode this value
+        })));
       } else if (product.calibrationDataSheet && 
                  product.calibrationDataSheet.referenceStandards) {
-        referenceStandards.push(...product.calibrationDataSheet.referenceStandards);
+        // Make a deep copy and ensure each standard has the correct validUpTo date  
+        referenceStandards.push(...product.calibrationDataSheet.referenceStandards.map(std => ({
+          ...std,
+          validUpTo: validUpToDate, // Always use validUpToDate from completion date
+          calibratedBy: "C and I Calibrations Pvt. Ltd", // Always hardcode this value
+          traceableTo: "NPL" // Always hardcode this value
+        })));
       } else {
         // Create a reference standard entry using the product details
         referenceStandards.push({
@@ -550,11 +687,17 @@ const ViewCalibration = () => {
                                     `ED/CAL/${jobNo}/${
                                       new Date().getFullYear()
                                     }`,
-          validUpTo: formatDate(new Date(new Date().setFullYear(new Date().getFullYear() + 1))),
-          calibratedBy: "Error Detector",
-          traceableTo: "National Standards"
+          validUpTo: validUpToDate, // Use validUpToDate calculated from completion date
+          calibratedBy: "C and I Calibrations Pvt. Ltd", // Changed from "Error Detector"
+          traceableTo: "NPL" // Changed from "National Standards"
         });
       }
+
+      // Make sure to hardcode calibratedBy and traceableTo for all reference standards
+      referenceStandards.forEach(std => {
+        std.calibratedBy = "C and I Calibrations Pvt. Ltd";
+        std.traceableTo = "NPL";
+      });
       
       // Make sure to process all parameters when constructing the list of parameters
       // This ensures all data is available when generating the second page
@@ -588,9 +731,9 @@ const ViewCalibration = () => {
           ref.makeModel || "N/A",
           ref.slNoIdNo || "N/A",
           ref.calibrationCertificateNo || "N/A",
-          ref.validUpTo || "N/A",
-          ref.calibratedBy || "N/A",
-          ref.traceableTo || "N/A"
+          ref.validUpTo || ref.validUpToDate || validUpToDate, // Handle multiple possible field names
+          "C and I Calibrations Pvt. Ltd", // Always use hardcoded value
+          "NPL" // Always use hardcoded value
         ]),
         theme: 'grid',
         styles: { 
@@ -632,17 +775,6 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "normal");
       doc.setTextColor(0, 0, 0);
       doc.text("(Technical Manager)", signatureX, finalY);
-      
-      // For calibration results page, also add QR code if available from previous page
-      if (product.qrCodeDataUrl) {
-        try {
-          // Position it above the green footer - adjusted for new green region height
-          doc.addImage(product.qrCodeDataUrl, 'PNG', 20, pageHeight - 60, 30, 30);
-          // No scan text for the first page in the merged PDF 
-        } catch (qrError) {
-          console.error("Error adding QR code to certificate page:", qrError);
-        }
-      }
       
       // Calculate center position for watermark - shifted upward by 20 units
       const watermarkWidth = pageWidth * 0.6;
