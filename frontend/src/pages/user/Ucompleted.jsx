@@ -225,7 +225,7 @@ const Ucompleted = () => {
         throw new Error("No product selected");
       }
 
-      const response = await fetch("http://localhost:8080/order", {
+      const response = await fetch("/api/order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -256,7 +256,7 @@ const Ucompleted = () => {
         "order_id": order.id,
         "handler": async function (response) {
           const body = { ...response };
-          const validateresponse = await fetch("http://localhost:8080/order/validate", {
+          const validateresponse = await fetch("/api/order/validate", {
             method: "POST",
             body: JSON.stringify(body),
             headers: {

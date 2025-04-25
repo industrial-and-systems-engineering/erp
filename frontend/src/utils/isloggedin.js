@@ -18,7 +18,7 @@ export const useAuthStore1 = create((set) => ({
   isAuthenticated1: false,
   checkAuth1: async () => {
     try {
-      const response = await fetch('/api/isloggedin/technician', { credentials: 'include' });
+      const response = await fetch('/api/middleware/technician', { credentials: 'include' });
       const data = await response.json();
       set({ isAuthenticated1: data.isLoggedIn });
     } catch (error) {
