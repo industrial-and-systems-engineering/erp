@@ -197,15 +197,32 @@ app.post("/api/order/validate", async (req, res) => {
   }
 });
 
+// Replace your catch-all route with this middleware
 if (process.env.NODE_ENV === 'production') {
-  // No need to redefine __dirname - it's already available in CommonJS
   app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
-  app.get('/', (_, res) => {
-    // res.sendFile(path.resolve(__dirname, '../frontend/dist/index.html'));
-    res.send("Debugging: This is a placeholder response for production mode.");
+  // Use middleware instead of route pattern
+  app.use((req, res, next) => {
+    if (req.method === 'GET' && !req.path.startsWith('/api/')) {
+      return res.sendFile(path.resolve(__dirname, '../frontend/dist/index.html'));
+    }
+    next();
   });
 }
+
+// Default error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  if (req.accepts('html')) {
+    res.status(err.status || 500).sendFile(path.join(__dirname, '../frontend/dist/error.html'));
+  } else {
+    res.status(err.status || 500).json({
+      error: {
+        message: err.message || 'Internal Server Error',
+      },
+    });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT} + frontend ${frontendUrl}`);
