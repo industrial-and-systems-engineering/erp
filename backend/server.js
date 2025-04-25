@@ -125,7 +125,8 @@ app.use((req, res, next) => {
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'http://localhost:8085'],
+    'http://localhost:8085',
+    'https://erpdevelopment.onrender.com'],
   methods: ['GET', 'POST', 'PUT'],
   credentials: true
 }));
