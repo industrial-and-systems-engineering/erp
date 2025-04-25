@@ -21,10 +21,7 @@ const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const cors = require('cors');
 const result = dotenv.config();
-if (result.error) {
-  console.error("Error loading .env file:", result.error);
-  process.exit(1); // Exit the application if .env fails to load
-}
+
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 const PORT = process.env.PORT || 5001;
 mongoose.connect(process.env.MONGO_URI, {});
