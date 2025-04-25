@@ -5,7 +5,7 @@ export default defineConfig({
 
   server: {
     proxy: {
-      "/api": "https://erpdevelopment.onrender.com",
+      "/api": "http://localhost:8085",
     },
   },
 });
