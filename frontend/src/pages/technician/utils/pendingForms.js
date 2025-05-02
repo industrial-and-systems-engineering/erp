@@ -31,31 +31,8 @@ export const usePendingFormsStore = create((set) => ({
                     message: errorData.message || "Failed to update",
                 };
             }
-            const data = await response.json();
-            const updatedPendingForm = data.data;
-            console.log(updatedPendingForm);
-
-            set((state) => {
-                console.log("Before update:", state.pendingForms);
-                const updatedForms = state.pendingForms.reduce((acc, form) => {
-                    if (form._id === fid) {
-                        console.log("Updating form:", form._id, "removing product:", pid);
-                        const remainingProducts = form.products.filter((product) => product._id !== pid);
-                        if (remainingProducts.length > 0) {
-                            acc.push({
-                                ...form,
-                                products: remainingProducts,
-                            });
-                        }
-                    } else {
-                        acc.push(form);
-                    }
-                    return acc;
-                }, []);
-
-                console.log("After update:", updatedForms);
-                return { pendingForms: updatedForms };
-            });
+            const { fetchCompletedForms } = useCompletedFormsStore.getState();
+            fetchCompletedForms();
             return { success: true, message: "PendingForms updated successfully" };
         } catch (error) {
             return {
