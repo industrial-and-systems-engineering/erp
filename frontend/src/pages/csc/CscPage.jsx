@@ -38,7 +38,7 @@ const CscPage = () => {
       if (response.ok) {
         const data = await response.json();
         await checkAuth2();
-        navigate("/csc/homepage", { state: { usernumber: data.usernumber } });
+        navigate("/csc/pending", { state: { usernumber: data.usernumber } });
       } else {
         const errorData = await response.json();
         alert(errorData.message);
@@ -54,12 +54,14 @@ const CscPage = () => {
         {isAuthenticated2 ? (
           <div>
             <TechnicianNavbar setFormData={setFormData} />
-            <Outlet />
+            <div className="py-10">
+              <Outlet />
+            </div>
           </div>
         ) : (
           <div className='flex justify-center items-center min-h-screen py-12'>
 
-           <div className='bg-white p-6 rounded-lg shadow-lg w-full max-w-sm text-center mx-4 sm:mx-auto'>
+            <div className='bg-white p-6 rounded-lg shadow-lg w-full max-w-sm text-center mx-4 sm:mx-auto'>
               <h1 className="text-xl mb-4">csc Login</h1>
               <form className="flex flex-col space-y-4" onSubmit={handleSubmit}>
                 <label className="text-left">

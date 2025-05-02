@@ -156,8 +156,13 @@ const CcalDataSheet = ({ product, form }) => {
           <table className='w-full border-collapse border border-gray-300'>
             <thead className='bg-gray-100'>
               <tr>
-                <th className='border border-gray-300 p-2 text-left'>Name</th>
-                <th className='border border-gray-300 p-2 text-left'>Serial No./ID</th>
+                <th className='text-left p-2'>Name</th>
+                <th className='text-left p-2'>Make/Model</th>
+                <th className='text-left p-2'>Serial No.</th>
+                <th className='text-left p-2'>Certificate No.</th>
+                <th className='text-left p-2'>Valid Upto</th>
+                <th className='text-left p-2'>Calibrated By</th>
+                <th className='text-left p-2'>Traceable To</th>
               </tr>
             </thead>
             <tbody>
@@ -167,8 +172,13 @@ const CcalDataSheet = ({ product, form }) => {
                     key={index}
                     className='hover:bg-gray-50'
                   >
-                    <td className='border border-gray-300 p-2'>{item.name}</td>
-                    <td className='border border-gray-300 p-2'>{item.serialNo}</td>
+                    <td className='p-2'>{item.name}</td>
+                    <td className='p-2'>{item.MakeModel}</td>
+                    <td className='p-2'>{item.serialNo}</td>
+                    <td className='p-2'>{item.CertificateNo}</td>
+                    <td className='p-2'>{item.ValidUpto}</td>
+                    <td className='p-2'>{item.CalibratedBy}</td>
+                    <td className='p-2'>{item.TraceableTo}</td>
                   </tr>
                 ))}
             </tbody>

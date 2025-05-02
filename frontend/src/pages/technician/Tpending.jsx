@@ -37,45 +37,46 @@ const Tpending = () => {
               Equipment List
             </h2>
 
-            {pendingForms.map((form) =>
-              form.products.map((product) => (
-                <div
-                  key={product._id}
-                  className={`bg-white p-4 rounded-lg shadow-sm my-3 border-l-4 transition-all duration-200 hover:shadow-md ${
-                    selectedEquipment && selectedEquipment._id === product._id
-                      ? "border-l-blue-600"
-                      : "border-l-gray-300"
-                  }`}
-                >
-                  <div className='flex justify-between items-center gap-2'>
-                    <div>
-                      <p className='font-medium text-gray-800'>Job #{product.jobNo}</p>
-                      <p className='text-sm text-gray-500'>{product.name || "Equipment"}</p>
-                    </div>
-                    <button
-                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                        selectedEquipment && selectedEquipment._id === product._id
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+            {pendingForms
+              .slice() // Create a copy to avoid mutating the original array
+              .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)) // Sort by creation date
+              .map((form) =>
+                form.products.map((product) => (
+                  <div
+                    key={product._id}
+                    className={`bg-white p-4 rounded-lg shadow-sm my-3 border-l-4 transition-all duration-200 hover:shadow-md ${selectedEquipment && selectedEquipment._id === product._id
+                        ? "border-l-blue-600"
+                        : "border-l-gray-300"
                       }`}
-                      onClick={() => toggleEquipmentDetails(product, form)}
-                    >
-                      {selectedEquipment && selectedEquipment._id === product._id ? (
-                        <span className='flex items-center gap-1'>
-                          <span>Hide</span>
-                          <span className='text-xs'>▲</span>
-                        </span>
-                      ) : (
-                        <span className='flex items-center gap-1'>
-                          <span>Details</span>
-                          <span className='text-xs'>▼</span>
-                        </span>
-                      )}
-                    </button>
+                  >
+                    <div className='flex justify-between items-center gap-2'>
+                      <div>
+                        <p className='font-medium text-gray-800'>Job #{product.jobNo}</p>
+                        <p className='text-sm text-gray-500'>{product.name || "Equipment"}</p>
+                      </div>
+                      <button
+                        className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${selectedEquipment && selectedEquipment._id === product._id
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                          }`}
+                        onClick={() => toggleEquipmentDetails(product, form)}
+                      >
+                        {selectedEquipment && selectedEquipment._id === product._id ? (
+                          <span className='flex items-center gap-1'>
+                            <span>Hide</span>
+                            <span className='text-xs'>▲</span>
+                          </span>
+                        ) : (
+                          <span className='flex items-center gap-1'>
+                            <span>Details</span>
+                            <span className='text-xs'>▼</span>
+                          </span>
+                        )}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
           </div>
 
           {/* Equipment Details Panel */}
