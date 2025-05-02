@@ -4,6 +4,9 @@ import { StarIcon, CheckCircleIcon, ArrowRightIcon } from "@heroicons/react/24/o
 import { Link } from "react-router-dom";
 
 const Loginpage = () => {
+  // State for video display
+  const [showVideo, setShowVideo] = React.useState(false);
+  
   // Services offered
   const services = [
     {
@@ -249,6 +252,44 @@ const Loginpage = () => {
                   <p className='font-semibold'>{industry}</p>
                 </motion.div>
               ))}
+            </div>
+          </div>
+        </motion.section>
+        {/* YouTube Demo Section */}
+        <motion.section
+          initial='hidden'
+          animate='visible'
+          variants={fadeIn}
+          className='py-16 bg-gray-800 text-white'
+        >
+          <div className='container mx-auto px-4'>
+            <h2 className='text-3xl font-bold text-center mb-4'>See Our System in Action</h2>
+            <p className='text-center mb-8 max-w-2xl mx-auto'>
+              Watch this demo to understand how our calibration management system works and how it can streamline your operations.
+            </p>
+            <div className="relative aspect-video max-w-3xl mx-auto">
+              {showVideo ? (
+                <iframe
+                  className="w-full h-full border-0"
+                  src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
+                  title="Error Detector Calibration System Demo"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-900">
+                  <button
+                    onClick={() => setShowVideo(true)}
+                    className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-full font-medium flex items-center gap-2 cursor-pointer"
+                  >                     
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Play Demo Video
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </motion.section>

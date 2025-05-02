@@ -83,6 +83,14 @@ const Footer = () => {
                   Certifications
                 </a>
               </li>
+              <li>
+                <a
+                  href='https://www.youtube.com/watch?v=CuT0bF03mGg'
+                  className='hover:text-white transition-colors'
+                >
+                  Demo Video
+                </a>
+              </li>
             </ul>
           </div>
 

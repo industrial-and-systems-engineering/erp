@@ -120,6 +120,7 @@ const CTcard = ({ equipment, form }) => {
           <div className='flex justify-between items-center mt-8'>
             <div className='text-center'>
               <p className='font-semibold'>Issued by</p>
+              <p className='mt-2 border-b border-gray-400 w-40 mx-auto'>{equipment.issuedBy}</p>
               <div className='mt-8 border-t border-gray-400 w-40 ml-auto'></div>
             </div>
           </div>

@@ -338,11 +338,10 @@ const Tcard = ({ equipment, form, formOpen }) => {
                 <button
                   type='button'
                   onClick={() => setCalDataSheetStatus(!showCalDataSheet)}
-                  className={`py-2 px-4 rounded ${
-                    showCalDataSheet
+                  className={`py-2 px-4 rounded ${showCalDataSheet
                       ? "bg-red-500 hover:bg-red-700"
                       : "bg-green-500 hover:bg-green-700"
-                  } text-white cursor-pointer`}
+                    } text-white cursor-pointer`}
                 >
                   Show Calibration Data Sheet
                 </button>
@@ -355,8 +354,14 @@ const Tcard = ({ equipment, form, formOpen }) => {
               <div className='flex justify-between items-center mt-8'>
                 <div className='text-center'>
                   <p className='font-semibold'>Issued by</p>
-                  <div className='mt-8 border-t border-gray-400 w-40 ml-auto'></div>
-                </div>
+                  <input
+                    type='text'
+                    name='issuedBy'
+                    onChange={(e) => setNewData({ ...newData, issuedBy: e.target.value })}
+                    value={newData.issuedBy || ""}
+                    className='mt-8 border-b border-gray-400 w-40 ml-auto'
+                  />
+                  </div>
                 {!equipment.isCalibrated ? (
                   <div>
                     <div className='mt-2 flex justify-end'>
@@ -381,6 +386,7 @@ const Tcard = ({ equipment, form, formOpen }) => {
           Data={newData}
           close={setCalDataSheetStatus}
           form={form}
+          paramChange={handleParameterChange}
         />
       )}
     </div>

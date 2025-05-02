@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { TrashIcon } from "@heroicons/react/24/solid";
 import { useForm } from "react-hook-form";
+import { set } from "mongoose";
 
 const CalDataSheet = ({ product, save, close, form, Data }) => {
   const {
@@ -232,7 +233,10 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
         return; // Don't update if not a valid number format
       }
     }
-
+    if (field === "rUnit" && /\d/.test(value)) {
+      alert("Unit should be a string with letters, not numbers");
+      return; // Don't update if the unit contains numbers
+    }
     newParameters[paramIndex].readings[readingIndex][field] = value;
 
     // Automatically calculate mean and UC
@@ -444,7 +448,7 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
               type='text'
               {...register("humidity", {
                 required: "Humidity is required",
-                pattern: {                  
+                pattern: {
                   message: "Please enter a valid percentage (0-100)",
                 },
               })}
@@ -533,7 +537,7 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
               key={paramIndex}
               className='mt-6 border p-4 rounded-md'
             >
-              <div className='grid grid-cols-4 gap-4 mb-4'>
+              <div className='grid grid-cols-5 gap-4 mb-4'>
                 <div>
                   <label className='block text-sm font-medium'>Sl. NO.</label>
                   <input
@@ -553,7 +557,7 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
                   />
                 </div>
                 <div>
-                  <label className='block text-sm font-medium'>Range & L.C</label>
+                  <label className='block text-sm font-medium'>Range</label>
                   <input
                     type='text'
                     value={param.ranges}
@@ -567,6 +571,22 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
                     type='text'
                     value={param.accuracy}
                     readOnly
+                    className='mt-1 block w-full border border-gray-300 rounded-md p-2'
+                  />
+                </div>
+                <div>
+                  <label className='block text-sm font-medium'>Least Count</label>
+                  <input
+                    type='text'
+                    name="leastCount"
+                    value={param.leastCount}
+                    onChange={(e) => {
+                      setParameters((prev) => {
+                        const updatedParameters = [...prev];
+                        updatedParameters[paramIndex].leastCount = e.target.value;
+                        return updatedParameters;
+                      });
+                    }}
                     className='mt-1 block w-full border border-gray-300 rounded-md p-2'
                   />
                 </div>

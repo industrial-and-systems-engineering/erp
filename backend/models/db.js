@@ -27,6 +27,7 @@ const ProductSchema = new Schema({
             parameter: { type: String, required: true },
             ranges: { type: String, required: true },
             accuracy: { type: String, required: true },
+            leastCount: { type: String },
             // methodUsed: { type: String},
             calibrationStatus: { type: String },
             calibratedDate: { type: Date, default: Date.now() },
@@ -58,13 +59,14 @@ const ProductSchema = new Schema({
     csccalibrated: { type: Boolean, default: false },
     ispaymentDone: { type: Boolean, default: false },
     orderId: { type: String },
-  },
-  { timestamps: true }
+    issuedBy: { type: String },
+},
+    { timestamps: true }
 );
 ProductSchema.pre("save", async function (next) {
-  if (this.isNew) {
-    try {
-      const form = await mongoose.model("srfForms").findById(this.form);
+    if (this.isNew) {
+        try {
+            const form = await mongoose.model("srfForms").findById(this.form);
 
             if (!form) {
                 console.log("Form not found");
@@ -126,7 +128,7 @@ const ServiceRequestFormSchema = new Schema({
 
 }, { timestamps: true });
 
-ServiceRequestFormSchema.pre("save", async function(next) {
+ServiceRequestFormSchema.pre("save", async function (next) {
     if (this.isNew) {
         try {
             const formCounter = await Counter.findOneAndUpdate({ _id: FORM_COUNTER_ID }, { $inc: { sequence_value: 1 } }, { new: true, upsert: true });
