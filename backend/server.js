@@ -138,23 +138,15 @@ app.post("/order", async (req, res) => {
         key_id: process.env.RAZORPAY_KEY_ID,
         key_secret: process.env.RAZORPAY_SECRET,
       });
-  
-      // Extract only the fields that Razorpay needs and separate productId
       const { productId, amount, currency, receipt } = req.body;
-      // Build options for Razorpay orders.create
       const options = { amount, currency, receipt };
-  
-      // Create the order with Razorpay using the correct options
       const order = await razorpay.orders.create(options);
       if (!order) {
         return res.status(500).send("Error creating Razorpay order");
       }
-  
-      // Update the product with the Razorpay order ID if productId exists
       if (productId) {
         await Product.findByIdAndUpdate(productId, { orderId: order.id });
       }
-  
       res.json(order);
     } catch (err) {
       console.error("Error in /order route:", err);
