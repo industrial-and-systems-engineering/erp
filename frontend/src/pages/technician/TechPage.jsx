@@ -51,15 +51,16 @@ const TechPage = () => {
 
   return (
     <>
-      <div className='relative isolate px-6 pt-14 lg:px-8 min-h-screen'>
+       <div className='relative isolate px-4 sm:px-6 pt-14 lg:px-8 min-h-screen'>
         {isAuthenticated1 ? (
           <div>
             <TechnicianNavbar setFormData={setFormData} />
             <Outlet />
           </div>
         ) : (
-          <div className='flex justify-center items-center my-30'>
-            <div className='bg-white p-6 rounded-lg shadow-lg w-1/4 text-center'>
+          <div className='flex justify-center items-center min-h-screen py-12'>
+
+           <div className='bg-white p-6 rounded-lg shadow-lg w-full max-w-sm text-center mx-4 sm:mx-auto'>
               <h1 className='text-xl mb-4'>Technician Login</h1>
               <form
                 className='flex flex-col space-y-4'
