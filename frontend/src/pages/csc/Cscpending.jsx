@@ -96,19 +96,19 @@ const Tpending = () => {
     try {
       // Prepare the updated details with formUpdated set to true.
       const updatedDetails = { ...formChanges, formUpdated: true };
-  
+
       // Call updateFormDetails with only the form ID (no need to loop through products)
       const response = await updateFormDetails(selectedForm._id, updatedDetails);
       if (!response.success) {
         throw new Error(response.message);
       }
-  
+
       // Optionally update local state
       setSelectedForm((prevForm) => {
         if (!prevForm) return null;
         return { ...prevForm, ...updatedDetails };
       });
-  
+
       // Exit edit mode, clear changes and show success
       setIsEditing(false);
       setFormChanges({});
@@ -118,7 +118,7 @@ const Tpending = () => {
       setError("Failed to update form details");
     }
   };
-  
+
 
 
 
@@ -127,7 +127,7 @@ const Tpending = () => {
 
     try {
       const result = await markFormCompleted(selectedForm._id, selectedForm);
-      
+
       if (result.success) {
         setSuccessMessage("Form marked as completed and moved to completed forms");
         setSelectedForm(null);
@@ -157,7 +157,7 @@ const Tpending = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div>
       <h1 className="text-2xl font-bold my-6 mb-4 text-center">
         Pending SRF Forms
       </h1>

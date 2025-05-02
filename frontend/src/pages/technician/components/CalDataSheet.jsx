@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { TrashIcon } from "@heroicons/react/24/solid";
 import { useForm } from "react-hook-form";
+import { set } from "mongoose";
 
 const CalDataSheet = ({ product, save, close, form, Data }) => {
   const {
@@ -40,12 +41,12 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
   });
   const [parameters, setParameters] = useState(
     Data.parameters ||
-      product.parameters.map((param) => ({
-        ...param,
-        readings: param.readings.map((reading) => ({
-          ...reading,
-        })),
-      }))
+    product.parameters.map((param) => ({
+      ...param,
+      readings: param.readings.map((reading) => ({
+        ...reading,
+      })),
+    }))
   );
   // Details of Master Used section
   const masterEquipment = [
@@ -145,10 +146,10 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
 
     const uc = Math.sqrt(
       Math.pow(stdUncertainty, 2) +
-        Math.pow(u1, 2) +
-        Math.pow(u2, 2) +
-        Math.pow(u3, 2) +
-        Math.pow(u5, 2)
+      Math.pow(u1, 2) +
+      Math.pow(u2, 2) +
+      Math.pow(u3, 2) +
+      Math.pow(u5, 2)
     );
     return uc;
   };
@@ -163,6 +164,7 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
   const calculateUE = (reading) => {
     const uc = parseFloat(calculateUC(reading)) || 0;
     const edof = parseFloat(calculateEDof(reading)) || 0;
+    const mean = parseFloat(calculateReadingMean(reading)) || 0;
     let kAt95CL = 2;
 
     if (edof < 30) {
@@ -204,7 +206,7 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
     if (reading.rUnit === "degC") {
       return (uc * kAt95CL).toFixed(4);
     }
-    return ((uc * kAt95CL * 100) / rNameValue).toFixed(4);
+    return ((uc * kAt95CL * 100) / mean).toFixed(4);
   };
   const handleReadingChange = (paramIndex, readingIndex, field, value) => {
     const newParameters = [...parameters];
@@ -231,7 +233,10 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
         return; // Don't update if not a valid number format
       }
     }
-
+    if (field === "rUnit" && /\d/.test(value)) {
+      alert("Unit should be a string with letters, not numbers");
+      return; // Don't update if the unit contains numbers
+    }
     newParameters[paramIndex].readings[readingIndex][field] = value;
 
     // Automatically calculate mean and UC
@@ -424,7 +429,6 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
               {...register("roomTemp", {
                 required: "Room Temperature is required",
                 pattern: {
-                  value: /^-?\d+(\.\d+)?$/,
                   message: "Please enter a valid number",
                 },
               })}
@@ -445,7 +449,6 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
               {...register("humidity", {
                 required: "Humidity is required",
                 pattern: {
-                  value: /^(100|[1-9]?\d)$/,
                   message: "Please enter a valid percentage (0-100)",
                 },
               })}
@@ -534,7 +537,7 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
               key={paramIndex}
               className='mt-6 border p-4 rounded-md'
             >
-              <div className='grid grid-cols-4 gap-4 mb-4'>
+              <div className='grid grid-cols-5 gap-4 mb-4'>
                 <div>
                   <label className='block text-sm font-medium'>Sl. NO.</label>
                   <input
@@ -554,7 +557,7 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
                   />
                 </div>
                 <div>
-                  <label className='block text-sm font-medium'>Range & L.C</label>
+                  <label className='block text-sm font-medium'>Range</label>
                   <input
                     type='text'
                     value={param.ranges}
@@ -568,6 +571,22 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
                     type='text'
                     value={param.accuracy}
                     readOnly
+                    className='mt-1 block w-full border border-gray-300 rounded-md p-2'
+                  />
+                </div>
+                <div>
+                  <label className='block text-sm font-medium'>Least Count</label>
+                  <input
+                    type='text'
+                    name="leastCount"
+                    value={param.leastCount}
+                    onChange={(e) => {
+                      setParameters((prev) => {
+                        const updatedParameters = [...prev];
+                        updatedParameters[paramIndex].leastCount = e.target.value;
+                        return updatedParameters;
+                      });
+                    }}
                     className='mt-1 block w-full border border-gray-300 rounded-md p-2'
                   />
                 </div>

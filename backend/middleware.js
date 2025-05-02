@@ -1,5 +1,6 @@
 const express = require('express');
-const router = express.Router();
+const 
+router = express.Router();
 const passport = require('passport');
 router.get('/isloggedin/user', (req, res) => {
     if (req.isAuthenticated()&& req.user.usertype === 'customer') {

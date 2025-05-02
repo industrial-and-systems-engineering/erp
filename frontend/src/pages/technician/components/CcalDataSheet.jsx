@@ -184,7 +184,7 @@ const CcalDataSheet = ({ product, form }) => {
               key={paramIndex}
               className='mt-6 border p-4 rounded-md'
             >
-              <div className='grid grid-cols-4 gap-4 mb-4'>
+              <div className='grid grid-cols-5 gap-4 mb-4'>
                 <div>
                   <label className='block text-sm font-medium'>Sl. NO.</label>
                   <input
@@ -217,6 +217,16 @@ const CcalDataSheet = ({ product, form }) => {
                   <input
                     type='text'
                     value={param.accuracy}
+                    readOnly
+                    className='mt-1 block w-full border border-gray-300 rounded-md p-2'
+                  />
+                </div>
+                <div>
+                  <label className='block text-sm font-medium'>Least Count</label>
+                  <input
+                    type='text'
+                    name="leastCount"
+                    value={param.leastCount}
                     readOnly
                     className='mt-1 block w-full border border-gray-300 rounded-md p-2'
                   />

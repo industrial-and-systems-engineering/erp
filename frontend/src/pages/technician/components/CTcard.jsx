@@ -10,19 +10,17 @@ const CTcard = ({ equipment, form }) => {
 
   return (
     <div>
-      <div className=' bg-white shadow-md rounded p-6'>
+      <div className='bg-white shadow-md rounded'>
         {/* Header Section */}
         <div className='mb-6 text-center'>
           <div className='grid-cols-2 border-t border-l border-r py-4'>
             <h1 className='text-3xl font-bold basis-2xl'>ERROR DETECTOR</h1>
           </div>
-
           <div className='grid grid-cols-2'>
             <h2 className='text-lg font-medium border px-0.5'>Format No : ED/FM/33</h2>
             <h2 className='text-lg font-medium border px-0.5'>Job Card</h2>
           </div>
         </div>
-
         <form>
           {/* Job Card Information */}
           <div>
@@ -122,6 +120,7 @@ const CTcard = ({ equipment, form }) => {
           <div className='flex justify-between items-center mt-8'>
             <div className='text-center'>
               <p className='font-semibold'>Issued by</p>
+              <p className='mt-2 border-b border-gray-400 w-40 mx-auto'>{equipment.issuedBy}</p>
               <div className='mt-8 border-t border-gray-400 w-40 ml-auto'></div>
             </div>
           </div>

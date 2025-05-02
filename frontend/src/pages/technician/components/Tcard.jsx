@@ -147,15 +147,14 @@ const Tcard = ({ equipment, form, formOpen }) => {
   return (
     <div>
       {!showCalDataSheet ? (
-        <div className='flex justify-center items-center h-screen border-2 border-gray-300 rounded-lg p-4'>
+        <div className='flex justify-center items-center border-gray-300 rounded-lg p-4'>
           {/* Main Container */}
           <div className='w-full bg-white'>
             {/* Header Section */}
             <div className='mb-6 text-center'>
-              <div className='grid-cols-2 border-t border-l border-r py-4'>
+              <div className='grid-cols-2 border-t border-l border-r '>
                 <h1 className='text-3xl font-bold basis-2xl'>ERROR DETECTOR</h1>
               </div>
-
               <div className='grid grid-cols-2'>
                 <h2 className='text-lg font-medium border px-0.5'>Format No : ED/FM/33</h2>
                 <h2 className='text-lg font-medium border px-0.5'>Job Card</h2>
@@ -339,11 +338,10 @@ const Tcard = ({ equipment, form, formOpen }) => {
                 <button
                   type='button'
                   onClick={() => setCalDataSheetStatus(!showCalDataSheet)}
-                  className={`py-2 px-4 rounded ${
-                    showCalDataSheet
+                  className={`py-2 px-4 rounded ${showCalDataSheet
                       ? "bg-red-500 hover:bg-red-700"
                       : "bg-green-500 hover:bg-green-700"
-                  } text-white cursor-pointer`}
+                    } text-white cursor-pointer`}
                 >
                   Show Calibration Data Sheet
                 </button>
@@ -356,8 +354,14 @@ const Tcard = ({ equipment, form, formOpen }) => {
               <div className='flex justify-between items-center mt-8'>
                 <div className='text-center'>
                   <p className='font-semibold'>Issued by</p>
-                  <div className='mt-8 border-t border-gray-400 w-40 ml-auto'></div>
-                </div>
+                  <input
+                    type='text'
+                    name='issuedBy'
+                    onChange={(e) => setNewData({ ...newData, issuedBy: e.target.value })}
+                    value={newData.issuedBy || ""}
+                    className='mt-8 border-b border-gray-400 w-40 ml-auto'
+                  />
+                  </div>
                 {!equipment.isCalibrated ? (
                   <div>
                     <div className='mt-2 flex justify-end'>
@@ -382,6 +386,7 @@ const Tcard = ({ equipment, form, formOpen }) => {
           Data={newData}
           close={setCalDataSheetStatus}
           form={form}
+          paramChange={handleParameterChange}
         />
       )}
     </div>

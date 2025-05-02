@@ -55,7 +55,9 @@ const TechPage = () => {
         {isAuthenticated1 ? (
           <div>
             <TechnicianNavbar setFormData={setFormData} />
-            <Outlet />
+            <div className="py-10">
+              <Outlet />
+            </div>
           </div>
         ) : (
           <div className='flex justify-center items-center min-h-screen py-12'>
