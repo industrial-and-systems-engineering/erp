@@ -139,7 +139,7 @@ ServiceRequestFormSchema.pre("save", async function (next) {
             const formCounter = await Counter.findOneAndUpdate({ _id: FORM_COUNTER_ID }, { $inc: { sequence_value: 1 } }, { new: true, upsert: true });
 
             this.formNumber = formCounter.sequence_value;
-            this.srfNo = `kgp/24-25/${this.formNumber}`;
+            this.srfNo = `ED/24-25/${this.formNumber}`;
             next();
         } catch (err) {
             console.error("Error in pre-save hook:", err);
