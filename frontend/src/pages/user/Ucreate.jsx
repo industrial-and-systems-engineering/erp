@@ -10,14 +10,6 @@ const ErrorDetectorForm = () => {
 
   const defaultConditionOfProduct = "technician will enter";
   const defaultItemEnclosed = "labworker will enter";
-  // const availableMethods = [
-  //   "ED/SOP/E-001(A) - Calibration of Ammeter",
-  //   "ED/SOP/E-002(S) - Calibration of Megger/DC Voltage/Resistance",
-  //   "ED/SOP/E-003(S) - Temperature Controller/Indicator/Recorder - Thermocouple & RTD",
-  //   "ED/SOP/E-004(S) - Calibration of Voltmeter",
-  //   "ED/SOP/E-005(S) - Measurement of AC/DC Voltage, Current, and DC Resistance",
-  //   "ED/SOP/E-006(S) - Temperature Calibrator/Source/Process Source - Thermocouples & RTD",
-  // ];
 
   const [formData, setFormData] = useState({
     srfNo: "ED/24-25/formno",
@@ -47,6 +39,7 @@ const ErrorDetectorForm = () => {
     conditionalConformative: false,
     customerDrivenConformative: false,
   });
+
 
   const [signatureData, setSignatureData] = useState(null);
   const [isSignatureEmpty, setIsSignatureEmpty] = useState(true);
@@ -83,6 +76,7 @@ const ErrorDetectorForm = () => {
     setSignatureData(sigCanvas.current.toDataURL());
     setIsSignatureEmpty(false);
   };
+  
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -91,6 +85,7 @@ const ErrorDetectorForm = () => {
       alert("Please provide your signature");
       return;
     }
+    
 
     // Validate that each row has at least one parameter with required fields
     const invalidRows = tableRows.filter(
@@ -790,7 +785,7 @@ const ErrorDetectorForm = () => {
                         type='checkbox'
                         name='noDecision'
                         checked={decisionRules.noDecision}
-                        disabled
+                        onChange={handleCheckboxChange}
                         className='w-4 h-4 text-blue-600'
                       />
                       <span className='text-sm'>No decision on conformative statement</span>
@@ -800,7 +795,7 @@ const ErrorDetectorForm = () => {
                         type='checkbox'
                         name='simpleConformative'
                         checked={decisionRules.simpleConformative}
-                        disabled
+                        onChange={handleCheckboxChange}
                         className='w-4 h-4 text-blue-600'
                       />
                       <span className='text-sm'>Simple conformative decision</span>
@@ -810,7 +805,7 @@ const ErrorDetectorForm = () => {
                         type='checkbox'
                         name='conditionalConformative'
                         checked={decisionRules.conditionalConformative}
-                        disabled
+                        onChange={handleCheckboxChange}
                         className='w-4 h-4 text-blue-600'
                       />
                       <span className='text-sm'>Conditional conformative decision</span>
@@ -820,14 +815,14 @@ const ErrorDetectorForm = () => {
                         type='checkbox'
                         name='customerDrivenConformative'
                         checked={decisionRules.customerDrivenConformative}
-                        disabled
+                        onChange={handleCheckboxChange}
                         className='w-4 h-4 text-blue-600'
                       />
                       <span className='text-sm'>Customer-driven conformative decision</span>
                     </label>
                   </div>
                   <p className='text-xs text-gray-500 mt-1 italic'>
-                    This will be determined by lab staff
+                    {/* This will be determined by lab staff */}
                   </p>
                 </div>
 
