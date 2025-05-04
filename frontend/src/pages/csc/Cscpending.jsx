@@ -11,6 +11,8 @@ const Tpending = () => {
   const [formChanges, setFormChanges] = useState({});
   const [jobcardSelected, selectJobcard] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  // Add key state to force re-render when form changes
+  const [cardKey, setCardKey] = useState(0);
 
   useEffect(() => {
     const loadForms = async () => {
@@ -38,18 +40,20 @@ const Tpending = () => {
   }, [successMessage]);
 
   const toggleFormDetails = (form) => {
-    console.log(pendingForms);
-    setSelectedForm((prevForm) =>
-      prevForm && prevForm._id === form._id ? null : form
-    );
+    // If clicking the same form, hide it
+    if (selectedForm && selectedForm._id === form._id) {
+      setSelectedForm(null);
+    } else {
+      // If switching to a different form, update state and increment key
+      setSelectedForm(form);
+      setCardKey(prevKey => prevKey + 1);
+    }
     // Reset editing state when changing forms
     setIsEditing(false);
     setFormChanges({});
   };
 
   const startEditing = () => {
-    // Initialize form changes with values from the first product
-    // or with default values if no products exist
     setFormChanges({
       conditionOfProduct: selectedForm.conditionOfProduct,
       itemEnclosed: selectedForm.itemEnclosed,
@@ -63,8 +67,7 @@ const Tpending = () => {
       calibrationPeriodicity: selectedForm.calibrationPeriodicity,
       reviewRequest: selectedForm.reviewRequest,
       calibrationFacilityAvailable: selectedForm.calibrationFacilityAvailable,
-      calibrationServiceDoneByExternalAgency:
-        selectedForm.calibrationServiceDoneByExternalAgency,
+      calibrationServiceDoneByExternalAgency: selectedForm.calibrationServiceDoneByExternalAgency,
       calibrationMethodUsed: selectedForm.calibrationMethodUsed,
     });
     setIsEditing(true);
@@ -94,33 +97,26 @@ const Tpending = () => {
 
   const saveFormChanges = async () => {
     try {
-      // Prepare the updated details with formUpdated set to true.
       const updatedDetails = { ...formChanges, formUpdated: true };
-
-      // Call updateFormDetails with only the form ID (no need to loop through products)
       const response = await updateFormDetails(selectedForm._id, updatedDetails);
+
       if (!response.success) {
         throw new Error(response.message);
       }
 
-      // Optionally update local state
       setSelectedForm((prevForm) => {
         if (!prevForm) return null;
         return { ...prevForm, ...updatedDetails };
       });
 
-      // Exit edit mode, clear changes and show success
       setIsEditing(false);
       setFormChanges({});
-      setSuccessMessage("Form details updated and removed from pending list");
+      setSuccessMessage("Form details updated successfully");
     } catch (err) {
       console.error("Failed to update form", err);
       setError("Failed to update form details");
     }
   };
-
-
-
 
   const handleMarkAsCompleted = async () => {
     if (!selectedForm) return;
@@ -158,10 +154,6 @@ const Tpending = () => {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold my-6 mb-4 text-center">
-        Pending SRF Forms
-      </h1>
-
       {successMessage && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mx-auto max-w-4xl my-4">
           <p>{successMessage}</p>
@@ -169,56 +161,63 @@ const Tpending = () => {
       )}
 
       {pendingForms.length > 0 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 bg-gray-50 p-4 rounded-lg shadow">
-            <h2 className="text-lg font-semibold mb-3 pb-2 border-b">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {/* SRF Forms List Sidebar */}
+          <div className="bg-gray-50 rounded-lg shadow-md p-4 col-span-1 overflow-y-auto h-[87vh]">
+            <h2 className="font-semibold text-lg mb-4 text-gray-700 border-b pb-2">
               SRF Forms
             </h2>
-            <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
-              {pendingForms.map((form) => (
-                <div
-                  key={form._id}
-                  className={`p-4 rounded-lg shadow-sm cursor-pointer transition-all
-                                        ${selectedForm &&
-                      selectedForm._id === form._id
-                      ? "bg-blue-100 border-l-4 border-blue-500"
-                      : "bg-white hover:bg-gray-50"
-                    }`}
-                  onClick={() => toggleFormDetails(form)}
-                >
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-medium">SRF #{form.srfNo || "N/A"}</h3>
-                    <span className="text-xs bg-blue-100 text-blue-800 rounded-full px-2 py-1">
-                      {new Date(form.date).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-700 mt-1">
-                    Contact: {form.contactPersonName || "N/A"}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Products: {form.products?.length || 0}
-                  </p>
-                  <button
-                    className={`mt-2 w-full p-2 rounded text-sm font-medium transition-colors text-white
-                                            ${selectedForm &&
-                        selectedForm._id === form._id
-                        ? "bg-gray-500 hover:bg-gray-600"
-                        : "bg-blue-500 hover:bg-blue-600"
+            <div className="space-y-3">
+              {pendingForms
+                .slice()
+                .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+                .map((form) => (
+                  <div
+                    key={form._id}
+                    className={`bg-white p-4 rounded-lg shadow-sm border-l-4 transition-all duration-200 hover:shadow-md ${selectedForm && selectedForm._id === form._id
+                        ? "border-l-blue-600"
+                        : "border-l-gray-300"
                       }`}
                   >
-                    {selectedForm && selectedForm._id === form._id
-                      ? "Hide Details"
-                      : "View Details"}
-                  </button>
-                </div>
-              ))}
+                    <div className="flex justify-between items-center gap-2">
+                      <div>
+                        <p className="font-medium text-gray-800">SRF #{form.srfNo || "N/A"}</p>
+                        <p className="text-sm text-gray-500">
+                          {new Date(form.date).toLocaleDateString()}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          Products: {form.products?.length || 0}
+                        </p>
+                      </div>
+                      <button
+                        className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${selectedForm && selectedForm._id === form._id
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                          }`}
+                        onClick={() => toggleFormDetails(form)}
+                      >
+                        {selectedForm && selectedForm._id === form._id ? (
+                          <span className="flex items-center gap-1">
+                            <span>Hide</span>
+                            <span className="text-xs">▲</span>
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1">
+                            <span>Details</span>
+                            <span className="text-xs">▼</span>
+                          </span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ))}
             </div>
           </div>
 
-          <div className="lg:col-span-2">
-
+          {/* Form Details Panel */}
+          <div className="col-span-3 bg-white rounded-lg shadow-md overflow-y-auto h-[87vh]">
             {selectedForm ? (
-              <div className="bg-white p-6 rounded-lg shadow-md">
+              <div className="bg-white p-6 rounded-lg shadow-md" key={cardKey}>
                 <div className="border-b pb-4 mb-4">
                   <div className="flex justify-between items-center">
                     <h2 className="text-xl font-bold">
@@ -253,10 +252,6 @@ const Tpending = () => {
                         {selectedForm.mobileNumber || "N/A"}
                       </p>
                       <p>
-                        <span className="font-medium">Telephone:</span>{" "}
-                        {selectedForm.telephoneNumber || "N/A"}
-                      </p>
-                      <p>
                         <span className="font-medium">Email:</span>{" "}
                         {selectedForm.emailId || "N/A"}
                       </p>
@@ -279,14 +274,6 @@ const Tpending = () => {
                         <span className="font-medium">Probable Date:</span>{" "}
                         {new Date(selectedForm.probableDate).toLocaleString()}
                       </p>
-                      <p>
-                        <span className="font-medium">Created At:</span>{" "}
-                        {new Date(selectedForm.createdAt).toLocaleString()}
-                      </p>
-                      <p>
-                        <span className="font-medium">Updated At:</span>{" "}
-                        {new Date(selectedForm.updatedAt).toLocaleString()}
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -303,19 +290,12 @@ const Tpending = () => {
                           onClick={startEditing}
                         >
                           Edit Form Details
-                        </button>
-                        <button
-                          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm"
-                          onClick={handleMarkAsCompleted}
-                        >
-                          Mark as Completed
-                        </button>
+                        </button>                        
                       </div>
                     )}
                   </div>
 
                   {isEditing ? (
-                    // Editing mode for all products in the form
                     <div className="border rounded-lg p-4 bg-gray-50">
                       <h4 className="font-medium text-lg border-b pb-2 mb-3">
                         Edit Form Details{" "}
@@ -382,7 +362,9 @@ const Tpending = () => {
                           </div>
                         </div>
 
+                        {/* Second column of form fields - kept existing functionality */}
                         <div className="space-y-3">
+                          {/* Keep your existing edit fields */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Calibration Periodicity
@@ -406,6 +388,7 @@ const Tpending = () => {
                             </select>
                           </div>
 
+                          {/* Other form fields remain the same */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Review Request
@@ -446,6 +429,7 @@ const Tpending = () => {
                         </div>
                       </div>
 
+                      {/* Decision rules section */}
                       <div className="space-y-3">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -491,6 +475,7 @@ const Tpending = () => {
                             Decision Rules
                           </label>
                           <div className="space-y-2">
+                            {/* Checkboxes for decision rules */}
                             <div className="flex items-center">
                               <input
                                 type="checkbox"
@@ -509,6 +494,7 @@ const Tpending = () => {
                               <label htmlFor="noDecision">No Decision</label>
                             </div>
 
+                            {/* Other checkboxes remain the same */}
                             <div className="flex items-center">
                               <input
                                 type="checkbox"
@@ -591,7 +577,6 @@ const Tpending = () => {
                       </div>
                     </div>
                   ) : (
-                    // Display all products in the form
                     <div>
                       <div className="space-y-4">
                         {/* Form level details summary */}
@@ -694,7 +679,7 @@ const Tpending = () => {
                                 <th className="border border-gray-200 px-4 py-2 text-left">
                                   Instrument Description
                                 </th>
-                                <th className="border border-gray-200 px-4 py-2 text-left"></th>
+                                {/* <th className="border border-gray-200 px-4 py-2 text-left"></th> */}
                               </tr>
                             </thead>
                             <tbody>
@@ -711,11 +696,11 @@ const Tpending = () => {
                                   <td className="border border-gray-200 px-4 py-2">
                                     {product.instrumentDescription}
                                   </td>
-                                  <td className="border border-gray-200 px-4 py-2">
+                                  {/* <td className="border border-gray-200 px-4 py-2">
                                     <button className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm">
                                       View JobCard
                                     </button>
-                                  </td>
+                                  </td> */}
                                 </tr>
                               ))}
                             </tbody>
@@ -727,46 +712,46 @@ const Tpending = () => {
                 </div>
               </div>
             ) : (
-              <div className="bg-white p-6 rounded-lg shadow-md h-full flex flex-col items-center justify-center text-center">
+              <div className="flex flex-col items-center justify-center h-full p-10 text-center">
                 <svg
                   className="w-16 h-16 text-gray-300 mb-4"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
-                    fillRule="evenodd"
-                    d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 100-12 6 6 0 000 12zm-1-5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z"
-                    clipRule="evenodd"
-                  />
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  ></path>
                 </svg>
-                <h3 className="text-lg font-medium text-gray-900">
-                  No SRF form selected
-                </h3>
-                <p className="mt-1 text-gray-500">
-                  Select a form from the list to view all details
-                </p>
+                <h3 className="text-xl font-medium text-gray-600 mb-2">No SRF Form Selected</h3>
+                <p className="text-gray-500">Select a form from the list to view details</p>
               </div>
             )}
           </div>
         </div>
       ) : (
-        <div className="bg-white p-8 rounded-lg shadow-md text-center max-w-2xl mx-auto">
+        <div className="bg-white rounded-lg shadow-md p-10 text-center">
           <svg
             className="w-16 h-16 text-gray-300 mx-auto mb-4"
-            fill="currentColor"
-            viewBox="0 0 20 20"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
           >
             <path
-              fillRule="evenodd"
-              d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 100-12 6 6 0 000 12zm-1-5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z"
-              clipRule="evenodd"
-            />
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+            ></path>
           </svg>
-          <h2 className="text-xl font-medium text-gray-900 mb-2">
-            No pending SRF forms found
-          </h2>
+          <h3 className="text-xl font-medium text-gray-600 mb-2">No Pending SRF Forms</h3>
           <p className="text-gray-500">
-            All forms have been processed or no forms have been submitted yet.
+            There are currently no pending SRF forms to display.
           </p>
         </div>
       )}

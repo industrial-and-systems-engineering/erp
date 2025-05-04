@@ -37,7 +37,7 @@ const Tcompleted = () => {
               Equipment List
             </h2>
 
-            {completedForms.map((form) =>
+            {[...completedForms].reverse().map((form) =>
               form.products.map((product) => (
                 <div
                   key={product._id}

@@ -10,7 +10,7 @@ const CTcard = ({ equipment, form }) => {
 
   return (
     <div>
-      <div className='bg-white shadow-md rounded'>
+      <div className='bg-white shadow-md rounded p-4'>
         {/* Header Section */}
         <div className='mb-6 text-center'>
           <div className='grid-cols-2 border-t border-l border-r py-4'>

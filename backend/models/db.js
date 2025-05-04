@@ -19,7 +19,12 @@ const ProductSchema = new Schema({
     detailsOfMasterUsed: {
         type: [{
             name: { type: String },
+            MakeModel: { type: String },
             serialNo: { type: String },
+            CertificateNo: { type: String },
+            ValidUpto: { type: String },
+            CalibratedBy: { type: String },
+            TraceableTo: { type: String },
         }]
     },
     parameters: {

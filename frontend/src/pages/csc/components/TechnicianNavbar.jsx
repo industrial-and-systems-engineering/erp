@@ -48,7 +48,7 @@ const TechnicianNavbar = ({ setFormData }) => {
 
   // Navigation items
   const navItems = [
-    { name: "Homepage", path: "homepage", icon: HomeIcon },
+    // { name: "Homepage", path: "homepage", icon: HomeIcon },
     { name: "Pending", path: "pending", icon: ClipboardDocumentListIcon },
     { name: "Completed", path: "completed", icon: CheckCircleIcon },
   ];
