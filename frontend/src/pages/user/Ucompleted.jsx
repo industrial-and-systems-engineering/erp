@@ -220,7 +220,6 @@ const Ucompleted = () => {
   const paymenthandler = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     try {
-      // Make sure there is a selected product
       if (!selectedProduct || !selectedProduct._id) {
         throw new Error("No product selected");
       }
