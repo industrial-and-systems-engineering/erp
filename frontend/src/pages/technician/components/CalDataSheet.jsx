@@ -962,9 +962,9 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
                       </th>
                       <th
                         className='px-1 py-1'
-                        title='Readibility'
+                        title='Repeatability'
                       >
-                        Rd
+                        Rp
                       </th>
                       <th className='px-1 py-1'>Mean</th>
                       <th className='px-1 py-1'>Uc</th>
