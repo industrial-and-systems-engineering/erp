@@ -134,27 +134,27 @@ app.use('/api/csc', Cscroutes);
 app.use('/api', Middlewareroutes);
 
 app.post("/api/order", async (req, res) => {
-    try {
-      const razorpay = new Razorpay({
-        key_id: process.env.RAZORPAY_KEY_ID,
-        key_secret: process.env.RAZORPAY_SECRET,
-      });
-      const { productId, amount, currency, receipt } = req.body;
-      const options = { amount, currency, receipt };
-      const order = await razorpay.orders.create(options);
-      if (!order) {
-        return res.status(500).send("Error creating Razorpay order");
-      }
-      if (productId) {
-        await Product.findByIdAndUpdate(productId, { orderId: order.id });
-      }
-      res.json(order);
-    } catch (err) {
-      console.error("Error in /order route:", err);
-      res.status(500).send("Error");
+  try {
+    const razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_SECRET,
+    });
+    const { productId, amount, currency, receipt } = req.body;
+    const options = { amount, currency, receipt };
+    const order = await razorpay.orders.create(options);
+    if (!order) {
+      return res.status(500).send("Error creating Razorpay order");
     }
-  });
-  
+    if (productId) {
+      await Product.findByIdAndUpdate(productId, { orderId: order.id });
+    }
+    res.json(order);
+  } catch (err) {
+    console.error("Error in /order route:", err);
+    res.status(500).send("Error");
+  }
+});
+
 
 app.post("/api/order/validate", async (req, res) => {
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
