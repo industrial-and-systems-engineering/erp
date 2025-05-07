@@ -1,43 +1,65 @@
 import React, { useState } from "react";
-import { TrashIcon } from "@heroicons/react/24/solid";
-import { useForm } from "react-hook-form";
+import { calculateReadingMean, calculateUE } from "../utils/calculations";
+import masterEquipment from "../utils/masterEquipmentDetails";
+import commonUnits from "../utils/commonUnits";
+import { TrashIcon, PlusIcon, PencilIcon } from "@heroicons/react/24/solid";
 
-const CalDataSheet = ({ product, save, close, form, Data }) => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    setValue,
-    watch,
-  } = useForm({
-    defaultValues: {
-      Location: Data.Location || "",
-      sensorType: Data.sensorType || "",
-      resolution: Data.resolution || "",
-      roomTemp: Data.roomTemp || "",
-      humidity: Data.humidity || "",
-      selectedMaster: "",
-      recDate: new Date().toISOString().split("T")[0],
-    },
-  });
-  const selectedMaster = watch("selectedMaster");
+const CalDataSheet = ({ product, save, close, form, Data, partialUpdate }) => {
+  // Combined form data state
   const [formData, setFormData] = useState({
+    // Read-only fields
     jobNo: product.jobNo,
     srfNo: form.srfNo,
     ulrNo: form.URL_NO,
     name: product.instrumentDescription,
     make: product.make,
     srNo: product.serialNo,
-  });
-  const [newData, setNewData] = useState({
+    recDate: new Date().toISOString().split("T")[0],
+
+    // Editable fields
     Location: Data.Location || "",
     sensorType: Data.sensorType || "",
     resolution: Data.resolution || "",
     roomTemp: Data.roomTemp || "",
+    roomTempValue: Data.roomTemp ? Data.roomTemp.split('±')[0].trim() : "",
+    roomTempUncertainty: Data.roomTemp ? (Data.roomTemp.split('±')[1]?.trim() || "0") : "0",
     humidity: Data.humidity || "",
     detailsOfMasterUsed: Data.detailsOfMasterUsed || [],
-    recDate: new Date().toISOString().split("T")[0],
+
+    // Utility field for adding masters (not saved)
+    selectedMaster: "",
   });
+  // Add state to track which readings have editable Uc fields
+  const [editableUc, setEditableUc] = useState({});
+
+  // Handler to toggle Uc editability
+  const toggleUcEditable = (paramIndex, readingIndex) => {
+    const key = `${paramIndex}-${readingIndex}`;
+    setEditableUc(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  // Handler for manual Uc updates
+  const handleUcChange = (paramIndex, readingIndex, value) => {
+    // Validate numeric input
+    if (value !== "" && !/^-?\d*\.?\d*$/.test(value)) {
+      alert("Please enter a valid number format");
+      return;
+    }
+
+    const newParameters = [...parameters];
+    newParameters[paramIndex].readings[readingIndex].uc = value;
+    setParameters(newParameters);
+  };
+  // Form validation errors
+  const [formErrors, setFormErrors] = useState({});
+
+  // Status messages for user feedback
+  const [statusMessage, setStatusMessage] = useState({ message: "", type: "" });
+
+  // Parameters state (separate as it's complex and requires special handling)
   const [parameters, setParameters] = useState(
     Data.parameters ||
     product.parameters.map((param) => ({
@@ -62,452 +84,204 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
         }]
     }))
   );
-  // Details of Master Used section
-  const masterEquipment = [
-    {
-      name: "5½ Digit Multifunction Calibrator With Current Coil",
-      MakeModel: "ZEAL/ZSMFC5.5 & ZEAL/ZMCC",
-      serialNo: "20140557A ED/CC-02",
-      CertificateNo: "CAL/24-25/N/CC/020",
-      ValidUpto: "05.06.2025",
-      CalibratedBy: "Nashik Engineering Cluster",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "5½ Digit Multifunction Calibrator",
-      MakeModel: "ZEAL/ZSMFC5.5",
-      serialNo: "20140557 ED/MFC-02",
-      CertificateNo: "CAL/24-25/CC/0173-1",
-      ValidUpto: "05.06.2025",
-      CalibratedBy: "Nashik Engineering Cluster",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "6½ Digit Digital Multimeter",
-      MakeModel: "TEKTRONIX DMM4040",
-      serialNo: "2654101 ED/DMM-03",
-      CertificateNo: "CAL/24-25/CC/0377-1",
-      ValidUpto: "17.08.2025",
-      CalibratedBy: "Nashik Engineering Cluster",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Decade Capacitance Box",
-      MakeModel: "Agronic CDB6",
-      serialNo: "121001 ED/DCB-01",
-      CertificateNo: "CAL/24-25/CC/0228-2",
-      ValidUpto: "23.06.2025",
-      CalibratedBy: "Nashik Engineering Cluster",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Decade Inductance Box",
-      MakeModel: "Agronic LDB6",
-      serialNo: "121201 ED/DIB-01",
-      CertificateNo: "CAL/24-25/CC/0228-3",
-      ValidUpto: "23.06.2025",
-      CalibratedBy: "Nashik Engineering Cluster",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Decade Resistance Box",
-      MakeModel: "ZEAL ZSDRB",
-      serialNo: "201008205 ED/RB-02",
-      CertificateNo: "CAL/24-25/CC/0270-1",
-      ValidUpto: "06.07.2025",
-      CalibratedBy: "Nashik Engineering Cluster",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Digital Anemo Meter",
-      MakeModel: "Lutron AM 4201",
-      serialNo: "ED/DAM-01",
-      CertificateNo: "CL-027-04/2024-01",
-      ValidUpto: "14.04.2025",
-      CalibratedBy: "CAL LABS",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Digital Clampmeter",
-      MakeModel: "Metravi/Metraclamp-20",
-      serialNo: "110500541 ED/DCM-01",
-      CertificateNo: "TSC/24-25/1572-2",
-      ValidUpto: "12.04.2025",
-      CalibratedBy: "Transcal Technologies LLP",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Digital IR Thermo Meter",
-      MakeModel: "Metravi MT-16",
-      serialNo: "11018053 ED/IT(M-16)-01",
-      CertificateNo: "TSC/24-25/16266-4",
-      ValidUpto: "16.12.2025",
-      CalibratedBy: "Transcal Technologies LLP",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Digital Multimeter (5¾ Digit)",
-      MakeModel: "Gaussen Metra Watt/Metrahit-29S",
-      serialNo: "LG0171 ED/DMM-01",
-      CertificateNo: "CAL/24-25/CC/0428-1",
-      ValidUpto: "11.09.2025",
-      CalibratedBy: "Nashik Engineering Cluster",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Digital Pressure Calibrator",
-      MakeModel: "Druck DPI 603",
-      serialNo: "60303803 ED/DPC/01",
-      CertificateNo: "TSC/24-25/16266-1",
-      ValidUpto: "16.12.2025",
-      CalibratedBy: "Transcal Technologies LLP",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Digital Pressure gauge",
-      MakeModel: "Adarsh EN-501",
-      serialNo: "NAIM1904001 ED/PG/700/06",
-      CertificateNo: "TSC/24-25/5928-2",
-      ValidUpto: "01.07.2025",
-      CalibratedBy: "Transcal Technologies LLP",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Digital Pressure gauge",
-      MakeModel: "Sika",
-      serialNo: "007417 ED/LPG9300/03",
-      CertificateNo: "TSC/24-25/5928-1",
-      ValidUpto: "01.07.2025",
-      CalibratedBy: "Transcal Technologies LLP",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Digital Tachometar",
-      MakeModel: "Line Seiki TM-4000",
-      serialNo: "747; ED/DTM-01",
-      CertificateNo: "TSC/24-25/16266-02",
-      ValidUpto: "16.12.2025",
-      CalibratedBy: "Transcal Technologies LLP",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Digital Thermometer",
-      MakeModel: "Tempsens Tempet 09-02",
-      serialNo: "T0103;ED/THEM/01",
-      CertificateNo: "TSC/24-25/16266-6",
-      ValidUpto: "16.12.2026",
-      CalibratedBy: "Transcal Technologies LLP",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Digital Timer",
-      MakeModel: "Hitech Instruments/ HTI369PTMR",
-      serialNo: "2021031701; ED/TIMER-01",
-      CertificateNo: "TSC/24-25/2105-01",
-      ValidUpto: "25.04.2025",
-      CalibratedBy: "Transcal Technologies LLP",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Digital Vibration Meter with Sensor",
-      MakeModel: "MCM/AVD-80",
-      serialNo: "1572",
-      CertificateNo: "TSC/24-25/20379-1",
-      ValidUpto: "20.02.2026",
-      CalibratedBy: "Transcal Technologies LLP",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Gold Plated Low Resistance Box",
-      MakeModel: "Hitech Instruments",
-      serialNo: "11122002 ED/RB-01",
-      CertificateNo: "CAL/24-25/CC/0270-2",
-      ValidUpto: "06.07.2025",
-      CalibratedBy: "Nashik Engineering Cluster",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "High Voltage Probe with DMM",
-      MakeModel: "Fluke, 80K-40 DMM: APPA 505",
-      serialNo: "95290020;ED/HVP-01 38000208;ED/DMM-02",
-      CertificateNo: "C&IJ/CAL/25-02/132",
-      ValidUpto: "25.02.2026",
-      CalibratedBy: "C&I Calibrations Pvt.Ltd.",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Meg ohm Box",
-      MakeModel: "Sigma Instrumments",
-      serialNo: "102010 ED/MOHM-01",
-      CertificateNo: "CAL/24-25/CC/0228-1",
-      ValidUpto: "23.06.2025",
-      CalibratedBy: "Nashik Engineering Cluster",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Multiproduct Calibrator 5500A",
-      MakeModel: "FLUKE/5500A",
-      serialNo: "6530020 ED/MFC-03",
-      CertificateNo: "CAL/25/CC/057-1",
-      ValidUpto: "27.01.2026",
-      CalibratedBy: "Nashik Engineering Cluster",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Multiproduct Calibrator With Current Coil",
-      MakeModel: "FLUKE/5500A Zeal/ZMCC",
-      serialNo: "6530020... 201008204A",
-      CertificateNo: "CAL/25/N/CC/011",
-      ValidUpto: "26.01.2026",
-      CalibratedBy: "Nashik Engineering Cluster",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Precission C.T",
-      MakeModel: "Meco-v",
-      serialNo: "12952",
-      CertificateNo: "",
-      ValidUpto: "",
-      CalibratedBy: "",
-      TraceableTo: ""
-    },
-    {
-      name: "Process Source",
-      MakeModel: "Metravi/11+",
-      serialNo: "995115358 ED/PS/01",
-      CertificateNo: "CS/23/LB/ET/272-01",
-      ValidUpto: "",
-      CalibratedBy: "R&D Instrument Services",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "S Type Thermometer with Temp Indicator",
-      MakeModel: "Tempsens SIMP",
-      serialNo: "2426/T0103 ED/TC(S)/STD/01",
-      CertificateNo: "TSC/24-25/16266-3",
-      ValidUpto: "16.12.2025",
-      CalibratedBy: "Transcal Technologies LLP",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Slip Gauge Block Set",
-      MakeModel: "Mikronix M122/1",
-      serialNo: "8419",
-      CertificateNo: "TI/B/SGS/024/2024",
-      ValidUpto: "09.02.2026",
-      CalibratedBy: "Tanson Instrument",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "SPRT Sensor",
-      MakeModel: "Tempsens P-100X1",
-      serialNo: "1405 ED/SPRT/STD/01",
-      CertificateNo: "TSC/24-25/16266-6",
-      ValidUpto: "16.12.2025",
-      CalibratedBy: "Transcal Technologies LLP",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Standard Resistance box",
-      MakeModel: "Sigma Instrumments",
-      serialNo: "210212 ED/SRB-02",
-      CertificateNo: "C&IJ/CAL/25-02/133",
-      ValidUpto: "25.02.2026",
-      CalibratedBy: "C & I Calibrations Pvt.Ltd.",
-      TraceableTo: "NPL"
-    },
-    {
-      name: "Temperature Calibrator",
-      MakeModel: "Metravi;14",
-      serialNo: "99431127 ED/TC-01",
-      CertificateNo: "CS/24/LB/ET/138-01",
-      ValidUpto: "20.09.2025",
-      CalibratedBy: "R&D Instrument Services",
-      TraceableTo: "NPL"
-    }
-  ];
 
+  // Handle general input change
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+
+    // Clear error for this field if it exists
+    if (formErrors[field]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [field]: null
+      }));
+    }
+  };
+
+  // Handle temperature change with uncertainty
+  const handleTempChange = (field, value) => {
+    let updatedFormData = { ...formData };
+
+    if (field === 'roomTempValue') {
+      const uncertainty = formData.roomTempUncertainty || "0";
+      updatedFormData = {
+        ...updatedFormData,
+        roomTempValue: value,
+        roomTemp: `${value} ± ${uncertainty}`
+      };
+    }
+    else if (field === 'roomTempUncertainty') {
+      const tempValue = formData.roomTempValue || "";
+      updatedFormData = {
+        ...updatedFormData,
+        roomTempUncertainty: value,
+        roomTemp: `${tempValue} ± ${value}`
+      };
+    }
+
+    setFormData(updatedFormData);
+
+    // Clear related errors
+    if (formErrors[field]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [field]: null
+      }));
+    }
+  };
+
+  // Add a new range configuration for a parameter
+  const handleAddRangeConfig = (paramIndex) => {
+    // Get the source parameter
+    const sourceParam = parameters[paramIndex];
+
+    // Create a new parameter with same values but empty ranges and LC
+    const newParam = {
+      ...sourceParam,
+      ranges: "", // Empty ranges for user to fill
+      leastCount: "", // Empty least count for user to fill
+      // Create new readings array with same structure but empty values
+      readings: [{
+        rName: "",
+        rUnit: "",
+        r1: "",
+        r2: "",
+        r3: "",
+        r4: "",
+        r5: "",
+        mean: "",
+        uc: "",
+        masterCertUncertainty: 0,
+        ducResolution: 0,
+        masterAccuracy: 0,
+        stability: 0,
+        repeatibility: 0,
+      }]
+    };
+
+    // Insert the new parameter right after the source one
+    const newParameters = [...parameters];
+    newParameters.splice(paramIndex + 1, 0, newParam);
+
+    // Update state
+    setParameters(newParameters);
+
+    // Show success message
+    setStatusMessage({
+      message: "New range configuration added",
+      type: "success"
+    });
+
+    // Auto-hide the message after 3 seconds
+    setTimeout(() => {
+      setStatusMessage({ message: "", type: "" });
+    }, 3000);
+  };
+
+  // Function to remove a parameter (for range configurations)
+  const handleRemoveParam = (paramIndex) => {
+    // Prevent removing if there's only one parameter with this name
+    const paramName = parameters[paramIndex].parameter;
+    const sameNameCount = parameters.filter(p => p.parameter === paramName).length;
+
+    if (sameNameCount <= 1) {
+      setStatusMessage({
+        message: "Cannot remove the only configuration for this parameter",
+        type: "error"
+      });
+
+      setTimeout(() => {
+        setStatusMessage({ message: "", type: "" });
+      }, 3000);
+      return;
+    }
+
+    // Remove the parameter
+    const newParameters = [...parameters];
+    newParameters.splice(paramIndex, 1);
+    setParameters(newParameters);
+
+    // Show success message
+    setStatusMessage({
+      message: "Range configuration removed",
+      type: "success"
+    });
+
+    setTimeout(() => {
+      setStatusMessage({ message: "", type: "" });
+    }, 3000);
+  };
+
+  // Master equipment handlers
   const handleAddMaster = () => {
-    if (selectedMaster) {
-      const masterToAdd = masterEquipment.find((item) => item.name === selectedMaster);
+    if (formData.selectedMaster) {
+      const masterToAdd = masterEquipment.find((item) => item.name === formData.selectedMaster);
       if (
         masterToAdd &&
-        !newData.detailsOfMasterUsed.some((item) => item.name === masterToAdd.name)
+        !formData.detailsOfMasterUsed.some((item) => item.name === masterToAdd.name)
       ) {
-        setNewData({
-          ...newData,
-          detailsOfMasterUsed: [...newData.detailsOfMasterUsed, masterToAdd],
+        setFormData({
+          ...formData,
+          detailsOfMasterUsed: [...formData.detailsOfMasterUsed, masterToAdd],
+          selectedMaster: "" // Reset selection
         });
-        setValue("selectedMaster", ""); // Reset the select field
       }
     }
   };
 
   const handleRemoveMaster = (index) => {
-    const updatedMasters = [...newData.detailsOfMasterUsed];
+    const updatedMasters = [...formData.detailsOfMasterUsed];
     updatedMasters.splice(index, 1);
-    setNewData({
-      ...newData,
-      detailsOfMasterUsed: updatedMasters,
+    setFormData({
+      ...formData,
+      detailsOfMasterUsed: updatedMasters
     });
   };
-  // Calculation functions for each reading
-  const calculateReadingMean = (readings) => {
-    const readingValues = ["r1", "r2", "r3", "r4", "r5"]
-      .map((key) => readings[key])
-      .filter((val) => val !== "" && val !== null);
 
-    if (readingValues.length === 0) return "";
-
-    // Find the maximum number of decimal places in any reading
-    const maxDecimalPlaces = readingValues.reduce((max, val) => {
-      const decimalPart = String(val).split('.');
-      const decimalDigits = decimalPart.length > 1 ? decimalPart[1].length : 0;
-      return Math.max(max, decimalDigits);
-    }, 0);
-
-    // Calculate the mean
-    const numericReadings = readingValues.map(val => parseFloat(val)).filter(val => !isNaN(val));
-    if (numericReadings.length === 0) return "";
-
-    const mean = numericReadings.reduce((acc, val) => acc + val, 0) / numericReadings.length;
-
-    // Round to the maximum number of decimal places
-    return Number(mean.toFixed(maxDecimalPlaces));
-  };
-  const calculateStdDev = (readings) => {
-    const numericReadings = ["r1", "r2", "r3", "r4", "r5"]
-      .map((key) => parseFloat(readings[key]))
-      .filter((val) => !isNaN(val) && val !== null);
-
-    if (numericReadings.length <= 1) return 0;
-
-    const mean = numericReadings.reduce((acc, val) => acc + val, 0) / numericReadings.length;
-    const squaredDiffs = numericReadings.map((val) => Math.pow(val - mean, 2));
-    const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / (numericReadings.length - 1);
-
-    return Math.sqrt(variance);
-  };
-  const calculateStdUncertainty = (readings) => {
-    const stdDev = parseFloat(calculateStdDev(readings));
-    const numericReadings = ["r1", "r2", "r3", "r4", "r5"]
-      .map((key) => parseFloat(readings[key]))
-      .filter((val) => !isNaN(val) && val !== null);
-
-    return numericReadings.length > 0 ? stdDev / Math.sqrt(numericReadings.length) : "";
-  };
-  const calculateUC = (reading) => {
-    const u1 = parseFloat(reading.masterCertUncertainty) / 2 || 0;
-    const u2 = parseFloat(reading.ducResolution) / (2 * Math.sqrt(3)) || 0;
-    const u3 = parseFloat(reading.masterAccuracy) / Math.sqrt(3) || 0;
-    const u5 = parseFloat(reading.stability) / Math.sqrt(3) || 0;
-    const stdUncertainty = parseFloat(calculateStdUncertainty(reading)) || 0;
-
-    const uc = Math.sqrt(
-      Math.pow(stdUncertainty, 2) +
-      Math.pow(u1, 2) +
-      Math.pow(u2, 2) +
-      Math.pow(u3, 2) +
-      Math.pow(u5, 2)
-    );
-    return uc;
-  };
-  const calculateEDof = (reading) => {
-    const stdUncertainty = parseFloat(calculateStdUncertainty(reading)) || 0;
-    const combinedUncertainty = parseFloat(calculateUC(reading)) || 0;
-
-    if (stdUncertainty === 0) return "N/A";
-
-    return 4 * (Math.pow(combinedUncertainty, 4) / Math.pow(stdUncertainty, 4));
-  };
-  const calculateUE = (reading) => {
-    const uc = parseFloat(calculateUC(reading)) || 0;
-    const edof = parseFloat(calculateEDof(reading)) || 0;
-    const mean = parseFloat(calculateReadingMean(reading)) || 0;
-    let kAt95CL = 2;
-
-    if (edof < 30) {
-      const tDistribution = {
-        1: 12.71,
-        2: 4.3,
-        3: 3.18,
-        4: 2.78,
-        5: 2.57,
-        6: 2.45,
-        7: 2.36,
-        8: 2.31,
-        9: 2.26,
-        10: 2.23,
-        11: 2.2,
-        12: 2.18,
-        13: 2.16,
-        14: 2.14,
-        15: 2.13,
-        16: 2.12,
-        17: 2.11,
-        18: 2.1,
-        19: 2.09,
-        20: 2.09,
-        21: 2.08,
-        22: 2.07,
-        23: 2.07,
-        24: 2.06,
-        25: 2.06,
-        26: 2.06,
-        27: 2.05,
-        28: 2.05,
-        29: 2.05,
-      };
-      kAt95CL = tDistribution[Math.round(edof)] || 2;
-    }
-
-    const rNameValue = parseFloat(reading.rName) || 1; // Avoid division by zero
-    if (reading.rUnit === "°C") {
-      return (uc * kAt95CL).toFixed(4);
-    }
-    return ((uc * kAt95CL * 100) / mean).toFixed(4);
-  };
+  // Reading handlers
   const handleReadingChange = (paramIndex, readingIndex, field, value) => {
-    const newParameters = [...parameters];
-
     // Validate numeric inputs for readings
     if (
       [
-        "rName",
-        "r1",
-        "r2",
-        "r3",
-        "r4",
-        "r5",
-        "masterCertUncertainty",
-        "ducResolution",
-        "masterAccuracy",
-        "stability",
-        "repeatibility",
-      ].includes(field)
+        "r1", "r2", "r3", "r4", "r5",
+        "masterCertUncertainty", "ducResolution",
+        "masterAccuracy", "stability", "repeatibility"
+      ].includes(field) &&
+      value !== "" &&
+      !/^-?\d*\.?\d*$/.test(value)
     ) {
-      // Allow only numbers and decimal point
-      if (value !== "" && !/^-?\d*\.?\d*$/.test(value)) {
-        alert("Please enter a valid number format");
-        return; // Don't update if not a valid number format
-      }
+      alert("Please enter a valid number format");
+      return;
     }
+
+    // Validate unit input (no numbers)
     if (field === "rUnit" && /\d/.test(value)) {
       alert("Unit should be a string with letters, not numbers");
-      return; // Don't update if the unit contains numbers
+      return;
     }
+
+    // Update parameter value
+    const newParameters = [...parameters];
     newParameters[paramIndex].readings[readingIndex][field] = value;
 
-    // Automatically calculate mean and UC
-    const updatedReading = newParameters[paramIndex].readings[readingIndex];
-    updatedReading.mean = calculateReadingMean(updatedReading);
-    updatedReading.uc = calculateUE(updatedReading);
+    // Automatically calculate mean and UC when relevant fields change
+    if (["r1", "r2", "r3", "r4", "r5",
+      "masterCertUncertainty", "ducResolution",
+      "masterAccuracy", "stability", "repeatibility"].includes(field)) {
+      const updatedReading = newParameters[paramIndex].readings[readingIndex];
+      updatedReading.mean = calculateReadingMean(updatedReading);
+      updatedReading.uc = calculateUE(updatedReading);
+    }
 
     setParameters(newParameters);
   };
+
   const addStdReading = (paramIndex) => {
-    const newReadings = [...parameters];
-    newReadings[paramIndex].readings.push({
+    const newParameters = [...parameters];
+    newParameters[paramIndex].readings.push({
       rName: "",
       rUnit: "",
       r1: "",
@@ -523,60 +297,124 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
       stability: 0,
       repeatibility: 0,
     });
-    setParameters(newReadings);
+    setParameters(newParameters);
   };
+
   const removeStdReading = (paramIndex, readingIndex) => {
-    const newParameters = [...parameters];
-    // Only allow removal if there's more than one reading
-    if (newParameters[paramIndex].readings.length > 1) {
+    if (parameters[paramIndex].readings.length > 1) {
+      const newParameters = [...parameters];
       newParameters[paramIndex].readings.splice(readingIndex, 1);
       setParameters(newParameters);
     }
   };
 
-  // console.log(parameters);
-  // Unit options for dropdown
-  const commonUnits = [
-    { value: "V", label: "V" },
-    { value: "A", label: "A" },
-    { value: "°C", label: "°C" },
-    { value: "mA", label: "mA" },
-    { value: "ohm", label: "ohm" },
-    { value: "Hz", label: "Hz" },
-    { value: "", label: "Other" },
-  ];
+  // Form validation
+  const validateForm = () => {
+    const errors = {};
+
+    // Required field validation
+    if (!formData.Location) errors.Location = "Location is required";
+    if (!formData.sensorType) errors.sensorType = "Sensor Type is required";
+    if (!formData.resolution) errors.resolution = "Resolution is required";
+    if (!formData.roomTempValue) errors.roomTempValue = "Temperature value is required";
+    if (!formData.humidity) errors.humidity = "Humidity is required";
+
+    // Number validation
+    if (formData.roomTempValue && !/^-?\d*\.?\d*$/.test(formData.roomTempValue)) {
+      errors.roomTempValue = "Please enter a valid number";
+    }
+
+    if (formData.roomTempUncertainty && !/^\d*\.?\d*$/.test(formData.roomTempUncertainty)) {
+      errors.roomTempUncertainty = "Please enter a valid positive number";
+    }
+
+    // At least one master equipment required
+    if (formData.detailsOfMasterUsed.length === 0) {
+      errors.detailsOfMasterUsed = "At least one master equipment is required";
+    }
+
+    // Validate readings
+    const hasInvalidReadings = parameters.some(param =>
+      param.readings.some(reading =>
+        !reading.rName || !reading.rUnit ||
+        !(reading.r1 || reading.r2 || reading.r3 || reading.r4 || reading.r5)
+      )
+    );
+
+    if (hasInvalidReadings) {
+      errors.readings = "All readings must have a name, unit, and at least one reading value";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Partial save without validation
+  const handlePartialSave = () => {
+    // Clear any previous status message
+    setStatusMessage({ message: "", type: "" });
+
+    try {
+      // Build submission data (omitting UI-specific fields)
+      const { selectedMaster, ...submissionData } = formData;
+
+      // Save data as draft without validation
+      save({
+        ...submissionData,
+        parameters,
+        partialySaved: true  // Set the flag as defined in the model
+      });
+      partialUpdate();
+      // Show success message
+      setStatusMessage({
+        message: "Progress saved as draft",
+        type: "success"
+      });
+
+      // Auto-hide the message after 3 seconds
+      setTimeout(() => {
+        setStatusMessage({ message: "", type: "" });
+      }, 3000);
+    } catch (error) {
+      setStatusMessage({
+        message: "Error saving draft: " + error.message,
+        type: "error"
+      });
+    }
+  };
+
+  // Form submission with validation
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    // Validate form
+    if (!validateForm()) return;
+
+    // Build submission data (omitting UI-specific fields)
+    const { selectedMaster, ...submissionData } = formData;
+
+    save({
+      ...submissionData,
+      parameters,
+      partialySaved: false  // Completed calibration, not a draft
+    });
+  };
 
   return (
     <div className='border-2 border-gray-300 rounded-lg p-4'>
       <h1 className='text-2xl font-bold text-center mb-6'>ERROR DETECTOR</h1>
-      <form
-        className='space-y-4'
-        onSubmit={handleSubmit((data) => {
-          // Validate all readings have at least name, unit and one reading
-          const isReadingsValid = parameters.every((param) =>
-            param.readings.every(
-              (reading) =>
-                reading.rName &&
-                reading.rUnit &&
-                (reading.r1 || reading.r2 || reading.r3 || reading.r4 || reading.r5)
-            )
-          );
 
-          if (!isReadingsValid) {
-            alert("Please ensure all readings have a name, unit, and at least one reading value");
-            return;
-          }
-          if (newData.detailsOfMasterUsed.length === 0) {
-            alert("Please add at least one master equipment");
-            return;
-          }
-          save({
-            parameters: parameters,
-            ...data,
-            detailsOfMasterUsed: newData.detailsOfMasterUsed,
-          });
-        })}
-      >
+      {/* Status Message */}
+      {statusMessage.message && (
+        <div
+          className={`mb-4 p-3 rounded-lg text-center ${statusMessage.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+            }`}
+        >
+          {statusMessage.message}
+        </div>
+      )}
+
+      <form className='space-y-4' onSubmit={handleSubmit}>
         {/* Header Information */}
         <div className='grid grid-cols-2 gap-4'>
           <div>
@@ -592,7 +430,7 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
             <label className='block text-sm font-medium'>Rec. Date</label>
             <input
               type='date'
-              value={newData.recDate}
+              value={formData.recDate}
               readOnly
               className='mt-1 block w-full border border-gray-300 rounded-md p-2'
             />
@@ -616,6 +454,7 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
             />
           </div>
         </div>
+
         {/* Details of Item to be Calibrated */}
         <h2 className='text-lg font-bold mt-6'>Details of Item to be Calibrated</h2>
         <div className='grid grid-cols-2 gap-4 mt-4'>
@@ -646,44 +485,42 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
           <div>
             <div className='flex space-x-2'>
               <label className='block text-sm font-medium'>Location</label>
-              {errors.Location && (
-                <span className='text-red-500 text-sm'>{errors.Location.message}</span>
+              {formErrors.Location && (
+                <span className='text-red-500 text-sm'>{formErrors.Location}</span>
               )}
             </div>
             <input
-              {...register("Location", { required: "Location is required" })}
               type='text'
-              value={newData.Location}
-              onChange={(e) => setNewData((prev) => ({ ...prev, Location: e.target.value }))}
+              value={formData.Location}
+              onChange={(e) => handleInputChange("Location", e.target.value)}
               className='mt-1 block w-full border border-gray-300 rounded-md p-2'
               placeholder='Enter Location'
             />
+
             <div className='flex space-x-2'>
               <label className='block text-sm font-medium'>Sensor Type</label>
-              {errors.sensorType && (
-                <span className='text-red-500 text-sm'>{errors.sensorType.message}</span>
+              {formErrors.sensorType && (
+                <span className='text-red-500 text-sm'>{formErrors.sensorType}</span>
               )}
             </div>
             <input
               type='text'
-              {...register("sensorType", { required: "Sensor Type is required" })}
-              value={newData.sensorType}
-              onChange={(e) => setNewData((prev) => ({ ...prev, sensorType: e.target.value }))}
+              value={formData.sensorType}
+              onChange={(e) => handleInputChange("sensorType", e.target.value)}
               className='mt-1 block w-full border border-gray-300 rounded-md p-2'
               placeholder='Enter Sensor Type'
             />
 
             <div className='flex space-x-2'>
               <label className='block text-sm font-medium'>Resolution</label>
-              {errors.resolution && (
-                <span className='text-red-500 text-sm'>{errors.resolution.message}</span>
+              {formErrors.resolution && (
+                <span className='text-red-500 text-sm'>{formErrors.resolution}</span>
               )}
             </div>
             <input
               type='text'
-              {...register("resolution", { required: "Resolution is required" })}
-              value={newData.resolution}
-              onChange={(e) => setNewData((prev) => ({ ...prev, resolution: e.target.value }))}
+              value={formData.resolution}
+              onChange={(e) => handleInputChange("resolution", e.target.value)}
               className='mt-1 block w-full border border-gray-300 rounded-md p-2'
               placeholder='Enter Resolution'
             />
@@ -698,85 +535,54 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
             <div className='flex items-center space-x-2 mt-1'>
               <input
                 type='text'
-                {...register("roomTempValue", {
-                  required: "Temperature value is required",
-                  pattern: {
-                    value: /^-?\d*\.?\d*$/,
-                    message: "Please enter a valid number",
-                  },
-                })}
                 className='block w-full border border-gray-300 rounded-md p-2'
                 placeholder='Value'
-                defaultValue={newData.roomTemp ? newData.roomTemp.split('±')[0].trim() : ''}
-                onChange={(e) => {
-                  const uncertainty = watch("roomTempUncertainty") || "0";
-                  const combined = `${e.target.value} ± ${uncertainty}`;
-                  setValue("roomTemp", combined);
-                  setNewData((prev) => ({ ...prev, roomTemp: combined }));
-                }}
+                value={formData.roomTempValue}
+                onChange={(e) => handleTempChange("roomTempValue", e.target.value)}
               />
               <span className='text-lg font-medium'>±</span>
               <input
                 type='text'
-                {...register("roomTempUncertainty", {
-                  pattern: {
-                    value: /^\d*\.?\d*$/,
-                    message: "Please enter a valid positive number",
-                  },
-                })}
                 className='block w-full border border-gray-300 rounded-md p-2'
                 placeholder='Uncertainty'
-                defaultValue={newData.roomTemp ? (newData.roomTemp.split('±')[1]?.trim() || "0") : "0"}
-                onChange={(e) => {
-                  const value = watch("roomTempValue") || "";
-                  const combined = `${value} ± ${e.target.value}`;
-                  setValue("roomTemp", combined);
-                  setNewData((prev) => ({ ...prev, roomTemp: combined }));
-                }}
+                value={formData.roomTempUncertainty}
+                onChange={(e) => handleTempChange("roomTempUncertainty", e.target.value)}
               />
             </div>
-            <input type="hidden" {...register("roomTemp")} />
-            {errors.roomTempValue && (
-              <span className='text-red-500 text-sm'>{errors.roomTempValue.message}</span>
+            {formErrors.roomTempValue && (
+              <span className='text-red-500 text-sm'>{formErrors.roomTempValue}</span>
             )}
-            {errors.roomTempUncertainty && (
-              <span className='text-red-500 text-sm'>{errors.roomTempUncertainty.message}</span>
+            {formErrors.roomTempUncertainty && (
+              <span className='text-red-500 text-sm'>{formErrors.roomTempUncertainty}</span>
             )}
           </div>
           <div>
             <label className='block text-sm font-medium'>Humidity (%)</label>
             <input
               type='text'
-              {...register("humidity", {
-                required: "Humidity is required",
-                pattern: {
-                  message: "Please enter a valid percentage (0-100)",
-                },
-              })}
-              value={newData.humidity}
-              onChange={(e) => setNewData((prev) => ({ ...prev, humidity: e.target.value }))}
+              value={formData.humidity}
+              onChange={(e) => handleInputChange("humidity", e.target.value)}
               className='mt-1 block w-full border border-gray-300 rounded-md p-2'
               placeholder='Enter Humidity'
             />
-            {errors.humidity && (
-              <span className='text-red-500 text-sm'>{errors.humidity.message}</span>
+            {formErrors.humidity && (
+              <span className='text-red-500 text-sm'>{formErrors.humidity}</span>
             )}
           </div>
         </div>
-        {/* details of master used */}
+
+        {/* Details of Master Used */}
         <h2 className='text-lg font-bold mt-6'>Details of Master Used</h2>
         <div className='mt-4'>
           <div className='flex space-x-2 mb-4'>
             <select
-              {...register("selectedMaster")}
+              value={formData.selectedMaster}
+              onChange={(e) => handleInputChange("selectedMaster", e.target.value)}
               className='flex-grow border border-gray-300 rounded-md p-2'
             >
               <option value=''>Select Master Equipment</option>
               {masterEquipment.map((item, idx) => (
-                <option
-                  key={idx}
-                  value={item.name}
-                >
+                <option key={idx} value={item.name}>
                   {item.name}
                 </option>
               ))}
@@ -790,11 +596,12 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
               Add
             </button>
           </div>
-          {errors.selectedMaster && (
-            <span className='text-red-500 text-sm'>{errors.selectedMaster.message}</span>
+
+          {formErrors.detailsOfMasterUsed && (
+            <span className='text-red-500 text-sm block mb-2'>{formErrors.detailsOfMasterUsed}</span>
           )}
 
-          {newData.detailsOfMasterUsed.length > 0 && (
+          {formData.detailsOfMasterUsed.length > 0 && (
             <div className='border rounded-md p-4 mb-4'>
               <h3 className='font-medium mb-2'>Selected Equipment:</h3>
               <table className='w-full'>
@@ -811,11 +618,8 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {newData.detailsOfMasterUsed.map((item, index) => (
-                    <tr
-                      key={index}
-                      className='border-t'
-                    >
+                  {formData.detailsOfMasterUsed.map((item, index) => (
+                    <tr key={index} className='border-t'>
                       <td className='p-2'>{item.name}</td>
                       <td className='p-2'>{item.MakeModel}</td>
                       <td className='p-2'>{item.serialNo}</td>
@@ -823,7 +627,6 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
                       <td className='p-2'>{item.ValidUpto}</td>
                       <td className='p-2'>{item.CalibratedBy}</td>
                       <td className='p-2'>{item.TraceableTo}</td>
-                      {/* Action Button */}
                       <td className='p-2 text-center'>
                         <button
                           type='button'
@@ -840,94 +643,110 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
             </div>
           )}
         </div>
+
         {/* Observation */}
         <h2 className='text-lg font-bold mt-6'>Observation</h2>
+        {formErrors.readings && (
+          <span className='text-red-500 text-sm block mb-2'>{formErrors.readings}</span>
+        )}
         <div>
           {/* Parameters Section */}
           {parameters.map((param, paramIndex) => (
-            <div
-              key={paramIndex}
-              className='mt-6 border p-4 rounded-md'
-            >
-              <div className='grid grid-cols-5 gap-4 mb-4'>
-                <div>
-                  <label className='block text-sm font-medium'>Sl. NO.</label>
-                  <input
-                    type='text'
-                    value={paramIndex + 1}
-                    readOnly
-                    className='mt-1 block w-full border border-gray-300 rounded-md p-2'
-                  />
-                </div>
-                <div>
-                  <label className='block text-sm font-medium'>Parameter</label>
-                  <input
-                    type='text'
-                    value={param.parameter}
-                    readOnly
-                    className='mt-1 block w-full border border-gray-300 rounded-md p-2'
-                  />
-                </div>
-                <div>
-                  <label className='block text-sm font-medium'>Range</label>
-                  <input
-                    type='text'
-                    value={param.ranges}
-                    readOnly
-                    className='mt-1 block w-full border border-gray-300 rounded-md p-2'
-                  />
-                </div>
-                <div>
-                  <label className='block text-sm font-medium'>Accuracy</label>
-                  <input
-                    type='text'
-                    value={param.accuracy}
-                    readOnly
-                    className='mt-1 block w-full border border-gray-300 rounded-md p-2'
-                  />
-                </div>
-                <div>
-                  <label className='block text-sm font-medium'>Least Count</label>
-                  <input
-                    type='text'
-                    name="leastCount"
-                    value={param.leastCount}
-                    onChange={(e) => {
-                      setParameters((prev) => {
-                        const updatedParameters = [...prev];
+            <div key={paramIndex} className='mt-6 border p-4 rounded-md'>
+              <div className='flex justify-between items-center mb-4'>
+                <div className='grid grid-cols-5 gap-4 flex-grow'>
+                  <div>
+                    <label className='block text-sm font-medium'>Sl. NO.</label>
+                    <input
+                      type='text'
+                      value={paramIndex + 1}
+                      readOnly
+                      className='mt-1 block w-full border border-gray-300 rounded-md p-2'
+                    />
+                  </div>
+                  <div>
+                    <label className='block text-sm font-medium'>Parameter</label>
+                    <input
+                      type='text'
+                      value={param.parameter}
+                      readOnly
+                      className='mt-1 block w-full border border-gray-300 rounded-md p-2'
+                    />
+                  </div>
+                  <div>
+                    <label className='block text-sm font-medium'>Range</label>
+                    <input
+                      type='text'
+                      value={param.ranges}
+                      onChange={(e) => {
+                        const updatedParameters = [...parameters];
+                        updatedParameters[paramIndex].ranges = e.target.value;
+                        setParameters(updatedParameters);
+                      }}
+                      className='mt-1 block w-full border border-gray-300 rounded-md p-2'
+                    />
+                  </div>
+                  <div>
+                    <label className='block text-sm font-medium'>Accuracy</label>
+                    <input
+                      type='text'
+                      value={param.accuracy}
+                      readOnly
+                      className='mt-1 block w-full border border-gray-300 rounded-md p-2'
+                    />
+                  </div>
+                  <div>
+                    <label className='block text-sm font-medium'>Least Count</label>
+                    <input
+                      type='text'
+                      name="leastCount"
+                      value={param.leastCount}
+                      onChange={(e) => {
+                        const updatedParameters = [...parameters];
                         updatedParameters[paramIndex].leastCount = e.target.value;
-                        return updatedParameters;
-                      });
-                    }}
-                    className='mt-1 block w-full border border-gray-300 rounded-md p-2'
-                  />
+                        setParameters(updatedParameters);
+                      }}
+                      className='mt-1 block w-full border border-gray-300 rounded-md p-2'
+                    />
+                  </div>
+                </div>
+
+                {/* Range configuration buttons */}
+                <div className='flex flex-col gap-2 ml-4'>
+                  <button
+                    type='button'
+                    onClick={() => handleAddRangeConfig(paramIndex)}
+                    title="Add new range configuration"
+                    className='flex bg-green-500 text-white p-2 rounded-md hover:bg-green-600'
+                  >
+                    <PlusIcon className='h-5 w-5' />
+                    <span className="text-xs">Add Range</span>
+                  </button>
+
+                  {/* Only show remove button if there are multiple configurations for this parameter */}
+                  {parameters.filter(p => p.parameter === param.parameter).length > 1 && (
+                    <button
+                      type='button'
+                      onClick={() => handleRemoveParam(paramIndex)}
+                      title="Remove this range configuration"
+                      className='flex justify-between bg-red-500 text-white p-2 rounded-md hover:bg-red-600'
+                    >
+                      <TrashIcon className='h-5 w-5' />
+                      <span className="text-xs">Remove</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {/* STD/DUC Readings */}
+              {/* Reading table */}
               <div className='overflow-x-auto shadow-md rounded-lg'>
                 <table className='w-full text-xs text-left text-gray-500 border-collapse'>
                   <thead>
                     <tr className='text-xs text-gray-700 uppercase bg-gray-50'>
                       <th className='px-2 py-1' colSpan={2}>STD./DUC</th>
-                      <th
-                        className='px-2 py-1'
-                        colSpan='5'
-                      >
-                        Readings
-                      </th>
-                      <th
-                        className='px-2 py-1'
-                        colSpan='4'
-                      >
-                        Details of Master
-                      </th>
-                      <th
-                        className='px-2 py-1'
-                        colSpan='3'
-                      >
-                        Results
-                      </th>
+                      <th className='px-2 py-1' colSpan='5'>Readings</th>
+                      <th className='px-2 py-1' colSpan='4'>Details of Master</th>
+                      <th className='px-2 py-1' colSpan='3'>Results</th>
                     </tr>
                     <tr className='bg-gray-100'>
                       <th className='px-2 py-1'></th>
@@ -936,36 +755,11 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
                       <th className='px-1 py-1'>R3</th>
                       <th className='px-1 py-1'>R4</th>
                       <th className='px-1 py-1'>R5</th>
-                      <th
-                        className='px-1 py-1'
-                        title='Master Cert Uncertainty'
-                      >
-                        MCU
-                      </th>
-                      <th
-                        className='px-1 py-1'
-                        title='DUC Resolution'
-                      >
-                        DUCR
-                      </th>
-                      <th
-                        className='px-1 py-1'
-                        title='Master Accuracy'
-                      >
-                        MA
-                      </th>
-                      <th
-                        className='px-1 py-1'
-                        title='Stability'
-                      >
-                        St
-                      </th>
-                      <th
-                        className='px-1 py-1'
-                        title='Repeatability'
-                      >
-                        Rp
-                      </th>
+                      <th className='px-1 py-1' title='Master Cert Uncertainty'>MCU</th>
+                      <th className='px-1 py-1' title='DUC Resolution'>DUCR</th>
+                      <th className='px-1 py-1' title='Master Accuracy'>MA</th>
+                      <th className='px-1 py-1' title='Stability'>St</th>
+                      <th className='px-1 py-1' title='Repeatability'>Rp</th>
                       <th className='px-1 py-1'>Mean</th>
                       <th className='px-1 py-1'>Uc</th>
                       <th className='px-1 py-1'></th>
@@ -973,10 +767,7 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
                   </thead>
                   <tbody>
                     {param.readings.map((reading, readingIndex) => (
-                      <tr
-                        key={readingIndex}
-                        className='bg-white hover:bg-gray-50'
-                      >
+                      <tr key={readingIndex} className='bg-white hover:bg-gray-50'>
                         <td className='px-1 py-1'>
                           <div className='flex flex-nowrap items-center space-x-1'>
                             <input
@@ -1025,131 +816,36 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
                             </div>
                           </div>
                         </td>
-                        <td className='px-1 py-1'>
-                          <input
-                            type='text'
-                            value={reading.r1}
-                            onChange={(e) =>
-                              handleReadingChange(paramIndex, readingIndex, "r1", e.target.value)
-                            }
-                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
-                          />
-                        </td>
-                        <td className='px-1 py-1'>
-                          <input
-                            type='text'
-                            value={reading.r2}
-                            onChange={(e) =>
-                              handleReadingChange(paramIndex, readingIndex, "r2", e.target.value)
-                            }
-                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
-                          />
-                        </td>
-                        <td className='px-1 py-1'>
-                          <input
-                            type='text'
-                            value={reading.r3}
-                            onChange={(e) =>
-                              handleReadingChange(paramIndex, readingIndex, "r3", e.target.value)
-                            }
-                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
-                          />
-                        </td>
-                        <td className='px-1 py-1'>
-                          <input
-                            type='text'
-                            value={reading.r4}
-                            onChange={(e) =>
-                              handleReadingChange(paramIndex, readingIndex, "r4", e.target.value)
-                            }
-                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
-                          />
-                        </td>
-                        <td className='px-1 py-1'>
-                          <input
-                            type='text'
-                            value={reading.r5}
-                            onChange={(e) =>
-                              handleReadingChange(paramIndex, readingIndex, "r5", e.target.value)
-                            }
-                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
-                          />
-                        </td>
-                        <td className='px-1 py-1'>
-                          <input
-                            type='text'
-                            value={reading.masterCertUncertainty}
-                            onChange={(e) =>
-                              handleReadingChange(
-                                paramIndex,
-                                readingIndex,
-                                "masterCertUncertainty",
-                                e.target.value
-                              )
-                            }
-                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
-                          />
-                        </td>
-                        <td className='px-1 py-1'>
-                          <input
-                            type='text'
-                            value={reading.ducResolution}
-                            onChange={(e) =>
-                              handleReadingChange(
-                                paramIndex,
-                                readingIndex,
-                                "ducResolution",
-                                e.target.value
-                              )
-                            }
-                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
-                          />
-                        </td>
-                        <td className='px-1 py-1'>
-                          <input
-                            type='text'
-                            value={reading.masterAccuracy}
-                            onChange={(e) =>
-                              handleReadingChange(
-                                paramIndex,
-                                readingIndex,
-                                "masterAccuracy",
-                                e.target.value
-                              )
-                            }
-                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
-                          />
-                        </td>
-                        <td className='px-1 py-1'>
-                          <input
-                            type='text'
-                            value={reading.stability}
-                            onChange={(e) =>
-                              handleReadingChange(
-                                paramIndex,
-                                readingIndex,
-                                "stability",
-                                e.target.value
-                              )
-                            }
-                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
-                          />
-                        </td>
-                        <td className='px-1 py-1'>
-                          <input
-                            type='text'
-                            value={reading.repeatibility}
-                            onChange={(e) =>
-                              handleReadingChange(
-                                paramIndex,
-                                readingIndex,
-                                "repeatibility",
-                                e.target.value
-                              )
-                            }
-                            className='w-full border border-gray-300 rounded-md p-1 text-xs'
-                          />
-                        </td>
+                        {/* Reading fields R1-R5 */}
+                        {["r1", "r2", "r3", "r4", "r5"].map((field) => (
+                          <td key={field} className='px-1 py-1'>
+                            <input
+                              type='text'
+                              value={reading[field]}
+                              onChange={(e) =>
+                                handleReadingChange(paramIndex, readingIndex, field, e.target.value)
+                              }
+                              className='w-full border border-gray-300 rounded-md p-1 text-xs'
+                            />
+                          </td>
+                        ))}
+
+                        {/* Master detail fields */}
+                        {["masterCertUncertainty", "ducResolution", "masterAccuracy",
+                          "stability", "repeatibility"].map((field) => (
+                            <td key={field} className='px-1 py-1'>
+                              <input
+                                type='text'
+                                value={reading[field]}
+                                onChange={(e) =>
+                                  handleReadingChange(paramIndex, readingIndex, field, e.target.value)
+                                }
+                                className='w-full border border-gray-300 rounded-md p-1 text-xs'
+                              />
+                            </td>
+                          ))}
+
+                        {/* Result fields */}
                         <td className='px-1 py-1'>
                           <input
                             type='text'
@@ -1162,20 +858,43 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
                           <input
                             type='text'
                             value={reading.uc}
-                            readOnly
-                            className='w-full border border-gray-300 rounded-md p-1 bg-gray-100 text-xs'
+                            readOnly={!editableUc[`${paramIndex}-${readingIndex}`]}
+                            onChange={(e) =>
+                              handleUcChange(paramIndex, readingIndex, e.target.value)
+                            }
+                            className={`w-full border border-gray-300 rounded-md p-1 text-xs ${editableUc[`${paramIndex}-${readingIndex}`]
+                              ? 'bg-white'
+                              : 'bg-gray-100'
+                              }`}
                           />
                         </td>
                         <td className='px-1 py-1'>
-                          {param.readings.length > 1 && (
+                          <div className="flex space-x-1">
+                            {/* Edit Uc button */}
                             <button
                               type='button'
-                              onClick={() => removeStdReading(paramIndex, readingIndex)}
-                              className='bg-red-500 text-white p-1 rounded-md hover:bg-red-600 cursor-pointer'
+                              onClick={() => toggleUcEditable(paramIndex, readingIndex)}
+                              title={editableUc[`${paramIndex}-${readingIndex}`] ? "Apply manual Uc" : "Override Uc value"}
+                              className={`p-1 rounded-md cursor-pointer ${editableUc[`${paramIndex}-${readingIndex}`]
+                                ? 'bg-green-500 hover:bg-green-600'
+                                : 'bg-blue-500 hover:bg-blue-600'
+                                } text-white`}
                             >
-                              <TrashIcon className='h-3 w-3' />
+                              <PencilIcon className='h-3 w-3' />
                             </button>
-                          )}
+
+                            {/* Existing delete button */}
+                            {param.readings.length > 1 && (
+                              <button
+                                type='button'
+                                onClick={() => removeStdReading(paramIndex, readingIndex)}
+                                className='bg-red-500 text-white p-1 rounded-md hover:bg-red-600 cursor-pointer'
+                                title="Remove this reading"
+                              >
+                                <TrashIcon className='h-3 w-3' />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1191,6 +910,8 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
               </button>
             </div>
           ))}
+
+          {/* Form Buttons */}
           <div className='flex justify-end space-x-4 mt-6'>
             <button
               type='button'
@@ -1200,10 +921,17 @@ const CalDataSheet = ({ product, save, close, form, Data }) => {
               Cancel
             </button>
             <button
+              type='button'
+              onClick={handlePartialSave}
+              className='bg-yellow-500 text-white px-6 py-2 rounded hover:bg-yellow-600 cursor-pointer'
+            >
+              Save Draft
+            </button>
+            <button
               type='submit'
               className='bg-blue-500 object-bottom text-white px-6 py-2 rounded hover:bg-blue-600 cursor-pointer'
             >
-              Save
+              Save & Complete
             </button>
           </div>
         </div>
