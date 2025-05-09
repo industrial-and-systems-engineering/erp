@@ -394,7 +394,7 @@ const ErrorDetectorForm = () => {
                           Instrument
                         </th>
                         <th className='px-4 py-3.5 text-xs font-medium text-left tracking-wider'>
-                          Make
+                          Make & Model required
                         </th>
                         <th className='px-4 py-3.5 text-xs font-medium text-left tracking-wider'>
                           Serial No
@@ -445,7 +445,7 @@ const ErrorDetectorForm = () => {
                                   )
                                 }
                                 className='w-full p-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all'
-                                placeholder='Enter make'
+                                placeholder='Enter make or model'
                               />
                             </td>
                             <td className='px-4 py-4'>
