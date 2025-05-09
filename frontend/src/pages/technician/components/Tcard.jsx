@@ -3,68 +3,27 @@ import { usePendingFormsStore } from "../utils/pendingForms";
 import CalDataSheet from "./CalDataSheet";
 
 const Tcard = ({ equipment, form, formOpen }) => {
-  const { updateForm, fetchPendingForms } = usePendingFormsStore();
-  const [newData, setNewData] = useState({});
-  const [parameters, setParameters] = useState([...equipment.parameters]);
+  const { updateForm, fetchPendingForms, partiallySave } = usePendingFormsStore();
   const [showCalDataSheet, setCalDataSheetStatus] = useState(false);
-  const [formErrors, setFormErrors] = useState({});
   const [parameterErrors, setParameterErrors] = useState({});
-  const [CDSerrors, setCDSErrors] = useState({ isValid: true });
   const [CDSValid, setCDSValid] = useState(false);
-
-  const [formData, setFormData] = useState({
-    ulrNo: form.URL_NO || "",
-    jobNo: equipment.jobNo || "",
-    jobCardIssueDate: form.createdAt ? new Date(form.createdAt).toLocaleDateString() : "",
-    srfNo: form.srfNo || "",
-    srfDate: form.createdAt,
-    itemName: equipment.instrumentDescription || "",
-    makeModel: equipment.instrumentDescription || "",
-    serialNo: equipment.serialNo || "",
-    targetDate: form.probableDate ? new Date(form.probableDate).toLocaleDateString() : "",
-  });
-
-  useEffect(() => {
-    setFormData({
-      ulrNo: form.URL_NO || "",
-      jobNo: equipment.jobNo || "",
-      jobCardIssueDate: form.createdAt ? new Date(form.createdAt).toLocaleDateString() : "",
-      srfNo: form.srfNo || "",
-      srfDate: form.createdAt ? new Date(form.createdAt).toLocaleDateString() : "",
-      itemName: equipment.instrumentDescription || "",
-      makeModel: equipment.make || "",
-      serialNo: equipment.serialNo || "",
-      targetDate: form.probableDate ? new Date(form.probableDate).toLocaleDateString() : "",
-    });
-
-    setParameters([...equipment.parameters]);
-  }, [equipment, form]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevState) => ({
-      ...prevState,
-      [name]: value,
-    }));
-
-    // Clear error for the field being changed
-    setFormErrors((prevErrors) => ({ ...prevErrors, [name]: null }));
-  };
+  const [newData, setNewData] = useState(equipment);
 
   const handleParameterChange = (e, index) => {
     const { name, value } = e.target;
 
-    const updatedParameters = [...parameters];
-    updatedParameters[index] = {
-      ...updatedParameters[index],
-      [name]: value,
-    };
-    setParameters(updatedParameters);
+    setNewData((prevData) => {
+      const updatedParameters = [...prevData.parameters];
+      updatedParameters[index] = {
+        ...updatedParameters[index],
+        [name]: value,
+      };
 
-    setNewData((prevData) => ({
-      ...prevData,
-      parameters: updatedParameters,
-    }));
+      return {
+        ...prevData,
+        parameters: updatedParameters,
+      };
+    });
 
     // Clear error for the parameter being changed
     setParameterErrors((prevErrors) => ({
@@ -77,7 +36,7 @@ const Tcard = ({ equipment, form, formOpen }) => {
     let errors = {};
     let isValid = true;
 
-    parameters.forEach((parameter, index) => {
+    newData.parameters.forEach((parameter, index) => {
       let paramErrors = {};
       if (!parameter.calibrationStatus) {
         paramErrors.calibrationStatus = "Calibration Status is required";
@@ -97,14 +56,11 @@ const Tcard = ({ equipment, form, formOpen }) => {
     setParameterErrors(errors);
     return isValid;
   };
+
   const validateCDS = () => {
-    if (!CDSValid) {
-      setCDSErrors({ errors: "Please fill the Calibration Data Sheet", isValid: false });
-      return false;
-    }
-    setCDSErrors({ isValid: true });
-    return true;
+    return CDSValid;
   };
+
   const handleUpdateClick = async () => {
     const areParametersValid = validateParameters();
     const cdsValid = validateCDS();
@@ -114,8 +70,7 @@ const Tcard = ({ equipment, form, formOpen }) => {
     }
 
     const dataToUpdate = {
-      ...newData,
-      parameters: parameters,
+      ...newData
     };
 
     const response = await updateForm(form._id, equipment._id, dataToUpdate);
@@ -129,12 +84,19 @@ const Tcard = ({ equipment, form, formOpen }) => {
     }
   };
 
-  const handleSaveNewObservation = (readingData) => {
-    setParameters((prevParameters) => {
-      const updatedParameters = readingData.parameters || prevParameters;
-      return updatedParameters;
-    });
+  const handlePartiallyUpdateClick = async () => {
+    const dataToUpdate = { ...newData };
+    const response = await partiallySave(form._id, equipment._id, dataToUpdate);
 
+    if (response.success) {
+      fetchPendingForms();
+      alert("Form Partially Updated Successfully");
+    } else {
+      alert("Failed to Partially Update form: " + response.message);
+    }
+  }
+
+  const handleSaveNewObservation = (readingData) => {
     setNewData((prevData) => ({
       ...prevData,
       ...readingData,
@@ -170,9 +132,8 @@ const Tcard = ({ equipment, form, formOpen }) => {
                       type='text'
                       name='ulrNo'
                       readOnly
-                      value={formData.ulrNo}
-                      onChange={handleChange}
-                      className='ml-2   '
+                      value={form.URL_NO || ""}
+                      className='ml-2'
                     />
                   </p>
                 </div>
@@ -183,8 +144,8 @@ const Tcard = ({ equipment, form, formOpen }) => {
                       type='text'
                       name='jobNo'
                       readOnly
-                      value={formData.jobNo}
-                      className='ml-2 w-20  '
+                      value={equipment.jobNo || ""}
+                      className='ml-2 w-20'
                     />
                   </p>
                   <p className='mt-2'>
@@ -192,9 +153,9 @@ const Tcard = ({ equipment, form, formOpen }) => {
                     <input
                       type='text'
                       name='jobCardIssueDate'
-                      value={formData.jobCardIssueDate}
+                      value={form.createdAt ? new Date(form.createdAt).toLocaleDateString() : ""}
                       readOnly
-                      className='ml-2  '
+                      className='ml-2'
                     />
                   </p>
                 </div>
@@ -207,9 +168,9 @@ const Tcard = ({ equipment, form, formOpen }) => {
                   <input
                     type='text'
                     name='srfNo'
-                    value={formData.srfNo}
+                    value={form.srfNo || ""}
                     readOnly
-                    className='ml-2  '
+                    className='ml-2'
                   />
                 </p>
               </div>
@@ -223,9 +184,9 @@ const Tcard = ({ equipment, form, formOpen }) => {
                     <input
                       type='text'
                       name='itemName'
-                      value={formData.itemName}
+                      value={equipment.instrumentDescription || ""}
                       readOnly
-                      className='ml-2  '
+                      className='ml-2'
                     />
                   </p>
                 </div>
@@ -235,9 +196,9 @@ const Tcard = ({ equipment, form, formOpen }) => {
                     <input
                       type='text'
                       name='makeModel'
-                      value={formData.makeModel}
+                      value={equipment.make || ""}
                       readOnly
-                      className='ml-2  '
+                      className='ml-2'
                     />
                   </p>
                 </div>
@@ -247,9 +208,9 @@ const Tcard = ({ equipment, form, formOpen }) => {
                     <input
                       type='text'
                       name='serialNo'
-                      value={formData.serialNo}
+                      value={equipment.serialNo || ""}
                       readOnly
-                      className='ml-2  '
+                      className='ml-2'
                     />
                   </p>
                 </div>
@@ -259,9 +220,9 @@ const Tcard = ({ equipment, form, formOpen }) => {
                     <input
                       type='text'
                       name='targetDate'
-                      value={formData.targetDate}
+                      value={form.probableDate ? new Date(form.probableDate).toLocaleDateString() : ""}
                       readOnly
-                      className='ml-2  '
+                      className='ml-2'
                     />
                   </p>
                 </div>
@@ -281,7 +242,7 @@ const Tcard = ({ equipment, form, formOpen }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {parameters.map((parameter, index) => (
+                    {newData.parameters.map((parameter, index) => (
                       <tr key={index}>
                         <td className='border border-black p-1'>{index + 1}</td>
                         <td className='border border-black p-1'>{parameter.parameter}</td>
@@ -305,7 +266,7 @@ const Tcard = ({ equipment, form, formOpen }) => {
                           <input
                             type='date'
                             name='calibratedDate'
-                            value={parameter.calibratedDate || ""}
+                            value={parameter.calibratedDate ? new Date(parameter.calibratedDate).toISOString().split('T')[0] : ""}
                             onChange={(e) => handleParameterChange(e, index)}
                             className='w-full p-1'
                           />
@@ -339,13 +300,13 @@ const Tcard = ({ equipment, form, formOpen }) => {
                   type='button'
                   onClick={() => setCalDataSheetStatus(!showCalDataSheet)}
                   className={`py-2 px-4 rounded ${showCalDataSheet
-                      ? "bg-red-500 hover:bg-red-700"
-                      : "bg-green-500 hover:bg-green-700"
+                    ? "bg-red-500 hover:bg-red-700"
+                    : "bg-green-500 hover:bg-green-700"
                     } text-white cursor-pointer`}
                 >
                   Show Calibration Data Sheet
                 </button>
-                {!CDSerrors.isValid && (
+                {!CDSValid && (
                   <span className='text-red-500 ml-2'>Please fill the Calibration Data Sheet</span>
                 )}
               </div>
@@ -361,20 +322,28 @@ const Tcard = ({ equipment, form, formOpen }) => {
                     value={newData.issuedBy || ""}
                     className='mt-8 border-b border-gray-400 w-40 ml-auto'
                   />
-                  </div>
-                {!equipment.isCalibrated ? (
-                  <div>
-                    <div className='mt-2 flex justify-end'>
+                </div>
+
+                <div>
+                  <div className='mt-2 flex justify-end'>
+                    <div className='flex gap-2'>
                       <button
                         type='button'
                         onClick={handleUpdateClick}
-                        className='mt-2 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700 cursor-pointer'
+                        className='bg-blue-500 text-white py-2 px-6 rounded hover:bg-blue-700 cursor-pointer'
                       >
                         Update
                       </button>
+                      <button
+                        type='button'
+                        onClick={handlePartiallyUpdateClick}
+                        className='bg-yellow-600 text-white px-6 py-2 rounded hover:bg-yellow-700 cursor-pointer'
+                      >
+                        Save as Draft
+                      </button>
                     </div>
                   </div>
-                ) : null}
+                </div>
               </div>
             </form>
           </div>
@@ -387,6 +356,7 @@ const Tcard = ({ equipment, form, formOpen }) => {
           close={setCalDataSheetStatus}
           form={form}
           paramChange={handleParameterChange}
+          partialUpdate={handlePartiallyUpdateClick}
         />
       )}
     </div>

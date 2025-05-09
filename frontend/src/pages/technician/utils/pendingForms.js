@@ -41,4 +41,29 @@ export const usePendingFormsStore = create((set) => ({
             };
         }
     },
+    partiallySave: async (fid, pid, details) => {
+        try {
+            const response = await fetch(`/api/technician/partiallyUpdate/${pid}/${fid}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(details),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                return {
+                    success: false,
+                    message: errorData.message || "Failed to update",
+                };
+            }
+            return { success: true, message: "PendingForms updated successfully" };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message || "An error occurred",
+            };
+        }
+    },
 }));

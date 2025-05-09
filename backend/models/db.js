@@ -33,7 +33,6 @@ const ProductSchema = new Schema({
             ranges: { type: String, required: true },
             accuracy: { type: String, required: true },
             leastCount: { type: String },
-            // methodUsed: { type: String},
             calibrationStatus: { type: String },
             calibratedDate: { type: Date, default: Date.now() },
             remarks: { type: String },
@@ -65,6 +64,7 @@ const ProductSchema = new Schema({
     ispaymentDone: { type: Boolean, default: false },
     orderId: { type: String },
     issuedBy: { type: String },
+    partialySaved: { type: Boolean, default: false },
 },
     { timestamps: true }
 );
