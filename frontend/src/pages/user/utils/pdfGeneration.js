@@ -706,12 +706,18 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
           doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
           
           if (text) {
-            doc.setFontSize(8);
+            // White background for text to make it more readable and remove green background
+            doc.setFillColor(255, 255, 255);
+            doc.rect(qrX - 2, qrY + qrSize, qrSize + 4, 10, 'F');
+            
+            // Add text with smaller font and narrower width
+            doc.setFontSize(7);
             doc.setTextColor(0, 0, 0);
-            // Place text below QR code
-            doc.text("Scan this QR code to view the complete calibration certificate", 
+            
+            // Place text below QR code without background
+            doc.text("Scan this QR code to view the complete certificate", 
                     qrX + qrSize/2, qrY + qrSize + 5, 
-                    {align: 'center', maxWidth: qrSize*2});
+                    {align: 'center', maxWidth: qrSize*1.5});
             
             // If there are signatures that might overlap with the QR code, adjust their positions
             if (i === 1) {
@@ -1033,12 +1039,10 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
     
     // Position signature on the right side of the calibration results table
     const resultsSignatureY = doc.lastAutoTable ? Math.min(doc.lastAutoTable.finalY - 20, 160) : 140;
-    doc.setFont("helvetica", "bold");
-    doc.text("Calibrated by", margin, tableEndY + 10);
-    doc.text("Checked by", pageWidth / 2 - 15, tableEndY + 10);
     
-    // Place the authorized by signature on the right
+    // Only add the authorised by signature at the right side of the table
     const authRightMargin = pageWidth - 45;
+    doc.setFont("helvetica", "bold");
     doc.text("Authorised by", authRightMargin, resultsSignatureY);
     doc.text("Technical Manager", authRightMargin, resultsSignatureY + 7);
     
@@ -1052,12 +1056,13 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
       tableEndY = 30; // Start from top of new page
     }
     
+    // Add signatures at the bottom - only once (removed duplicate)
+    doc.setFont("helvetica", "bold");
     doc.text("Calibrated by", margin, tableEndY);
     doc.text("Checked by", pageWidth / 2 - 15, tableEndY);
     doc.text("Authorised by", pageWidth - 60, tableEndY);
     
     tableEndY += 7;
-    doc.setFont("helvetica", "bold");
     doc.text("Technical Manager", pageWidth - 60, tableEndY);
     tableEndY += 15;
     doc.text("Note:", margin, tableEndY);
@@ -1083,6 +1088,13 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
     tableEndY += 10;
     doc.setFont("helvetica", "bold");
     doc.text("****------END OF CALIBRATION CERTIFICATE-----****", pageWidth / 2, tableEndY, { align: "center" });
+    
+    // Add office contact information at the bottom in pink color
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(187, 107, 158); // Same pink color as accreditation text
+    doc.text("Office: 53/2, Haridevpur Road, Kolkata - 700 082, West Bengal, India", pageWidth / 2, pageHeight - 13, { align: "center" });
+    doc.text("Mobile: 9830532452, E-mail: errordetector268@gmail.com / errordetector268@yahoo.com / calibrationerror94@gmail.com", pageWidth / 2, pageHeight - 7, { align: "center" });
     
     // Try to add watermark to the calibration results page again 
     try {
