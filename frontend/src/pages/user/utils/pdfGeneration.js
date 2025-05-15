@@ -296,19 +296,21 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     // Create a light blue background for the entire page    
     doc.setFillColor(240, 248, 255);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
-    // Add watermark to the page
-    addWatermark(doc, '/watermarkupd.png');
+    
     // Add a greenish background to the top section ending just above the CALIBRATION CERTIFICATE heading    
     doc.setFillColor(140, 205, 162); // #8CCDA2
     doc.rect(0, 0, pageWidth, 22, 'F'); // Height ends just before the heading at y=26
+    
     // Add a matching greenish background to the bottom of the page
     doc.setFillColor(140, 205, 162); // #8CCDA2
     doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
-    // Add watermark to the page
+    
+    // Try to add watermark, but continue if it fails
     try {
       addWatermark(doc, '/watermarkupd.png');
     } catch (watermarkError) {
-      console.error("Error adding watermark:", watermarkError);
+      console.warn("Error adding watermark to main PDF:", watermarkError);
+      // Continue with PDF generation regardless of watermark error
     }
 
     // Add office contact information at the bottom in pink color
@@ -317,27 +319,54 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setTextColor(187, 107, 158); // Same pink color as accreditation text
     doc.text("Office: 53/2, Haridevpur Road, Kolkata - 700 082, West Bengal, India", pageWidth / 2, pageHeight - 13, { align: "center" });
     doc.text("Mobile: 9830532452, E-mail: errordetector268@gmail.com / errordetector268@yahoo.com / calibrationerror94@gmail.com", pageWidth / 2, pageHeight - 7, { align: "center" });
-    // Add the logo images in the top right corner
+    
+    // Add the logo images in the top right corner with error handling
     try {
-      // Load and place the first image (cc.png)
-      const ccImg = new Image();
-      ccImg.src = '/cc.png'; // Adjust path as needed based on your project structure
-      doc.addImage(ccImg, 'PNG', pageWidth - 60, 5, 25, 15);
-      // Load and place the second image (ilac-mra.png)
-      const ilacImg = new Image();
-      ilacImg.src = '/ilac-mra.png'; // Adjust path as needed based on your project structure
-      doc.addImage(ilacImg, 'PNG', pageWidth - 30, 5, 25, 15);
+      // Try to load cc.png, but continue if not available
+      try {
+        const ccImg = new Image();
+        ccImg.onload = function() {
+          doc.addImage(ccImg, 'PNG', pageWidth - 60, 5, 25, 15);
+        };
+        ccImg.onerror = function() {
+          console.warn("Could not load cc.png logo");
+        };
+        ccImg.src = '/cc.png';
+      } catch (logoError) {
+        console.warn("Error processing cc.png logo:", logoError);
+      }
+      
+      // Try to load ilac-mra.png, but continue if not available
+      try {
+        const ilacImg = new Image();
+        ilacImg.onload = function() {
+          doc.addImage(ilacImg, 'PNG', pageWidth - 30, 5, 25, 15);
+        };
+        ilacImg.onerror = function() {
+          console.warn("Could not load ilac-mra.png logo");
+        };
+        ilacImg.src = '/ilac-mra.png';
+      } catch (logoError) {
+        console.warn("Error processing ilac-mra.png logo:", logoError);
+      }
     } catch (imgError) {
-      console.error("Error adding logo images:", imgError);
+      console.warn("Error processing logo images:", imgError);
+      // Continue with PDF generation regardless of logo errors
     }
 
+    // Try to add company logo in the top left corner
     try {
-      // Add company logo in the top left corner
       const dImg = new Image();
-      dImg.src = '/Dupdated.png'; // Changed from D.png to Dupdated.png
-      doc.addImage(dImg, 'PNG', 10, 5, 25, 15);
+      dImg.onload = function() {
+        doc.addImage(dImg, 'PNG', 10, 5, 25, 15);
+      };
+      dImg.onerror = function() {
+        console.warn("Could not load Dupdated.png logo");
+      };
+      dImg.src = '/Dupdated.png';
     } catch (imgError) {
-      console.error("Error adding D logo:", imgError);
+      console.warn("Error processing D logo:", imgError);
+      // Continue with PDF generation regardless of logo errors
     }
 
     // Add company name and title
@@ -570,14 +599,14 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     
     doc.autoTable({
       startY: y,
-      head: [['SI no', 'Description', 'Make/Model', 'Slno/Idno', 'Calibration Certificate No', 'Valid up to', 'Calibrated By', 'Traceable to']],
+      head: [['SI no', 'Name', 'Make/Model', 'Serial No.', 'Certificate No.', 'Valid Upto', 'Calibrated By', 'Traceable To']],
       body: certificate.referenceStandards.map((ref, index) => [
         `${index + 1}.`,
         ref.description,
         ref.makeModel,
         ref.slNoIdNo,
         ref.calibrationCertificateNo,
-        ref.validUpTo || ref.validUpToDate || validUpToDate, // Handle multiple possible field names
+        ref.validUpTo || ref.validUpToDate || validUpToDate,
         ref.calibratedBy,
         ref.traceableTo
       ]),
@@ -596,23 +625,31 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       },
       bodyStyles: {
         fillColor: [240, 255, 240]
+      },
+      // Set a specific width for the table to leave room for signature
+      tableWidth: pageWidth - 70, // Make table narrower to make space for signature on right
+      // Add a callback to check the table height and adjust signature position
+      didDrawPage: function(data) {
+        console.log("Table finalized at Y position:", data.cursor.y);
       }
     });
 
-    let finalY = doc.previousAutoTable ? doc.previousAutoTable.finalY + 20 : y + 40; // Increased from +15 to +20
+    // Position signature on the right side instead of below the table
+    const signatureY = doc.previousAutoTable ? doc.previousAutoTable.finalY - 30 : y + 40;
+    
+    // Ensure signature is placed properly regardless of table height
+    const rightMargin = pageWidth - 45;    
+    
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
+    doc.text("Authorised by", rightMargin, signatureY);
     
-    const rightMargin = pageWidth - 50;    
-    doc.text("Authorised by", rightMargin, finalY);
-    
-    finalY += 7; // Reduced from 15 to 7
     doc.setTextColor(25, 25, 112);
-    doc.text("(P.R.SINGHA)", rightMargin, finalY);
-    finalY += 5; // Reduced from 10 to 5
+    doc.text("(P.R.SINGHA)", rightMargin, signatureY + 7);
+    
     doc.setFont("helvetica", "normal");
     doc.setTextColor(0, 0, 0);
-    doc.text("(Technical Manager)", rightMargin, finalY);
+    doc.text("(Technical Manager)", rightMargin, signatureY + 12);
     // Add watermark to the page
     addWatermark(doc, '/watermarkupd.png');
     if (returnDoc) {
@@ -639,15 +676,17 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
     }
     
     if (!qrCodeDataUrl) {
-      console.error("No QR code data URL provided");
+      console.warn("No QR code data URL provided, skipping QR code addition");
       return doc;
     }
     
-    console.log("Adding QR code to PDF");
+    console.log("Adding QR code to PDF - direct method");
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const qrSize = 30;
-    const qrX = 20;
+    
+    // Move QR code position to left bottom instead of center bottom
+    const qrX = 5; // Position more to the left
     // Position QR code higher to avoid overlap with the green bottom region
     const qrY = pageHeight - qrSize - 25; // Position to avoid overlap with footer
     
@@ -655,26 +694,61 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
     const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
     // Get total number of pages in the document
     const totalPages = doc.internal.getNumberOfPages();
-    // Add QR code to all pages
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      // Try to add the QR code image with error handling
-      try {
-        doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
-        if (text) {
-          doc.setFontSize(8);
-          doc.setTextColor(0, 0, 0);
-          doc.text(text, qrX + qrSize + 5, qrY + qrSize/2);
+    
+    // Add QR code to all pages directly rather than using onload event
+    try {
+      // Loop through all pages
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        
+        try {
+          // Add QR code directly to this page
+          doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+          
+          if (text) {
+            // White background for text to make it more readable and remove green background
+            doc.setFillColor(255, 255, 255);
+            doc.rect(qrX - 2, qrY + qrSize, qrSize + 4, 10, 'F');
+            
+            // Add text with smaller font and narrower width
+            doc.setFontSize(7);
+            doc.setTextColor(0, 0, 0);
+            
+            // Place text below QR code without background
+            doc.text("Scan this QR code to view the complete certificate", 
+                    qrX + qrSize/2, qrY + qrSize + 5, 
+                    {align: 'center', maxWidth: qrSize*1.5});
+            
+            // If there are signatures that might overlap with the QR code, adjust their positions
+            if (i === 1) {
+              // On first page, adjust the signature position to ensure no overlap
+              doc.setFont("helvetica", "bold");
+              doc.setTextColor(70, 130, 180);
+              const signatureX = pageWidth - 45; // Keep signature on the right
+              const signatureY = qrY - 15; // Move signature above QR code 
+              
+              // Re-add signature since it might have been drawn before QR code was added
+              doc.text("Authorised by", signatureX, signatureY);
+              doc.setTextColor(25, 25, 112);
+              doc.text("(P.R.SINGHA)", signatureX, signatureY + 7);
+              doc.setFont("helvetica", "normal");
+              doc.setTextColor(0, 0, 0);
+              doc.text("(Technical Manager)", signatureX, signatureY + 12);
+            }
+          }
+          console.log(`QR code added successfully to page ${i}`);
+        } catch (imgError) {
+          console.warn(`Error adding QR code to page ${i}:`, imgError);
+          // Continue with other pages even if one fails
         }
-      } catch (imgError) {
-        console.error(`Error adding QR code to page ${i}:`, imgError);
-        // Continue with other pages even if one fails
       }
+      
+      // Return to the original page
+      doc.setPage(currentPage);
+    } catch (err) {
+      console.error("Error in QR code addition process:", err);
     }
     
-    // Return to the original page
-    doc.setPage(currentPage);
-    console.log("QR code added successfully to all pages");
     return doc;
   } catch (error) {
     console.error("Error adding QR code to PDF:", error);
@@ -725,8 +799,14 @@ export function compressQrCodeDataUrl(dataUrl) {
   }
 }
 
-export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
+export function generateCalibrationResults(doc, product, certificateNo, jobNo, options = {}) {
   try {
+    // Set default options if not provided
+    const spacing = {
+      ensureProperSpacing: options.ensureProperSpacing || true,
+      minimumSignatureSpace: options.minimumSignatureSpace || 25
+    };
+    
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     const margin = 20;
@@ -734,42 +814,70 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
     // Create a light blue background for the entire page
     doc.setFillColor(240, 248, 255);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
-    // Add watermark to the page
-    addWatermark(doc, '/watermarkupd.png');
-    // Add a greenish background to the top section ending just above the CALIBRATION RESULTS heading
-    doc.setFillColor(140, 205, 162); // #8CCDA2
-    doc.rect(0, 0, pageWidth, 22, 'F'); // Height ends just before the heading
-    // Add a matching greenish background to the bottom of the page
-    doc.setFillColor(140, 205, 162); // #8CCDA2
-    doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
-    // Add watermark to the page
+    
+    // Try to add watermark, but continue if it fails
     try {
       addWatermark(doc, '/watermarkupd.png');
     } catch (watermarkError) {
-      console.error("Error adding watermark to calibration results page:", watermarkError);
+      console.warn("Error adding watermark to calibration results page:", watermarkError);
+      // Continue regardless of watermark errors
     }
     
-    // Add the logo images in the top right corner
+    // Add a greenish background to the top section ending just above the CALIBRATION RESULTS heading
+    doc.setFillColor(140, 205, 162); // #8CCDA2
+    doc.rect(0, 0, pageWidth, 22, 'F'); // Height ends just before the heading
+    
+    // Add a matching greenish background to the bottom of the page
+    doc.setFillColor(140, 205, 162); // #8CCDA2
+    doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+    
+    // Add the logo images in the top right corner with error handling
     try {
-      // Load and place the first image (cc.png)
-      const ccImg = new Image();
-      ccImg.src = '/cc.png'; // Adjust path as needed based on your project structure
-      doc.addImage(ccImg, 'PNG', pageWidth - 60, 5, 25, 15);
-      // Load and place the second image (ilac-mra.png)
-      const ilacImg = new Image();
-      ilacImg.src = '/ilac-mra.png'; // Adjust path as needed based on your project structure
-      doc.addImage(ilacImg, 'PNG', pageWidth - 30, 5, 25, 15);
+      // Try to load cc.png, but continue if not available
+      try {
+        const ccImg = new Image();
+        ccImg.onload = function() {
+          doc.addImage(ccImg, 'PNG', pageWidth - 60, 5, 25, 15);
+        };
+        ccImg.onerror = function() {
+          console.warn("Could not load cc.png logo in calibration results");
+        };
+        ccImg.src = '/cc.png';
+      } catch (logoError) {
+        console.warn("Error processing cc.png logo in calibration results:", logoError);
+      }
+      
+      // Try to load ilac-mra.png, but continue if not available
+      try {
+        const ilacImg = new Image();
+        ilacImg.onload = function() {
+          doc.addImage(ilacImg, 'PNG', pageWidth - 30, 5, 25, 15);
+        };
+        ilacImg.onerror = function() {
+          console.warn("Could not load ilac-mra.png logo in calibration results");
+        };
+        ilacImg.src = '/ilac-mra.png';
+      } catch (logoError) {
+        console.warn("Error processing ilac-mra.png logo in calibration results:", logoError);
+      }
     } catch (imgError) {
-      console.error("Error adding logo images:", imgError);
+      console.warn("Error processing logo images in calibration results:", imgError);
+      // Continue regardless of logo errors
     }
     
+    // Try to add company logo in the top left corner
     try {
-      // Add company logo in the top left corner
       const dImg = new Image();
-      dImg.src = '/Dupdated.png'; // Changed from D.png to Dupdated.png
-      doc.addImage(dImg, 'PNG', 10, 5, 25, 15);
+      dImg.onload = function() {
+        doc.addImage(dImg, 'PNG', 10, 5, 25, 15);
+      };
+      dImg.onerror = function() {
+        console.warn("Could not load Dupdated.png logo in calibration results");
+      };
+      dImg.src = '/Dupdated.png';
     } catch (imgError) {
-      console.error("Error adding D logo:", imgError);
+      console.warn("Error processing D logo in calibration results:", imgError);
+      // Continue regardless of logo errors
     }
     
     // Add company name and header
@@ -812,8 +920,7 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
     doc.text(`Meter Serial no: ${product.serialNo || "N/A"}`, margin + 100, 35);
     doc.text("Page: 02 of 02 Pages", margin + 100, 40);
     doc.setFontSize(14);
-    doc.text("CALIBRATION RESULTS", pageWidth / 2, 65, { align: "center" }); // Moved down
-    let tableData = [];
+    doc.text("CALIBRATION RESULTS", pageWidth / 2, 55, { align: "center" });
     
     // Format range with kV unit if not already present
     const formatRange = (rangeValue) => {
@@ -828,78 +935,121 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
       return `${rangeValue} kV`;
     };
     
-    // Check if product has parameters
+    let tableData = [];
+    
+    // Restructured table with new columns as per the provided requirements
     if (product.parameters && product.parameters.length > 0) {
       let rowCounter = 1;
+      let lastParameterName = null; // Track last parameter name to avoid duplication
       
-      // Process all parameters instead of just the first one
-      product.parameters.forEach((parameter, paramIndex) => {
-        const parameterDetails = parameter.parameter || "DC high resistance @1000 Volt";
-        const rangeDetails = formatRange(parameter.ranges || "Full Range");
-        // Use hardcoded least count value of 0.2 kV
-        const leastCount = "0.2 kV";
-        // Construct full parameter description with hardcoded least count beside range
-        const fullParameterInfo = `${parameterDetails} (${rangeDetails}, Least count=${leastCount})`;
-        // If the parameter has readings
+      // Group all readings across parameters
+      const allReadings = [];
+      
+      // First collect all readings with their parameter information
+      product.parameters.forEach((parameter) => {
+        const parameterName = parameter.parameter || "DC high resistance @1000 Volt";
+        
         if (parameter.readings && parameter.readings.length > 0) {
-          // First row of each parameter includes the parameter name
-          parameter.readings.forEach((reading, readingIndex) => {
-            const ducValue = `${reading.rName || "N/A"} ${reading.rUnit || ""}`.trim();
-            const stdValue = `${reading.mean || "N/A"} ${reading.rUnit || ""}`.trim();
-            const uncertainty = reading.uc ? `${reading.uc}%` : "N/A";
-            if (readingIndex === 0) {
-              tableData.push([
-                `${rowCounter}.`,
-                fullParameterInfo,
-                ducValue,
-                stdValue,
-                uncertainty
-              ]);
-            } else {
-              tableData.push([
-                `${rowCounter}.`,
-                "",
-                ducValue,
-                stdValue,
-                uncertainty
-              ]);
-            }
-            rowCounter++;
+          parameter.readings.forEach((reading) => {
+            allReadings.push({
+              parameterName: parameterName,
+              reading: reading,
+              range: reading.rRange || parameter.ranges || "Full Range"
+            });
           });
         } else {
-          // If parameter has no readings, add a single row for it
-          tableData.push([
-            `${rowCounter}.`,
-            fullParameterInfo,
-            "N/A",
-            "N/A",
-            "N/A"
-          ]);
-          rowCounter++;
+          // If no readings, create a placeholder
+          allReadings.push({
+            parameterName: parameterName,
+            reading: null,
+            range: parameter.ranges || "Full Range"
+          });
         }
       });
       
+      // Now process all readings in sequence
+      allReadings.forEach((item) => {
+        const { parameterName, reading, range } = item;
+        const formattedRange = formatRange(range);
+        const leastCount = "0.2 kV";
+        const rangeWithLeastCount = `${formattedRange}, Least count=${leastCount}`;
+        
+        let ducValue, stdValue, uncertainty;
+        
+        if (reading) {
+          ducValue = `${reading.rName || "N/A"} ${reading.rUnit || ""}`.trim();
+          stdValue = `${reading.mean || "N/A"} ${reading.rUnit || ""}`.trim();
+          uncertainty = reading.uc ? `${reading.uc}%` : "N/A";
+        } else {
+          ducValue = "N/A";
+          stdValue = "N/A";
+          uncertainty = "N/A";
+        }
+        
+        // Only show parameter name if it's different from the previous one
+        const showParameterName = parameterName !== lastParameterName;
+        
+        tableData.push([
+          `${rowCounter}.`,
+          showParameterName ? parameterName : "", // Only show parameter name if it's new
+          rangeWithLeastCount,
+          stdValue,
+          ducValue,
+          uncertainty
+        ]);
+        
+        // Update the last parameter name
+        lastParameterName = parameterName;
+        rowCounter++;
+      });
+      
     } else {
-      // Fallback for when no parameters are found - use default values with hardcoded least count
+      // Fallback data if no parameters are found
       console.warn("No calibration parameters found in product data, using default values");
-      tableData = [
-        ["1.", "DC high resistance @1000 Volt (Full Range, Least count=0.2 kV)", "1 M.ohm", "1.0045 M.ohm", "5.75%"],
-        ["2.", "Range: 1000 M.ohm (Least count=0.2 kV)", "2 M.ohm", "2.0085 M.ohm", "14.37%"],
-        ["3.", "", "5 M.ohm", "5.0156 M.ohm", "11.51%"],
-        ["4.", "", "10 M.ohm", "10.0179 M.ohm", "5.71%"],
-        ["5.", "", "20 M.ohm", "20.0546 M.ohm", "14.39%"],
-        ["6.", "", "50 M.ohm", "48.0469 M.ohm", "12.02%"],
-        ["7.", "", "100 M.ohm", "95.1580 M.ohm", "6.07%"],
-        ["8.", "", "200 M.ohm", "195.2565 M.ohm", "14.78%"],
-        ["9.", "", "500 M.ohm", "505.1733 M.ohm", "11.67%"],
-        ["10.", "", "1000 M.ohm", "1003.083 M.ohm", "6.22%"],
+      
+      // Example data showing parameter grouping
+      const voltageGroups = [
+        {name: "Voltage DC", rows: [
+          {range: "0-600mV/0.1 mV", ducValue: "100.1 mV", stdValue: "100.0000 mV", uncertainty: "0.07%"},
+          {range: "0-6V/0.001 V", ducValue: "1.002 V", stdValue: "1.000000 V", uncertainty: "0.08%"},
+          {range: "0-60V/0.01 V", ducValue: "10.03 V", stdValue: "10.00000 V", uncertainty: "0.09%"},
+          {range: "0-600V/0.1 V", ducValue: "99.8 V", stdValue: "100.0000 V", uncertainty: "0.12%"},
+          {range: "0-1000V/1V", ducValue: "299 V", stdValue: "300.0000 V", uncertainty: "0.23%"},
+          {range: "0-1000V/1V", ducValue: "598 V", stdValue: "600.00 V", uncertainty: "0.16%"},
+          {range: "0-1000V/1V", ducValue: "898 V", stdValue: "900.00 V", uncertainty: "0.14%"}
+        ]},
+        {name: "Current DC", rows: [
+          {range: "0-60mA/0.01 mA", ducValue: "10.1 mA", stdValue: "10.0000 mA", uncertainty: "0.09%"},
+          {range: "0-400mA/0.1 mA", ducValue: "100.3 mA", stdValue: "100.0000 mA", uncertainty: "0.08%"},
+          {range: "0-10A/0.01 A", ducValue: "1.01 A", stdValue: "1.0000 A", uncertainty: "0.12%"}
+        ]}
       ];
+      
+      // Convert to table data format
+      let rowIndex = 1;
+      voltageGroups.forEach(group => {
+        let isFirstRow = true;
+        group.rows.forEach(row => {
+          tableData.push([
+            `${rowIndex}.`,
+            isFirstRow ? group.name : "", // Only show group name in first row
+            row.range,
+            row.stdValue,
+            row.ducValue,
+            row.uncertainty
+          ]);
+          isFirstRow = false;
+          rowIndex++;
+        });
+      });
     }
     
-    console.log("Calibration results table data:", tableData);
+    console.log("Restructured calibration results table data:", tableData);
+    
+    // Create table with new column structure
     doc.autoTable({
-      startY: 55,
-      head: [["Sl.No.", "Parameter, range and Least count", "*DUC Value set at", "Standard value applied to reach *DUC value", "(±) Measurement uncertainty At 95% **C.L where k=2"]],
+      startY: 65,
+      head: [["Sl.No.", "Parameter", "Range & Least Count", "Standard Value applied", "*DUC value observed (average of five readings)", "(±)Measurement uncertainty at 95% **C.L where k=2"]],
       body: tableData,
       theme: 'grid',
       headStyles: {
@@ -910,27 +1060,171 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
       bodyStyles: {
         fillColor: [240, 255, 240]
       },
-      styles: { fontSize: 8 }
+      styles: { 
+        fontSize: 8,
+        cellPadding: 2,
+        overflow: 'linebreak',
+        lineWidth: 0.1
+      },
+      columnStyles: {
+        0: { cellWidth: 15 }, // Sl.No
+        1: { cellWidth: 40 }, // Parameter
+        2: { cellWidth: 55 }, // Range & Least Count
+        3: { cellWidth: 30 }, // Standard Value
+        4: { cellWidth: 30 }, // DUC Value
+        5: { cellWidth: 25 }  // Uncertainty
+      },
+      margin: { left: margin, right: margin },
+      // Handle page overflow automatically
+      didDrawPage: function(data) {
+        // Add page header/footer for any additional pages
+        if (data.pageCount > 1) {
+          // Reset page background
+          doc.setFillColor(240, 248, 255);
+          doc.rect(0, 0, pageWidth, pageHeight, 'F');
+          
+          // Add green header and footer
+          doc.setFillColor(140, 205, 162);
+          doc.rect(0, 0, pageWidth, 22, 'F');
+          doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+          
+          // Add header content
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(0, 102, 204);
+          doc.setFontSize(14);
+          doc.text("ERROR DETECTOR", pageWidth / 2, 10, { align: "center" });
+          
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(11);
+          doc.text(`Calibration Certificate No. : ${certificateNo}`, margin, 30);
+          doc.text(`Page: ${data.pageCount} of ${data.pageCount} Pages`, margin + 100, 30);
+        }
+        
+        console.log(`Table finalized on page ${data.pageCount} at Y position:`, data.cursor.y);
+      }
     });
     
+    // Calculate table end position
     let tableEndY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 200;
+    const currentPage = doc.lastAutoTable ? doc.lastAutoTable.pageCount : 1;
+    
+    // Move to the last page of the table
+    if (doc.lastAutoTable && doc.lastAutoTable.pageCount > 1) {
+      doc.setPage(doc.lastAutoTable.pageCount);
+      tableEndY = doc.lastAutoTable.finalY + 10;
+    }
+    
+    // Add explanatory text
     doc.setFontSize(8);
+    doc.setTextColor(0, 0, 0);
     doc.text("*DUC: Device Under Calibration, **C.L: Confidence Level", margin, tableEndY);
     tableEndY += 10;
+    
+    // Make sure we have enough space for remarks, or move to next page
+    if (tableEndY + 50 > pageHeight - 35) {
+      doc.addPage();
+      
+      // Reset background on new page
+      doc.setFillColor(240, 248, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      
+      // Add green header and footer
+      doc.setFillColor(140, 205, 162);
+      doc.rect(0, 0, pageWidth, 22, 'F');
+      doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+      
+      // Add header content for new page
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 102, 204);
+      doc.setFontSize(14);
+      doc.text("ERROR DETECTOR", pageWidth / 2, 10, { align: "center" });
+      
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(11);
+      doc.text(`Calibration Certificate No. : ${certificateNo}`, margin, 30);
+      doc.text(`Page: ${currentPage + 1} of ${currentPage + 1} Pages`, margin + 100, 30);
+      
+      // Reset position for remarks
+      tableEndY = 40;
+    }
+    
+    // Add remarks
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
     doc.text("REMARKS:", margin, tableEndY);
     doc.setFont("helvetica", "normal");
     doc.text("The above insulation tester has been calibrated over its range and readings are tabulated above.", margin + 20, tableEndY);
+    
+    // Calculate position for the signatures
     tableEndY += 15;
+    
+    // Check if we have enough space for signatures and notes, add new page if needed
+    if (tableEndY + 70 > pageHeight - 25) {
+      doc.addPage();
+      
+      // Reset background on new page
+      doc.setFillColor(240, 248, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      
+      // Add green header and footer
+      doc.setFillColor(140, 205, 162);
+      doc.rect(0, 0, pageWidth, 22, 'F');
+      doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+      
+      // Add header content for new page
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 102, 204);
+      doc.setFontSize(14);
+      doc.text("ERROR DETECTOR", pageWidth / 2, 10, { align: "center" });
+      
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(11);
+      doc.text(`Calibration Certificate No. : ${certificateNo}`, margin, 30);
+      doc.text(`Page: ${currentPage + 1} of ${currentPage + 1} Pages`, margin + 100, 30);
+      
+      // Reset position for signatures
+      tableEndY = 40;
+    }
+    
+    // Add signatures
+    doc.setFont("helvetica", "bold");
     doc.text("Calibrated by", margin, tableEndY);
     doc.text("Checked by", pageWidth / 2 - 15, tableEndY);
     doc.text("Authorised by", pageWidth - 60, tableEndY);
     
-    tableEndY += 7; // Reduced from 20 to 7
-    doc.setFont("helvetica", "bold");
+    tableEndY += 7;
     doc.text("Technical Manager", pageWidth - 60, tableEndY);
+    
+    // Check if we have enough space for notes
     tableEndY += 15;
+    if (tableEndY + 70 > pageHeight - 25) {
+      doc.addPage();
+      
+      // Reset background on new page
+      doc.setFillColor(240, 248, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      
+      // Add green header and footer
+      doc.setFillColor(140, 205, 162);
+      doc.rect(0, 0, pageWidth, 22, 'F');
+      doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+      
+      // Add header content for new page
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 102, 204);
+      doc.setFontSize(14);
+      doc.text("ERROR DETECTOR", pageWidth / 2, 10, { align: "center" });
+      
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(11);
+      doc.text(`Calibration Certificate No. : ${certificateNo}`, margin, 30);
+      doc.text(`Page: ${currentPage + 2} of ${currentPage + 2} Pages`, margin + 100, 30);
+      
+      // Reset position for notes
+      tableEndY = 40;
+    }
+    
+    // Add notes
     doc.text("Note:", margin, tableEndY);
     const notes = [
       "This calibration certificate shall not be reproduced except in full, without written approval of the laboratory.",
@@ -949,23 +1243,83 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
     
     notes.forEach((note, index) => {
       tableEndY += 7;
+      
+      // Check if we need to add a new page for remaining notes
+      if (tableEndY > pageHeight - 30) {
+        doc.addPage();
+        
+        // Reset background on new page
+        doc.setFillColor(240, 248, 255);
+        doc.rect(0, 0, pageWidth, pageHeight, 'F');
+        
+        // Add green header and footer
+        doc.setFillColor(140, 205, 162);
+        doc.rect(0, 0, pageWidth, 22, 'F');
+        doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+        
+        // Add header content for new page
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 102, 204);
+        doc.setFontSize(14);
+        doc.text("ERROR DETECTOR", pageWidth / 2, 10, { align: "center" });
+        
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(11);
+        doc.text(`Calibration Certificate No. : ${certificateNo}`, margin, 30);
+        doc.text(`Continued Notes`, margin + 100, 30);
+        
+        // Reset position for notes
+        tableEndY = 40;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+      }
+      
       doc.text(`${index + 1}. ${note}`, margin, tableEndY);
     });
+    
     tableEndY += 10;
+    
+    // Check if we need to add a page for the "END OF CERTIFICATE" text
+    if (tableEndY > pageHeight - 30) {
+      doc.addPage();
+      
+      // Reset background on new page
+      doc.setFillColor(240, 248, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      
+      // Add green header and footer
+      doc.setFillColor(140, 205, 162);
+      doc.rect(0, 0, pageWidth, 22, 'F');
+      doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+      
+      tableEndY = 40;
+    }
+    
     doc.setFont("helvetica", "bold");
     doc.text("****------END OF CALIBRATION CERTIFICATE-----****", pageWidth / 2, tableEndY, { align: "center" });
-    // Add office contact information at the bottom in pink color 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-    doc.setTextColor(187, 107, 158); // Same pink color as accreditation text
-    doc.text("Office: 53/2, Haridevpur Road, Kolkata - 700 082, West Bengal, India", pageWidth / 2, pageHeight - 13, { align: "center" });
-    doc.text("Mobile: 9830532452, E-mail: errordetector268@gmail.com / errordetector268@yahoo.com / calibrationerror94@gmail.com", pageWidth / 2, pageHeight - 7, { align: "center" });
-    // Add watermark to the calibration results page 
-    addWatermark(doc, '/watermarkupd.png');
+    
+    // Add office contact information at the bottom in pink color for all pages
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(187, 107, 158); // Same pink color as accreditation text
+      doc.text("Office: 53/2, Haridevpur Road, Kolkata - 700 082, West Bengal, India", pageWidth / 2, pageHeight - 13, { align: "center" });
+      doc.text("Mobile: 9830532452, E-mail: errordetector268@gmail.com / errordetector268@yahoo.com / calibrationerror94@gmail.com", pageWidth / 2, pageHeight - 7, { align: "center" });
+      
+      // Add watermark to each page
+      try {
+        addWatermark(doc, '/watermarkupd.png');
+      } catch (watermarkError) {
+        console.warn(`Error adding watermark to page ${i}:`, watermarkError);
+      }
+    }
+    
     return doc;
   } catch (error) {
     console.error("Error generating calibration results:", error);
-    return null;
+    return doc; // Still return the doc even if there was an error
   }
 }
 
@@ -976,31 +1330,59 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
  */
 export function addWatermark(doc, watermarkPath) {
   try {
+    // Check if watermark path is valid before proceeding
+    if (!watermarkPath) {
+      console.log("No watermark path provided, skipping watermark");
+      return doc;
+    }
+
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    // Create watermark image
-    const watermarkImg = new Image();
-    watermarkImg.src = watermarkPath;
-    // Calculate center position - adjusted upward by 20 units
-    const watermarkWidth = pageWidth * 0.6; // 60% of page width
-    const watermarkHeight = watermarkWidth * 0.75; // Approximate height based on typical image ratio
-    const x = (pageWidth - watermarkWidth) / 2;
-    const y = (pageHeight - watermarkHeight) / 2 - 20; // Shifted upward by 20 units
-    // Add watermark with transparency using GState approach
-    // Create a graphics state with 10% opacity
-    const gState = new doc.GState({opacity: 0.1});
-    doc.setGState(gState);
-    // Add the image with the transparency setting    
-    doc.addImage(watermarkImg, 'PNG', x, y, watermarkWidth, watermarkHeight);
-    // Reset to default graphics state (100% opacity) for subsequent drawings
-    const defaultGState = new doc.GState({opacity: 1.0});
-    doc.setGState(defaultGState);
     
-    console.log("Watermark added successfully to page");
+    try {
+      // Create watermark image with error handling
+      const watermarkImg = new Image();
+      
+      // Add error handler to image
+      watermarkImg.onerror = function() {
+        console.warn(`Could not load watermark image from ${watermarkPath}, skipping watermark`);
+      };
+      
+      watermarkImg.onload = function() {
+        try {
+          // Calculate center position - adjusted upward by 20 units
+          const watermarkWidth = pageWidth * 0.6; // 60% of page width
+          const watermarkHeight = watermarkWidth * 0.75; // Approximate height based on typical image ratio
+          const x = (pageWidth - watermarkWidth) / 2;
+          const y = (pageHeight - watermarkHeight) / 2 - 20; // Shifted upward by 20 units
+          
+          // Add watermark with transparency using GState approach
+          // Create a graphics state with 10% opacity
+          const gState = new doc.GState({opacity: 0.1});
+          doc.setGState(gState);
+          
+          // Add the image with the transparency setting    
+          doc.addImage(watermarkImg, 'PNG', x, y, watermarkWidth, watermarkHeight);
+          
+          // Reset to default graphics state (100% opacity) for subsequent drawings
+          const defaultGState = new doc.GState({opacity: 1.0});
+          doc.setGState(defaultGState);
+        } catch (innerError) {
+          console.warn("Error applying watermark to PDF:", innerError);
+        }
+      };
+      
+      // Set the source to trigger loading
+      watermarkImg.src = watermarkPath;
+    } catch (imgError) {
+      console.warn("Could not create watermark image, skipping:", imgError);
+    }
+    
+    console.log("Watermark process initiated");
     return doc;
   } catch (error) {
-    console.error("Error adding watermark:", error);
-    return doc;
+    console.error("Error in watermark function:", error);
+    return doc; // Return doc even if there's an error
   }
 }
 
@@ -1222,21 +1604,41 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
       })));
     } 
     else {
-      // Create a reference standard entry using the product details
-      const referenceStandard = {
-        description: selectedProduct.instrumentDescription || selectedProduct.name || "Measurement Instrument",
-        makeModel: selectedProduct.make || "Unknown Make",
-        slNoIdNo: selectedProduct.serialNo || "N/A",
-        calibrationCertificateNo: selectedProduct.calibrationCertificateNo || 
-                                  `ED/CAL/${jobNo}/${
-                                    new Date().getFullYear()
-                                  }`,
-        validUpTo: validUpToDate, // This is correct
-        calibratedBy: "C and I Calibrations Pvt. Ltd", 
-        traceableTo: "NPL" 
-      };
+      // Create reference standard entries using the product details but with more specific fields
+      const standardsList = [
+        {
+          description: "Digital Pressure Calibrator",
+          makeModel: "Druck DPI 603",
+          slNoIdNo: "60303803 ED/DPC/01",
+          calibrationCertificateNo: "TSC/24-25/16266-1",
+          validUpTo: validUpToDate,
+          calibratedBy: "Transcal Technologies LLP",
+          traceableTo: "NPL"
+        },
+        {
+          description: "Digital IR Thermo Meter",
+          makeModel: "Metravi MT-16",
+          slNoIdNo: "11018053 ED/IT(M-16)-01",
+          calibrationCertificateNo: "TSC/24-25/16266-4",
+          validUpTo: validUpToDate,
+          calibratedBy: "Transcal Technologies LLP",
+          traceableTo: "NPL"
+        },
+        {
+          description: "Digital Anemo Meter",
+          makeModel: "Lutron AM 4201",
+          slNoIdNo: "ED/DAM-01",
+          calibrationCertificateNo: "CL-027-04/2024-01",
+          validUpTo: validUpToDate,
+          calibratedBy: "CAL LABS",
+          traceableTo: "NPL"
+        }
+      ];
       
-      referenceStandards.push(referenceStandard);
+      // Add all reference standards to the array
+      standardsList.forEach(std => {
+        referenceStandards.push(std);
+      });
     }
     
     // Prepare certificate data
@@ -1268,6 +1670,7 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     // Create PDF document
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
     const leftMargin = 20;
     // ===== FIRST PAGE =====
     
@@ -1436,36 +1839,41 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     // Reference standards table
     doc.autoTable({
       startY: y,
-      head: [['SI no', 'Description', 'Make/Model', 'Slno/Idno', 'Calibration Certificate No', 'Valid up to', 'Calibrated By', 'Traceable to']],
+      head: [['SI no', 'Name', 'Make/Model', 'Serial No.', 'Certificate No.', 'Valid Upto', 'Calibrated By', 'Traceable To']],
       body: certificate.referenceStandards.map((ref, index) => [
         `${index + 1}.`,
-        ref.description || "N/A",
-        ref.makeModel || "N/A",
-        ref.slNoIdNo || "N/A",
-        ref.calibrationCertificateNo || "N/A",
-        ref.validUpTo || ref.validUpToDate || validUpToDate, // Handle multiple possible field names
-        ref.calibratedBy || "N/A",
-        ref.traceableTo || "N/A"
+        ref.description,
+        ref.makeModel,
+        ref.slNoIdNo,
+        ref.calibrationCertificateNo,
+        ref.validUpTo || ref.validUpToDate || validUpToDate,
+        ref.calibratedBy,
+        ref.traceableTo
       ]),
       theme: 'grid',
       styles: { 
         fontSize: 8,
         cellPadding: 2
+      },
+      // Set a specific width for the table to leave room for signature
+      tableWidth: pageWidth - 70, // Make table narrower
+      // Add a callback to check the table height and adjust signature position
+      didDrawPage: function(data) {
+        console.log("Simplified table finalized at Y position:", data.cursor.y);
       }
     });
     
-    // Authorization
-    let finalY = doc.previousAutoTable ? doc.previousAutoTable.finalY + 20 : y + 40;
+    // Position signature on the right side instead of below the table
+    const simplifiedSignatureY = doc.previousAutoTable ? doc.previousAutoTable.finalY - 30 : y + 40;
+    
     doc.setFont("helvetica", "bold");
-    const rightMargin = pageWidth - 50;
-    doc.text("Authorised by", rightMargin, finalY);
+    const rightMargin = pageWidth - 45;
+    doc.text("Authorised by", rightMargin, simplifiedSignatureY);
     
-    finalY += 7;
-    doc.text("(P.R.SINGHA)", rightMargin, finalY);
+    doc.text("(P.R.SINGHA)", rightMargin, simplifiedSignatureY + 7);
     
-    finalY += 5;
     doc.setFont("helvetica", "normal");
-    doc.text("(Technical Manager)", rightMargin, finalY);
+    doc.text("(Technical Manager)", rightMargin, simplifiedSignatureY + 12);
     // ===== SECOND PAGE =====
     doc.addPage();
     // ===== SECOND PAGE =====
