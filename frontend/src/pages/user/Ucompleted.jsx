@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Ucard from './components/Ucard.jsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import generatePdf, { generateCalibrationResults, generateSimplifiedCertificate } from './utils/pdfGeneration.js';
+import generatePdf, { generateCalibrationResults, generateSimplifiedCertificate, addQrCodeToPdf } from './utils/pdfGeneration.js';
 import QRCode from 'qrcode';
 
 const Ucompleted = () => {
@@ -108,18 +108,38 @@ const Ucompleted = () => {
       console.log("Generating first page PDF with QR code");
 
       if (!selectedProduct.referenceStandards || selectedProduct.referenceStandards.length === 0) {
-        selectedProduct.referenceStandards = [{
-          description: selectedProduct.instrumentDescription || selectedProduct.name || "Measurement Instrument",
-          makeModel: selectedProduct.make || "Unknown Make",
-          slNoIdNo: selectedProduct.serialNo || "N/A",
-          calibrationCertificateNo: selectedProduct.calibrationCertificateNo ||
-            `ED/CAL/${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}/${new Date().getFullYear()
-            }`,
-          validUpTo: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-            .toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.'),
-          calibratedBy: "Error Detector",
-          traceableTo: "National Standards"
-        }];
+        selectedProduct.referenceStandards = [
+          {
+            description: "Digital Pressure Calibrator",
+            makeModel: "Druck DPI 603",
+            slNoIdNo: "60303803 ED/DPC/01",
+            calibrationCertificateNo: "TSC/24-25/16266-1",
+            validUpTo: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+              .toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.'),
+            calibratedBy: "Transcal Technologies LLP",
+            traceableTo: "NPL"
+          },
+          {
+            description: "Digital IR Thermo Meter",
+            makeModel: "Metravi MT-16",
+            slNoIdNo: "11018053 ED/IT(M-16)-01",
+            calibrationCertificateNo: "TSC/24-25/16266-4",
+            validUpTo: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+              .toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.'),
+            calibratedBy: "Transcal Technologies LLP",
+            traceableTo: "NPL"
+          },
+          {
+            description: "Digital Anemo Meter",
+            makeModel: "Lutron AM 4201",
+            slNoIdNo: "ED/DAM-01",
+            calibrationCertificateNo: "CL-027-04/2024-01",
+            validUpTo: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+              .toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.'),
+            calibratedBy: "CAL LABS",
+            traceableTo: "NPL"
+          }
+        ];
       }
 
       const certificateNo = `ED/CAL/${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}/${new Date().getMonth() > 3 ?
@@ -157,17 +177,11 @@ const Ucompleted = () => {
 
         console.log("PDF first page generated successfully");
 
-        // Add QR code to the first page
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
-        const qrSize = 30;
+        // Use the improved addQrCodeToPdf function with better positioning
+        const qrText = "Scan this QR code to view the complete calibration certificate";
+        addQrCodeToPdf(doc, qrCodeDataUrl, qrText);
 
-        // Position QR code above the green footer
-        doc.addImage(qrCodeDataUrl, 'PNG', 20, pageHeight - 60, qrSize, qrSize);
-
-        doc.setFontSize(8);
-        doc.setTextColor(0, 0, 0);
-        doc.text("Scan this QR code to view the complete calibration certificate", 55, pageHeight - 45);
+        console.log("QR code added to PDF with improved positioning");
 
         // Save the first page PDF with a different name
         doc.save(`Calibration_Certificate_FirstPage_${certificateNo.replace(/\//g, '_')}.pdf`);
@@ -200,7 +214,7 @@ const Ucompleted = () => {
     } catch (error) {
       console.error("Error generating PDF with QR:", error);
       setPdfError("Failed to generate PDF with QR code: " + error.message);
-      
+
       // Alert the user with more specific information about the error
       alert(`There was an error generating the PDF with QR code: ${error.message}\nPlease try using the regular Download button instead.`);
     }
@@ -332,8 +346,8 @@ const Ucompleted = () => {
                   <div className='flex justify-end mt-2'>
                     <button
                       className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${selectedProduct && selectedProduct._id === product._id
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
                         }`}
                       onClick={() => toggleProductDetails(product, form)}
                     >

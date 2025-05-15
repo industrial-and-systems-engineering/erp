@@ -570,14 +570,14 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     
     doc.autoTable({
       startY: y,
-      head: [['SI no', 'Description', 'Make/Model', 'Slno/Idno', 'Calibration Certificate No', 'Valid up to', 'Calibrated By', 'Traceable to']],
+      head: [['SI no', 'Name', 'Make/Model', 'Serial No.', 'Certificate No.', 'Valid Upto', 'Calibrated By', 'Traceable To']],
       body: certificate.referenceStandards.map((ref, index) => [
         `${index + 1}.`,
         ref.description,
         ref.makeModel,
         ref.slNoIdNo,
         ref.calibrationCertificateNo,
-        ref.validUpTo || ref.validUpToDate || validUpToDate, // Handle multiple possible field names
+        ref.validUpTo || ref.validUpToDate || validUpToDate,
         ref.calibratedBy,
         ref.traceableTo
       ]),
@@ -596,23 +596,31 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       },
       bodyStyles: {
         fillColor: [240, 255, 240]
+      },
+      // Set a specific width for the table to leave room for signature
+      tableWidth: pageWidth - 70, // Make table narrower to make space for signature on right
+      // Add a callback to check the table height and adjust signature position
+      didDrawPage: function(data) {
+        console.log("Table finalized at Y position:", data.cursor.y);
       }
     });
 
-    let finalY = doc.previousAutoTable ? doc.previousAutoTable.finalY + 20 : y + 40; // Increased from +15 to +20
+    // Position signature on the right side instead of below the table
+    const signatureY = doc.previousAutoTable ? doc.previousAutoTable.finalY - 30 : y + 40;
+    
+    // Ensure signature is placed properly regardless of table height
+    const rightMargin = pageWidth - 45;    
+    
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
+    doc.text("Authorised by", rightMargin, signatureY);
     
-    const rightMargin = pageWidth - 50;    
-    doc.text("Authorised by", rightMargin, finalY);
-    
-    finalY += 7; // Reduced from 15 to 7
     doc.setTextColor(25, 25, 112);
-    doc.text("(P.R.SINGHA)", rightMargin, finalY);
-    finalY += 5; // Reduced from 10 to 5
+    doc.text("(P.R.SINGHA)", rightMargin, signatureY + 7);
+    
     doc.setFont("helvetica", "normal");
     doc.setTextColor(0, 0, 0);
-    doc.text("(Technical Manager)", rightMargin, finalY);
+    doc.text("(Technical Manager)", rightMargin, signatureY + 12);
     // Add watermark to the page
     addWatermark(doc, '/watermarkupd.png');
     if (returnDoc) {
@@ -647,7 +655,9 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const qrSize = 30;
-    const qrX = 20;
+    
+    // Move QR code position to left bottom instead of center bottom
+    const qrX = 5; // Position more to the left
     // Position QR code higher to avoid overlap with the green bottom region
     const qrY = pageHeight - qrSize - 25; // Position to avoid overlap with footer
     
@@ -664,7 +674,26 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
         if (text) {
           doc.setFontSize(8);
           doc.setTextColor(0, 0, 0);
-          doc.text(text, qrX + qrSize + 5, qrY + qrSize/2);
+          // Place text below QR code instead of to the right
+          doc.text("Scan this QR code to view the complete calibration certificate", qrX + qrSize/2, qrY + qrSize + 5, {align: 'center', maxWidth: qrSize*2});
+          
+          // If there are signatures that might overlap with the QR code, adjust their positions
+          // Look for signature positions that might be in the QR code area and move them if needed
+          if (i === 1) {
+            // On first page, adjust the signature position to ensure no overlap
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(70, 130, 180);
+            const signatureX = pageWidth - 45; // Keep signature on the right
+            const signatureY = qrY - 15; // Move signature above QR code 
+            
+            // Re-add signature since it might have been drawn before QR code was added
+            doc.text("Authorised by", signatureX, signatureY);
+            doc.setTextColor(25, 25, 112);
+            doc.text("(P.R.SINGHA)", signatureX, signatureY + 7);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(0, 0, 0);
+            doc.text("(Technical Manager)", signatureX, signatureY + 12);
+          }
         }
       } catch (imgError) {
         console.error(`Error adding QR code to page ${i}:`, imgError);
@@ -725,8 +754,14 @@ export function compressQrCodeDataUrl(dataUrl) {
   }
 }
 
-export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
+export function generateCalibrationResults(doc, product, certificateNo, jobNo, options = {}) {
   try {
+    // Set default options if not provided
+    const spacing = {
+      ensureProperSpacing: options.ensureProperSpacing || true,
+      minimumSignatureSpace: options.minimumSignatureSpace || 25
+    };
+    
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     const margin = 20;
@@ -910,7 +945,13 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
       bodyStyles: {
         fillColor: [240, 255, 240]
       },
-      styles: { fontSize: 8 }
+      styles: { fontSize: 8 },
+      // Set a specific width for the table to leave room for signature
+      tableWidth: pageWidth - 70, // Make table narrower to leave space for signature
+      // Add callback to monitor table end position
+      didDrawPage: function(data) {
+        console.log("Calibration results table finalized at Y position:", data.cursor.y);
+      }
     });
     
     let tableEndY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 200;
@@ -922,12 +963,33 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo) {
     doc.text("REMARKS:", margin, tableEndY);
     doc.setFont("helvetica", "normal");
     doc.text("The above insulation tester has been calibrated over its range and readings are tabulated above.", margin + 20, tableEndY);
-    tableEndY += 15;
+    
+    // Position signature on the right side of the calibration results table
+    const resultsSignatureY = doc.lastAutoTable ? Math.min(doc.lastAutoTable.finalY - 20, 160) : 140;
+    doc.setFont("helvetica", "bold");
+    doc.text("Calibrated by", margin, tableEndY + 10);
+    doc.text("Checked by", pageWidth / 2 - 15, tableEndY + 10);
+    
+    // Place the authorized by signature on the right
+    const authRightMargin = pageWidth - 45;
+    doc.text("Authorised by", authRightMargin, resultsSignatureY);
+    doc.text("Technical Manager", authRightMargin, resultsSignatureY + 7);
+    
+    // Add minimum signature space based on options or default
+    tableEndY += spacing.minimumSignatureSpace;
+    
+    // Check if signatures would be too close to the bottom
+    const bottomMargin = 40; // Space to leave at bottom
+    if (spacing.ensureProperSpacing && tableEndY > pageHeight - bottomMargin) {
+      doc.addPage();
+      tableEndY = 30; // Start from top of new page
+    }
+    
     doc.text("Calibrated by", margin, tableEndY);
     doc.text("Checked by", pageWidth / 2 - 15, tableEndY);
     doc.text("Authorised by", pageWidth - 60, tableEndY);
     
-    tableEndY += 7; // Reduced from 20 to 7
+    tableEndY += 7;
     doc.setFont("helvetica", "bold");
     doc.text("Technical Manager", pageWidth - 60, tableEndY);
     tableEndY += 15;
@@ -1222,21 +1284,41 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
       })));
     } 
     else {
-      // Create a reference standard entry using the product details
-      const referenceStandard = {
-        description: selectedProduct.instrumentDescription || selectedProduct.name || "Measurement Instrument",
-        makeModel: selectedProduct.make || "Unknown Make",
-        slNoIdNo: selectedProduct.serialNo || "N/A",
-        calibrationCertificateNo: selectedProduct.calibrationCertificateNo || 
-                                  `ED/CAL/${jobNo}/${
-                                    new Date().getFullYear()
-                                  }`,
-        validUpTo: validUpToDate, // This is correct
-        calibratedBy: "C and I Calibrations Pvt. Ltd", 
-        traceableTo: "NPL" 
-      };
+      // Create reference standard entries using the product details but with more specific fields
+      const standardsList = [
+        {
+          description: "Digital Pressure Calibrator",
+          makeModel: "Druck DPI 603",
+          slNoIdNo: "60303803 ED/DPC/01",
+          calibrationCertificateNo: "TSC/24-25/16266-1",
+          validUpTo: validUpToDate,
+          calibratedBy: "Transcal Technologies LLP",
+          traceableTo: "NPL"
+        },
+        {
+          description: "Digital IR Thermo Meter",
+          makeModel: "Metravi MT-16",
+          slNoIdNo: "11018053 ED/IT(M-16)-01",
+          calibrationCertificateNo: "TSC/24-25/16266-4",
+          validUpTo: validUpToDate,
+          calibratedBy: "Transcal Technologies LLP",
+          traceableTo: "NPL"
+        },
+        {
+          description: "Digital Anemo Meter",
+          makeModel: "Lutron AM 4201",
+          slNoIdNo: "ED/DAM-01",
+          calibrationCertificateNo: "CL-027-04/2024-01",
+          validUpTo: validUpToDate,
+          calibratedBy: "CAL LABS",
+          traceableTo: "NPL"
+        }
+      ];
       
-      referenceStandards.push(referenceStandard);
+      // Add all reference standards to the array
+      standardsList.forEach(std => {
+        referenceStandards.push(std);
+      });
     }
     
     // Prepare certificate data
@@ -1268,6 +1350,7 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     // Create PDF document
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
     const leftMargin = 20;
     // ===== FIRST PAGE =====
     
@@ -1436,36 +1519,41 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     // Reference standards table
     doc.autoTable({
       startY: y,
-      head: [['SI no', 'Description', 'Make/Model', 'Slno/Idno', 'Calibration Certificate No', 'Valid up to', 'Calibrated By', 'Traceable to']],
+      head: [['SI no', 'Name', 'Make/Model', 'Serial No.', 'Certificate No.', 'Valid Upto', 'Calibrated By', 'Traceable To']],
       body: certificate.referenceStandards.map((ref, index) => [
         `${index + 1}.`,
-        ref.description || "N/A",
-        ref.makeModel || "N/A",
-        ref.slNoIdNo || "N/A",
-        ref.calibrationCertificateNo || "N/A",
-        ref.validUpTo || ref.validUpToDate || validUpToDate, // Handle multiple possible field names
-        ref.calibratedBy || "N/A",
-        ref.traceableTo || "N/A"
+        ref.description,
+        ref.makeModel,
+        ref.slNoIdNo,
+        ref.calibrationCertificateNo,
+        ref.validUpTo || ref.validUpToDate || validUpToDate,
+        ref.calibratedBy,
+        ref.traceableTo
       ]),
       theme: 'grid',
       styles: { 
         fontSize: 8,
         cellPadding: 2
+      },
+      // Set a specific width for the table to leave room for signature
+      tableWidth: pageWidth - 70, // Make table narrower
+      // Add a callback to check the table height and adjust signature position
+      didDrawPage: function(data) {
+        console.log("Simplified table finalized at Y position:", data.cursor.y);
       }
     });
     
-    // Authorization
-    let finalY = doc.previousAutoTable ? doc.previousAutoTable.finalY + 20 : y + 40;
+    // Position signature on the right side instead of below the table
+    const simplifiedSignatureY = doc.previousAutoTable ? doc.previousAutoTable.finalY - 30 : y + 40;
+    
     doc.setFont("helvetica", "bold");
-    const rightMargin = pageWidth - 50;
-    doc.text("Authorised by", rightMargin, finalY);
+    const rightMargin = pageWidth - 45;
+    doc.text("Authorised by", rightMargin, simplifiedSignatureY);
     
-    finalY += 7;
-    doc.text("(P.R.SINGHA)", rightMargin, finalY);
+    doc.text("(P.R.SINGHA)", rightMargin, simplifiedSignatureY + 7);
     
-    finalY += 5;
     doc.setFont("helvetica", "normal");
-    doc.text("(Technical Manager)", rightMargin, finalY);
+    doc.text("(Technical Manager)", rightMargin, simplifiedSignatureY + 12);
     // ===== SECOND PAGE =====
     doc.addPage();
     // ===== SECOND PAGE =====
