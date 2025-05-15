@@ -296,19 +296,21 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     // Create a light blue background for the entire page    
     doc.setFillColor(240, 248, 255);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
-    // Add watermark to the page
-    addWatermark(doc, '/watermarkupd.png');
+    
     // Add a greenish background to the top section ending just above the CALIBRATION CERTIFICATE heading    
     doc.setFillColor(140, 205, 162); // #8CCDA2
     doc.rect(0, 0, pageWidth, 22, 'F'); // Height ends just before the heading at y=26
+    
     // Add a matching greenish background to the bottom of the page
     doc.setFillColor(140, 205, 162); // #8CCDA2
     doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
-    // Add watermark to the page
+    
+    // Try to add watermark, but continue if it fails
     try {
       addWatermark(doc, '/watermarkupd.png');
     } catch (watermarkError) {
-      console.error("Error adding watermark:", watermarkError);
+      console.warn("Error adding watermark to main PDF:", watermarkError);
+      // Continue with PDF generation regardless of watermark error
     }
 
     // Add office contact information at the bottom in pink color
@@ -317,27 +319,54 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setTextColor(187, 107, 158); // Same pink color as accreditation text
     doc.text("Office: 53/2, Haridevpur Road, Kolkata - 700 082, West Bengal, India", pageWidth / 2, pageHeight - 13, { align: "center" });
     doc.text("Mobile: 9830532452, E-mail: errordetector268@gmail.com / errordetector268@yahoo.com / calibrationerror94@gmail.com", pageWidth / 2, pageHeight - 7, { align: "center" });
-    // Add the logo images in the top right corner
+    
+    // Add the logo images in the top right corner with error handling
     try {
-      // Load and place the first image (cc.png)
-      const ccImg = new Image();
-      ccImg.src = '/cc.png'; // Adjust path as needed based on your project structure
-      doc.addImage(ccImg, 'PNG', pageWidth - 60, 5, 25, 15);
-      // Load and place the second image (ilac-mra.png)
-      const ilacImg = new Image();
-      ilacImg.src = '/ilac-mra.png'; // Adjust path as needed based on your project structure
-      doc.addImage(ilacImg, 'PNG', pageWidth - 30, 5, 25, 15);
+      // Try to load cc.png, but continue if not available
+      try {
+        const ccImg = new Image();
+        ccImg.onload = function() {
+          doc.addImage(ccImg, 'PNG', pageWidth - 60, 5, 25, 15);
+        };
+        ccImg.onerror = function() {
+          console.warn("Could not load cc.png logo");
+        };
+        ccImg.src = '/cc.png';
+      } catch (logoError) {
+        console.warn("Error processing cc.png logo:", logoError);
+      }
+      
+      // Try to load ilac-mra.png, but continue if not available
+      try {
+        const ilacImg = new Image();
+        ilacImg.onload = function() {
+          doc.addImage(ilacImg, 'PNG', pageWidth - 30, 5, 25, 15);
+        };
+        ilacImg.onerror = function() {
+          console.warn("Could not load ilac-mra.png logo");
+        };
+        ilacImg.src = '/ilac-mra.png';
+      } catch (logoError) {
+        console.warn("Error processing ilac-mra.png logo:", logoError);
+      }
     } catch (imgError) {
-      console.error("Error adding logo images:", imgError);
+      console.warn("Error processing logo images:", imgError);
+      // Continue with PDF generation regardless of logo errors
     }
 
+    // Try to add company logo in the top left corner
     try {
-      // Add company logo in the top left corner
       const dImg = new Image();
-      dImg.src = '/Dupdated.png'; // Changed from D.png to Dupdated.png
-      doc.addImage(dImg, 'PNG', 10, 5, 25, 15);
+      dImg.onload = function() {
+        doc.addImage(dImg, 'PNG', 10, 5, 25, 15);
+      };
+      dImg.onerror = function() {
+        console.warn("Could not load Dupdated.png logo");
+      };
+      dImg.src = '/Dupdated.png';
     } catch (imgError) {
-      console.error("Error adding D logo:", imgError);
+      console.warn("Error processing D logo:", imgError);
+      // Continue with PDF generation regardless of logo errors
     }
 
     // Add company name and title
@@ -647,11 +676,11 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
     }
     
     if (!qrCodeDataUrl) {
-      console.error("No QR code data URL provided");
+      console.warn("No QR code data URL provided, skipping QR code addition");
       return doc;
     }
     
-    console.log("Adding QR code to PDF");
+    console.log("Adding QR code to PDF - direct method");
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const qrSize = 30;
@@ -665,45 +694,55 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
     const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
     // Get total number of pages in the document
     const totalPages = doc.internal.getNumberOfPages();
-    // Add QR code to all pages
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      // Try to add the QR code image with error handling
-      try {
-        doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
-        if (text) {
-          doc.setFontSize(8);
-          doc.setTextColor(0, 0, 0);
-          // Place text below QR code instead of to the right
-          doc.text("Scan this QR code to view the complete calibration certificate", qrX + qrSize/2, qrY + qrSize + 5, {align: 'center', maxWidth: qrSize*2});
+    
+    // Add QR code to all pages directly rather than using onload event
+    try {
+      // Loop through all pages
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        
+        try {
+          // Add QR code directly to this page
+          doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
           
-          // If there are signatures that might overlap with the QR code, adjust their positions
-          // Look for signature positions that might be in the QR code area and move them if needed
-          if (i === 1) {
-            // On first page, adjust the signature position to ensure no overlap
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(70, 130, 180);
-            const signatureX = pageWidth - 45; // Keep signature on the right
-            const signatureY = qrY - 15; // Move signature above QR code 
-            
-            // Re-add signature since it might have been drawn before QR code was added
-            doc.text("Authorised by", signatureX, signatureY);
-            doc.setTextColor(25, 25, 112);
-            doc.text("(P.R.SINGHA)", signatureX, signatureY + 7);
-            doc.setFont("helvetica", "normal");
+          if (text) {
+            doc.setFontSize(8);
             doc.setTextColor(0, 0, 0);
-            doc.text("(Technical Manager)", signatureX, signatureY + 12);
+            // Place text below QR code
+            doc.text("Scan this QR code to view the complete calibration certificate", 
+                    qrX + qrSize/2, qrY + qrSize + 5, 
+                    {align: 'center', maxWidth: qrSize*2});
+            
+            // If there are signatures that might overlap with the QR code, adjust their positions
+            if (i === 1) {
+              // On first page, adjust the signature position to ensure no overlap
+              doc.setFont("helvetica", "bold");
+              doc.setTextColor(70, 130, 180);
+              const signatureX = pageWidth - 45; // Keep signature on the right
+              const signatureY = qrY - 15; // Move signature above QR code 
+              
+              // Re-add signature since it might have been drawn before QR code was added
+              doc.text("Authorised by", signatureX, signatureY);
+              doc.setTextColor(25, 25, 112);
+              doc.text("(P.R.SINGHA)", signatureX, signatureY + 7);
+              doc.setFont("helvetica", "normal");
+              doc.setTextColor(0, 0, 0);
+              doc.text("(Technical Manager)", signatureX, signatureY + 12);
+            }
           }
+          console.log(`QR code added successfully to page ${i}`);
+        } catch (imgError) {
+          console.warn(`Error adding QR code to page ${i}:`, imgError);
+          // Continue with other pages even if one fails
         }
-      } catch (imgError) {
-        console.error(`Error adding QR code to page ${i}:`, imgError);
-        // Continue with other pages even if one fails
       }
+      
+      // Return to the original page
+      doc.setPage(currentPage);
+    } catch (err) {
+      console.error("Error in QR code addition process:", err);
     }
     
-    // Return to the original page
-    doc.setPage(currentPage);
-    console.log("QR code added successfully to all pages");
     return doc;
   } catch (error) {
     console.error("Error adding QR code to PDF:", error);
@@ -769,42 +808,70 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
     // Create a light blue background for the entire page
     doc.setFillColor(240, 248, 255);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
-    // Add watermark to the page
-    addWatermark(doc, '/watermarkupd.png');
-    // Add a greenish background to the top section ending just above the CALIBRATION RESULTS heading
-    doc.setFillColor(140, 205, 162); // #8CCDA2
-    doc.rect(0, 0, pageWidth, 22, 'F'); // Height ends just before the heading
-    // Add a matching greenish background to the bottom of the page
-    doc.setFillColor(140, 205, 162); // #8CCDA2
-    doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
-    // Add watermark to the page
+    
+    // Try to add watermark, but continue if it fails
     try {
       addWatermark(doc, '/watermarkupd.png');
     } catch (watermarkError) {
-      console.error("Error adding watermark to calibration results page:", watermarkError);
+      console.warn("Error adding watermark to calibration results page:", watermarkError);
+      // Continue regardless of watermark errors
     }
     
-    // Add the logo images in the top right corner
+    // Add a greenish background to the top section ending just above the CALIBRATION RESULTS heading
+    doc.setFillColor(140, 205, 162); // #8CCDA2
+    doc.rect(0, 0, pageWidth, 22, 'F'); // Height ends just before the heading
+    
+    // Add a matching greenish background to the bottom of the page
+    doc.setFillColor(140, 205, 162); // #8CCDA2
+    doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+    
+    // Add the logo images in the top right corner with error handling
     try {
-      // Load and place the first image (cc.png)
-      const ccImg = new Image();
-      ccImg.src = '/cc.png'; // Adjust path as needed based on your project structure
-      doc.addImage(ccImg, 'PNG', pageWidth - 60, 5, 25, 15);
-      // Load and place the second image (ilac-mra.png)
-      const ilacImg = new Image();
-      ilacImg.src = '/ilac-mra.png'; // Adjust path as needed based on your project structure
-      doc.addImage(ilacImg, 'PNG', pageWidth - 30, 5, 25, 15);
+      // Try to load cc.png, but continue if not available
+      try {
+        const ccImg = new Image();
+        ccImg.onload = function() {
+          doc.addImage(ccImg, 'PNG', pageWidth - 60, 5, 25, 15);
+        };
+        ccImg.onerror = function() {
+          console.warn("Could not load cc.png logo in calibration results");
+        };
+        ccImg.src = '/cc.png';
+      } catch (logoError) {
+        console.warn("Error processing cc.png logo in calibration results:", logoError);
+      }
+      
+      // Try to load ilac-mra.png, but continue if not available
+      try {
+        const ilacImg = new Image();
+        ilacImg.onload = function() {
+          doc.addImage(ilacImg, 'PNG', pageWidth - 30, 5, 25, 15);
+        };
+        ilacImg.onerror = function() {
+          console.warn("Could not load ilac-mra.png logo in calibration results");
+        };
+        ilacImg.src = '/ilac-mra.png';
+      } catch (logoError) {
+        console.warn("Error processing ilac-mra.png logo in calibration results:", logoError);
+      }
     } catch (imgError) {
-      console.error("Error adding logo images:", imgError);
+      console.warn("Error processing logo images in calibration results:", imgError);
+      // Continue regardless of logo errors
     }
     
+    // Try to add company logo in the top left corner
     try {
-      // Add company logo in the top left corner
       const dImg = new Image();
-      dImg.src = '/Dupdated.png'; // Changed from D.png to Dupdated.png
-      doc.addImage(dImg, 'PNG', 10, 5, 25, 15);
+      dImg.onload = function() {
+        doc.addImage(dImg, 'PNG', 10, 5, 25, 15);
+      };
+      dImg.onerror = function() {
+        console.warn("Could not load Dupdated.png logo in calibration results");
+      };
+      dImg.src = '/Dupdated.png';
     } catch (imgError) {
-      console.error("Error adding D logo:", imgError);
+      console.warn("Error processing D logo in calibration results:", imgError);
+      // Continue regardless of logo errors
     }
     
     // Add company name and header
@@ -1016,18 +1083,19 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
     tableEndY += 10;
     doc.setFont("helvetica", "bold");
     doc.text("****------END OF CALIBRATION CERTIFICATE-----****", pageWidth / 2, tableEndY, { align: "center" });
-    // Add office contact information at the bottom in pink color 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-    doc.setTextColor(187, 107, 158); // Same pink color as accreditation text
-    doc.text("Office: 53/2, Haridevpur Road, Kolkata - 700 082, West Bengal, India", pageWidth / 2, pageHeight - 13, { align: "center" });
-    doc.text("Mobile: 9830532452, E-mail: errordetector268@gmail.com / errordetector268@yahoo.com / calibrationerror94@gmail.com", pageWidth / 2, pageHeight - 7, { align: "center" });
-    // Add watermark to the calibration results page 
-    addWatermark(doc, '/watermarkupd.png');
+    
+    // Try to add watermark to the calibration results page again 
+    try {
+      addWatermark(doc, '/watermarkupd.png');
+    } catch (watermarkError) {
+      console.warn("Error adding final watermark to calibration results:", watermarkError);
+      // Continue regardless of watermark errors
+    }
+    
     return doc;
   } catch (error) {
     console.error("Error generating calibration results:", error);
-    return null;
+    return doc; // Still return the doc even if there was an error
   }
 }
 
@@ -1038,31 +1106,59 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
  */
 export function addWatermark(doc, watermarkPath) {
   try {
+    // Check if watermark path is valid before proceeding
+    if (!watermarkPath) {
+      console.log("No watermark path provided, skipping watermark");
+      return doc;
+    }
+
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    // Create watermark image
-    const watermarkImg = new Image();
-    watermarkImg.src = watermarkPath;
-    // Calculate center position - adjusted upward by 20 units
-    const watermarkWidth = pageWidth * 0.6; // 60% of page width
-    const watermarkHeight = watermarkWidth * 0.75; // Approximate height based on typical image ratio
-    const x = (pageWidth - watermarkWidth) / 2;
-    const y = (pageHeight - watermarkHeight) / 2 - 20; // Shifted upward by 20 units
-    // Add watermark with transparency using GState approach
-    // Create a graphics state with 10% opacity
-    const gState = new doc.GState({opacity: 0.1});
-    doc.setGState(gState);
-    // Add the image with the transparency setting    
-    doc.addImage(watermarkImg, 'PNG', x, y, watermarkWidth, watermarkHeight);
-    // Reset to default graphics state (100% opacity) for subsequent drawings
-    const defaultGState = new doc.GState({opacity: 1.0});
-    doc.setGState(defaultGState);
     
-    console.log("Watermark added successfully to page");
+    try {
+      // Create watermark image with error handling
+      const watermarkImg = new Image();
+      
+      // Add error handler to image
+      watermarkImg.onerror = function() {
+        console.warn(`Could not load watermark image from ${watermarkPath}, skipping watermark`);
+      };
+      
+      watermarkImg.onload = function() {
+        try {
+          // Calculate center position - adjusted upward by 20 units
+          const watermarkWidth = pageWidth * 0.6; // 60% of page width
+          const watermarkHeight = watermarkWidth * 0.75; // Approximate height based on typical image ratio
+          const x = (pageWidth - watermarkWidth) / 2;
+          const y = (pageHeight - watermarkHeight) / 2 - 20; // Shifted upward by 20 units
+          
+          // Add watermark with transparency using GState approach
+          // Create a graphics state with 10% opacity
+          const gState = new doc.GState({opacity: 0.1});
+          doc.setGState(gState);
+          
+          // Add the image with the transparency setting    
+          doc.addImage(watermarkImg, 'PNG', x, y, watermarkWidth, watermarkHeight);
+          
+          // Reset to default graphics state (100% opacity) for subsequent drawings
+          const defaultGState = new doc.GState({opacity: 1.0});
+          doc.setGState(defaultGState);
+        } catch (innerError) {
+          console.warn("Error applying watermark to PDF:", innerError);
+        }
+      };
+      
+      // Set the source to trigger loading
+      watermarkImg.src = watermarkPath;
+    } catch (imgError) {
+      console.warn("Could not create watermark image, skipping:", imgError);
+    }
+    
+    console.log("Watermark process initiated");
     return doc;
   } catch (error) {
-    console.error("Error adding watermark:", error);
-    return doc;
+    console.error("Error in watermark function:", error);
+    return doc; // Return doc even if there's an error
   }
 }
 

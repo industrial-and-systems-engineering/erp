@@ -118,34 +118,46 @@ const ViewCalibration = () => {
       console.log(`Using job number ${jobNo} from stored certificate data for consistency`);
 
       // Make sure we have the QR code data
-      if (!product.qrCodeDataUrl && product.qrCodeUrl) {
+      let qrCodeDataUrl = null;
+      if (product.qrCodeDataUrl) {
+        qrCodeDataUrl = product.qrCodeDataUrl;
+        console.log("Using stored QR code data URL");
+      } else if (product.qrCodeUrl) {
         try {
-          // If we only have the URL but not the data URL, try to regenerate the QR code
+          // If we only have the URL but not the data URL, regenerate the QR code
           console.log("Regenerating QR code from stored URL");
           const QRCode = await import('qrcode');
-          product.qrCodeDataUrl = await QRCode.toDataURL(product.qrCodeUrl, {
+          qrCodeDataUrl = await QRCode.toDataURL(product.qrCodeUrl, {
             errorCorrectionLevel: 'M',
-            margin: 1,
-            width: 200,
+            margin: 2,
+            width: 300,
             color: {
               dark: '#000000',
               light: '#FFFFFF'
             }
           });
+          console.log("Successfully regenerated QR code from URL");
         } catch (qrError) {
           console.error("Failed to regenerate QR code:", qrError);
         }
       }
 
+      // Create the PDF document
       const doc = new jsPDF();
+
+      // Generate first page
       await generateFirstPage(doc, product, certificateNo, jobNo);
+      console.log("First page generated successfully");
+
+      // Add second page
       doc.addPage();
 
-      // Pass an additional parameter to ensure proper spacing and automatic adjustment of signature position
+      // Generate calibration results on second page
       generateCalibrationResults(doc, product, certificateNo, jobNo, {
         ensureProperSpacing: true, // Flag to enable automatic spacing adjustment
         minimumSignatureSpace: 25  // Minimum space required between table and signature
       });
+      console.log("Second page (calibration results) generated successfully");
 
       // Add watermark to both pages
       try {
@@ -157,29 +169,37 @@ const ViewCalibration = () => {
         doc.setPage(2);
         addWatermark(doc, '/watermarkupd.png');
       } catch (watermarkError) {
-        console.error("Error adding watermark to merged PDF:", watermarkError);
+        console.warn("Error adding watermark to merged PDF:", watermarkError);
+        // Continue despite watermark error
       }
 
-      // Add QR code to both pages in consistent position
-      if (product.qrCodeDataUrl) {
+      // Add QR code to both pages if available
+      if (qrCodeDataUrl) {
         try {
-          // Create positioned QR code string for both pages
+          console.log("Adding QR code to complete certificate document");
           const qrText = "Scan this QR code to view the complete calibration certificate";
 
-          // Add QR to merged PDF (first and second page)
-          // Use the updated addQrCodeToPdf function with improved positioning from pdfGeneration.js
-          addQrCodeToPdf(doc, product.qrCodeDataUrl, qrText);
-
-          console.log("QR code added to all pages of merged PDF");
+          // Add QR to merged PDF (both pages)
+          addQrCodeToPdf(doc, qrCodeDataUrl, qrText);
+          console.log("QR code added to complete certificate successfully");
         } catch (qrError) {
-          console.error("Error adding QR code to merged PDF:", qrError);
+          console.warn("Error adding QR code to merged PDF:", qrError);
+          // Continue generating PDF even if QR code fails
         }
       } else {
         console.warn("No QR code data URL available for the merged PDF");
       }
 
-      doc.save(`Complete_Calibration_Certificate_${certificateNo.replace(/\//g, '_')}.pdf`);
-      return true;
+      // Save the complete certificate
+      try {
+        doc.save(`Complete_Calibration_Certificate_${certificateNo.replace(/\//g, '_')}.pdf`);
+        console.log("Complete certificate saved successfully");
+        return true;
+      } catch (saveError) {
+        console.error("Error saving complete certificate:", saveError);
+        setError("Failed to save complete certificate PDF: " + saveError.message);
+        return false;
+      }
     } catch (error) {
       setError("Failed to generate complete certificate: " + error.message);
       return false;
@@ -314,29 +334,51 @@ const ViewCalibration = () => {
       doc.text("Office: 53/2, Haridevpur Road, Kolkata - 700 082, West Bengal, India", pageWidth / 2, pageHeight - 13, { align: "center" });
       doc.text("Mobile: 9830532452, E-mail: errordetector268@gmail.com / errordetector268@yahoo.com / calibrationerror94@gmail.com", pageWidth / 2, pageHeight - 7, { align: "center" });
 
-      // Add D.png to the top left corner
+      // Add D.png to the top left corner with error handling
       try {
-        // Add company logo in the top left corner
         const dImg = new Image();
-        dImg.src = '/Dupdated.png'; // Changed from D.png to Dupdated.png
-        doc.addImage(dImg, 'PNG', 10, 5, 25, 15);
+        dImg.onload = function () {
+          doc.addImage(dImg, 'PNG', 10, 5, 25, 15);
+        };
+        dImg.onerror = function () {
+          console.warn("Could not load Dupdated.png logo in generateFirstPage");
+        };
+        dImg.src = '/Dupdated.png';
       } catch (imgError) {
-        console.error("Error adding D logo:", imgError);
+        console.warn("Error processing D logo in generateFirstPage:", imgError);
       }
 
-      // Add the logo images in the top right corner with ilac-mra first
+      // Add the logo images in the top right corner with improved error handling
       try {
-        // Load and place the first image (ilac-mra.png) on the left
-        const ilacImg = new Image();
-        ilacImg.src = '/ilac-mra.png'; // Adjust path as needed based on your project structure
-        doc.addImage(ilacImg, 'PNG', pageWidth - 60, 5, 25, 15);
+        // Try to load and place ilac-mra.png
+        try {
+          const ilacImg = new Image();
+          ilacImg.onload = function () {
+            doc.addImage(ilacImg, 'PNG', pageWidth - 60, 5, 25, 15);
+          };
+          ilacImg.onerror = function () {
+            console.warn("Could not load ilac-mra.png logo in generateFirstPage");
+          };
+          ilacImg.src = '/ilac-mra.png';
+        } catch (logoError) {
+          console.warn("Error processing ilac-mra.png in generateFirstPage:", logoError);
+        }
 
-        // Load and place the second image (cc.png) on the right
-        const ccImg = new Image();
-        ccImg.src = '/cc.png'; // Adjust path as needed based on your project structure
-        doc.addImage(ccImg, 'PNG', pageWidth - 30, 5, 25, 15);
+        // Try to load and place cc.png
+        try {
+          const ccImg = new Image();
+          ccImg.onload = function () {
+            doc.addImage(ccImg, 'PNG', pageWidth - 30, 5, 25, 15);
+          };
+          ccImg.onerror = function () {
+            console.warn("Could not load cc.png logo in generateFirstPage");
+          };
+          ccImg.src = '/cc.png';
+        } catch (logoError) {
+          console.warn("Error processing cc.png in generateFirstPage:", logoError);
+        }
       } catch (imgError) {
-        console.error("Error adding logo images:", imgError);
+        console.warn("Error processing logo images in generateFirstPage:", imgError);
       }
 
       // Add company name and accreditation text above the main heading
@@ -779,7 +821,12 @@ const ViewCalibration = () => {
       const watermarkX = (pageWidth - watermarkWidth) / 2;
       const watermarkY = (pageHeight - watermarkHeight) / 2 - 20; // Shifted upward by 20 units
 
-      addWatermark(doc, '/watermarkupd.png');
+      // Add watermark with improved error handling
+      try {
+        addWatermark(doc, '/watermarkupd.png');
+      } catch (watermarkError) {
+        console.warn("Error adding watermark in generateFirstPage:", watermarkError);
+      }
 
       return doc;
     } catch (error) {

@@ -106,6 +106,7 @@ const Ucompleted = () => {
   const generatePdfWithQR = async (selectedProduct) => {
     try {
       console.log("Generating first page PDF with QR code");
+      setPdfError(null); // Clear any previous errors
 
       if (!selectedProduct.referenceStandards || selectedProduct.referenceStandards.length === 0) {
         selectedProduct.referenceStandards = [
@@ -147,75 +148,105 @@ const Ucompleted = () => {
         `${new Date().getFullYear() - 1}-${new Date().getFullYear() - 2000}`}`;
 
       const jobNo = certificateNo.split('/')[2];
-
       const documentId = `${selectedProduct._id}_${certificateNo.replace(/\//g, '_')}`;
-
       const viewUrl = `${window.location.origin}/view-calibration/${documentId}`;
       console.log("QR code will link to:", viewUrl);
 
+      // Generate QR code with error handling - Wait for completion before continuing
+      let qrCodeDataUrl = null;
       try {
-        // Generate QR code with smaller size and lower error correction for smaller file size
         const QRCode = await import('qrcode');
-        let qrCodeDataUrl = await QRCode.toDataURL(viewUrl, {
-          errorCorrectionLevel: 'L', // Changed from 'M' to 'L' for smaller size
-          margin: 1,
-          width: 150, // Reduced from 200 to 150
+        qrCodeDataUrl = await QRCode.toDataURL(viewUrl, {
+          errorCorrectionLevel: 'M', // Changed back to 'M' for better readability
+          margin: 2,
+          width: 300, // Increased size for better visibility
           color: {
             dark: '#000000',
             light: '#FFFFFF'
           }
         });
-
         console.log("QR code generated successfully with URL:", viewUrl);
+      } catch (qrError) {
+        console.warn("Error generating QR code:", qrError);
+        // Continue without QR code, but inform the user
+        alert("Could not generate QR code, but will continue with PDF generation.");
+      }
 
-        // Create only the first page of the PDF document
+      // Create PDF document
+      try {
+        // Generate first page with the enhanced product data
         const doc = await generatePdf(selectedProduct, true, certificateNo);
-
         if (!doc) {
-          throw new Error("Failed to generate PDF first page");
+          throw new Error("Failed to generate PDF document");
         }
 
         console.log("PDF first page generated successfully");
 
-        // Use the improved addQrCodeToPdf function with better positioning
-        const qrText = "Scan this QR code to view the complete calibration certificate";
-        addQrCodeToPdf(doc, qrCodeDataUrl, qrText);
+        // Add QR code to the PDF
+        if (qrCodeDataUrl) {
+          try {
+            console.log("Adding QR code to PDF document");
+            const qrText = "Scan this QR code to view the complete calibration certificate";
 
-        console.log("QR code added to PDF with improved positioning");
+            // Add QR code with updated function that places it directly
+            addQrCodeToPdf(doc, qrCodeDataUrl, qrText);
 
-        // Save the first page PDF with a different name
-        doc.save(`Calibration_Certificate_FirstPage_${certificateNo.replace(/\//g, '_')}.pdf`);
-        console.log("First page PDF with QR code saved successfully");
+            console.log("QR code added to PDF successfully");
+          } catch (qrAddError) {
+            console.warn("Error adding QR code to PDF:", qrAddError);
+            // Continue without QR code
+          }
+        } else {
+          console.warn("No QR code data available to add to PDF");
+        }
 
-        // Store product and certificate data for second page generation later
+        // Save the PDF file
+        try {
+          doc.save(`Calibration_Certificate_FirstPage_${certificateNo.replace(/\//g, '_')}.pdf`);
+          console.log("PDF saved successfully" + (qrCodeDataUrl ? " with QR code" : " without QR code"));
+        } catch (saveError) {
+          console.error("Error saving PDF:", saveError);
+          throw new Error("Failed to save PDF: " + saveError.message);
+        }
+
+        // Store certificate data for later retrieval
         const certificateData = {
           product: {
             ...selectedProduct,
-            qrCodeDataUrl: qrCodeDataUrl // Include QR code in the product data
+            qrCodeDataUrl: qrCodeDataUrl,
+            qrCodeUrl: viewUrl // Store the URL in case we need to regenerate the QR code
           },
           certificateNo: certificateNo,
           jobNo: jobNo,
           documentId: documentId,
           timestamp: new Date().toISOString(),
-          completeGenerated: false // Flag to track if the complete certificate has been generated
+          completeGenerated: false
         };
 
-        localStorage.setItem(`certificate_${documentId}`, JSON.stringify(certificateData));
-        console.log("Certificate data stored for QR lookup with ID:", documentId);
+        // Try to store in localStorage first
+        try {
+          localStorage.setItem(`certificate_${documentId}`, JSON.stringify(certificateData));
+          console.log("Certificate data stored in localStorage with ID:", documentId);
+        } catch (storageError) {
+          console.warn("Failed to store in localStorage:", storageError);
+          // Try sessionStorage as fallback
+          try {
+            sessionStorage.setItem(`certificate_${documentId}`, JSON.stringify(certificateData));
+            console.log("Certificate data stored in sessionStorage instead");
+          } catch (sessionError) {
+            console.error("Failed to store certificate data:", sessionError);
+          }
+        }
 
-        // Show success message to the user
-        // alert(`First page of certificate generated successfully. Scan the QR code to view and download the complete certificate.`);
-
-      } catch (qrError) {
-        console.error("Error generating QR code:", qrError);
-        throw new Error("Failed to generate QR code: " + qrError.message);
+        alert("Certificate with QR code generated successfully. You can scan the QR code to view the complete certificate.");
+      } catch (pdfError) {
+        console.error("Error in PDF generation process:", pdfError);
+        throw new Error("Failed to process PDF: " + pdfError.message);
       }
 
     } catch (error) {
-      console.error("Error generating PDF with QR:", error);
+      console.error("Error in overall PDF with QR process:", error);
       setPdfError("Failed to generate PDF with QR code: " + error.message);
-
-      // Alert the user with more specific information about the error
       alert(`There was an error generating the PDF with QR code: ${error.message}\nPlease try using the regular Download button instead.`);
     }
   };
