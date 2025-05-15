@@ -920,8 +920,7 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
     doc.text(`Meter Serial no: ${product.serialNo || "N/A"}`, margin + 100, 35);
     doc.text("Page: 02 of 02 Pages", margin + 100, 40);
     doc.setFontSize(14);
-    doc.text("CALIBRATION RESULTS", pageWidth / 2, 65, { align: "center" }); // Moved down
-    let tableData = [];
+    doc.text("CALIBRATION RESULTS", pageWidth / 2, 55, { align: "center" });
     
     // Format range with kV unit if not already present
     const formatRange = (rangeValue) => {
@@ -936,78 +935,121 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
       return `${rangeValue} kV`;
     };
     
-    // Check if product has parameters
+    let tableData = [];
+    
+    // Restructured table with new columns as per the provided requirements
     if (product.parameters && product.parameters.length > 0) {
       let rowCounter = 1;
+      let lastParameterName = null; // Track last parameter name to avoid duplication
       
-      // Process all parameters instead of just the first one
-      product.parameters.forEach((parameter, paramIndex) => {
-        const parameterDetails = parameter.parameter || "DC high resistance @1000 Volt";
-        const rangeDetails = formatRange(parameter.ranges || "Full Range");
-        // Use hardcoded least count value of 0.2 kV
-        const leastCount = "0.2 kV";
-        // Construct full parameter description with hardcoded least count beside range
-        const fullParameterInfo = `${parameterDetails} (${rangeDetails}, Least count=${leastCount})`;
-        // If the parameter has readings
+      // Group all readings across parameters
+      const allReadings = [];
+      
+      // First collect all readings with their parameter information
+      product.parameters.forEach((parameter) => {
+        const parameterName = parameter.parameter || "DC high resistance @1000 Volt";
+        
         if (parameter.readings && parameter.readings.length > 0) {
-          // First row of each parameter includes the parameter name
-          parameter.readings.forEach((reading, readingIndex) => {
-            const ducValue = `${reading.rName || "N/A"} ${reading.rUnit || ""}`.trim();
-            const stdValue = `${reading.mean || "N/A"} ${reading.rUnit || ""}`.trim();
-            const uncertainty = reading.uc ? `${reading.uc}%` : "N/A";
-            if (readingIndex === 0) {
-              tableData.push([
-                `${rowCounter}.`,
-                fullParameterInfo,
-                ducValue,
-                stdValue,
-                uncertainty
-              ]);
-            } else {
-              tableData.push([
-                `${rowCounter}.`,
-                "",
-                ducValue,
-                stdValue,
-                uncertainty
-              ]);
-            }
-            rowCounter++;
+          parameter.readings.forEach((reading) => {
+            allReadings.push({
+              parameterName: parameterName,
+              reading: reading,
+              range: reading.rRange || parameter.ranges || "Full Range"
+            });
           });
         } else {
-          // If parameter has no readings, add a single row for it
-          tableData.push([
-            `${rowCounter}.`,
-            fullParameterInfo,
-            "N/A",
-            "N/A",
-            "N/A"
-          ]);
-          rowCounter++;
+          // If no readings, create a placeholder
+          allReadings.push({
+            parameterName: parameterName,
+            reading: null,
+            range: parameter.ranges || "Full Range"
+          });
         }
       });
       
+      // Now process all readings in sequence
+      allReadings.forEach((item) => {
+        const { parameterName, reading, range } = item;
+        const formattedRange = formatRange(range);
+        const leastCount = "0.2 kV";
+        const rangeWithLeastCount = `${formattedRange}, Least count=${leastCount}`;
+        
+        let ducValue, stdValue, uncertainty;
+        
+        if (reading) {
+          ducValue = `${reading.rName || "N/A"} ${reading.rUnit || ""}`.trim();
+          stdValue = `${reading.mean || "N/A"} ${reading.rUnit || ""}`.trim();
+          uncertainty = reading.uc ? `${reading.uc}%` : "N/A";
+        } else {
+          ducValue = "N/A";
+          stdValue = "N/A";
+          uncertainty = "N/A";
+        }
+        
+        // Only show parameter name if it's different from the previous one
+        const showParameterName = parameterName !== lastParameterName;
+        
+        tableData.push([
+          `${rowCounter}.`,
+          showParameterName ? parameterName : "", // Only show parameter name if it's new
+          rangeWithLeastCount,
+          stdValue,
+          ducValue,
+          uncertainty
+        ]);
+        
+        // Update the last parameter name
+        lastParameterName = parameterName;
+        rowCounter++;
+      });
+      
     } else {
-      // Fallback for when no parameters are found - use default values with hardcoded least count
+      // Fallback data if no parameters are found
       console.warn("No calibration parameters found in product data, using default values");
-      tableData = [
-        ["1.", "DC high resistance @1000 Volt (Full Range, Least count=0.2 kV)", "1 M.ohm", "1.0045 M.ohm", "5.75%"],
-        ["2.", "Range: 1000 M.ohm (Least count=0.2 kV)", "2 M.ohm", "2.0085 M.ohm", "14.37%"],
-        ["3.", "", "5 M.ohm", "5.0156 M.ohm", "11.51%"],
-        ["4.", "", "10 M.ohm", "10.0179 M.ohm", "5.71%"],
-        ["5.", "", "20 M.ohm", "20.0546 M.ohm", "14.39%"],
-        ["6.", "", "50 M.ohm", "48.0469 M.ohm", "12.02%"],
-        ["7.", "", "100 M.ohm", "95.1580 M.ohm", "6.07%"],
-        ["8.", "", "200 M.ohm", "195.2565 M.ohm", "14.78%"],
-        ["9.", "", "500 M.ohm", "505.1733 M.ohm", "11.67%"],
-        ["10.", "", "1000 M.ohm", "1003.083 M.ohm", "6.22%"],
+      
+      // Example data showing parameter grouping
+      const voltageGroups = [
+        {name: "Voltage DC", rows: [
+          {range: "0-600mV/0.1 mV", ducValue: "100.1 mV", stdValue: "100.0000 mV", uncertainty: "0.07%"},
+          {range: "0-6V/0.001 V", ducValue: "1.002 V", stdValue: "1.000000 V", uncertainty: "0.08%"},
+          {range: "0-60V/0.01 V", ducValue: "10.03 V", stdValue: "10.00000 V", uncertainty: "0.09%"},
+          {range: "0-600V/0.1 V", ducValue: "99.8 V", stdValue: "100.0000 V", uncertainty: "0.12%"},
+          {range: "0-1000V/1V", ducValue: "299 V", stdValue: "300.0000 V", uncertainty: "0.23%"},
+          {range: "0-1000V/1V", ducValue: "598 V", stdValue: "600.00 V", uncertainty: "0.16%"},
+          {range: "0-1000V/1V", ducValue: "898 V", stdValue: "900.00 V", uncertainty: "0.14%"}
+        ]},
+        {name: "Current DC", rows: [
+          {range: "0-60mA/0.01 mA", ducValue: "10.1 mA", stdValue: "10.0000 mA", uncertainty: "0.09%"},
+          {range: "0-400mA/0.1 mA", ducValue: "100.3 mA", stdValue: "100.0000 mA", uncertainty: "0.08%"},
+          {range: "0-10A/0.01 A", ducValue: "1.01 A", stdValue: "1.0000 A", uncertainty: "0.12%"}
+        ]}
       ];
+      
+      // Convert to table data format
+      let rowIndex = 1;
+      voltageGroups.forEach(group => {
+        let isFirstRow = true;
+        group.rows.forEach(row => {
+          tableData.push([
+            `${rowIndex}.`,
+            isFirstRow ? group.name : "", // Only show group name in first row
+            row.range,
+            row.stdValue,
+            row.ducValue,
+            row.uncertainty
+          ]);
+          isFirstRow = false;
+          rowIndex++;
+        });
+      });
     }
     
-    console.log("Calibration results table data:", tableData);
+    console.log("Restructured calibration results table data:", tableData);
+    
+    // Create table with new column structure
     doc.autoTable({
-      startY: 55,
-      head: [["Sl.No.", "Parameter, range and Least count", "*DUC Value set at", "Standard value applied to reach *DUC value", "(±) Measurement uncertainty At 95% **C.L where k=2"]],
+      startY: 65,
+      head: [["Sl.No.", "Parameter", "Range & Least Count", "Standard Value applied", "*DUC value observed (average of five readings)", "(±)Measurement uncertainty at 95% **C.L where k=2"]],
       body: tableData,
       theme: 'grid',
       headStyles: {
@@ -1018,45 +1060,133 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
       bodyStyles: {
         fillColor: [240, 255, 240]
       },
-      styles: { fontSize: 8 },
-      // Set a specific width for the table to leave room for signature
-      tableWidth: pageWidth - 70, // Make table narrower to leave space for signature
-      // Add callback to monitor table end position
+      styles: { 
+        fontSize: 8,
+        cellPadding: 2,
+        overflow: 'linebreak',
+        lineWidth: 0.1
+      },
+      columnStyles: {
+        0: { cellWidth: 15 }, // Sl.No
+        1: { cellWidth: 40 }, // Parameter
+        2: { cellWidth: 55 }, // Range & Least Count
+        3: { cellWidth: 30 }, // Standard Value
+        4: { cellWidth: 30 }, // DUC Value
+        5: { cellWidth: 25 }  // Uncertainty
+      },
+      margin: { left: margin, right: margin },
+      // Handle page overflow automatically
       didDrawPage: function(data) {
-        console.log("Calibration results table finalized at Y position:", data.cursor.y);
+        // Add page header/footer for any additional pages
+        if (data.pageCount > 1) {
+          // Reset page background
+          doc.setFillColor(240, 248, 255);
+          doc.rect(0, 0, pageWidth, pageHeight, 'F');
+          
+          // Add green header and footer
+          doc.setFillColor(140, 205, 162);
+          doc.rect(0, 0, pageWidth, 22, 'F');
+          doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+          
+          // Add header content
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(0, 102, 204);
+          doc.setFontSize(14);
+          doc.text("ERROR DETECTOR", pageWidth / 2, 10, { align: "center" });
+          
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(11);
+          doc.text(`Calibration Certificate No. : ${certificateNo}`, margin, 30);
+          doc.text(`Page: ${data.pageCount} of ${data.pageCount} Pages`, margin + 100, 30);
+        }
+        
+        console.log(`Table finalized on page ${data.pageCount} at Y position:`, data.cursor.y);
       }
     });
     
+    // Calculate table end position
     let tableEndY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 200;
+    const currentPage = doc.lastAutoTable ? doc.lastAutoTable.pageCount : 1;
+    
+    // Move to the last page of the table
+    if (doc.lastAutoTable && doc.lastAutoTable.pageCount > 1) {
+      doc.setPage(doc.lastAutoTable.pageCount);
+      tableEndY = doc.lastAutoTable.finalY + 10;
+    }
+    
+    // Add explanatory text
     doc.setFontSize(8);
+    doc.setTextColor(0, 0, 0);
     doc.text("*DUC: Device Under Calibration, **C.L: Confidence Level", margin, tableEndY);
     tableEndY += 10;
+    
+    // Make sure we have enough space for remarks, or move to next page
+    if (tableEndY + 50 > pageHeight - 35) {
+      doc.addPage();
+      
+      // Reset background on new page
+      doc.setFillColor(240, 248, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      
+      // Add green header and footer
+      doc.setFillColor(140, 205, 162);
+      doc.rect(0, 0, pageWidth, 22, 'F');
+      doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+      
+      // Add header content for new page
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 102, 204);
+      doc.setFontSize(14);
+      doc.text("ERROR DETECTOR", pageWidth / 2, 10, { align: "center" });
+      
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(11);
+      doc.text(`Calibration Certificate No. : ${certificateNo}`, margin, 30);
+      doc.text(`Page: ${currentPage + 1} of ${currentPage + 1} Pages`, margin + 100, 30);
+      
+      // Reset position for remarks
+      tableEndY = 40;
+    }
+    
+    // Add remarks
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
     doc.text("REMARKS:", margin, tableEndY);
     doc.setFont("helvetica", "normal");
     doc.text("The above insulation tester has been calibrated over its range and readings are tabulated above.", margin + 20, tableEndY);
     
-    // Position signature on the right side of the calibration results table
-    const resultsSignatureY = doc.lastAutoTable ? Math.min(doc.lastAutoTable.finalY - 20, 160) : 140;
+    // Calculate position for the signatures
+    tableEndY += 15;
     
-    // Only add the authorised by signature at the right side of the table
-    const authRightMargin = pageWidth - 45;
-    doc.setFont("helvetica", "bold");
-    doc.text("Authorised by", authRightMargin, resultsSignatureY);
-    doc.text("Technical Manager", authRightMargin, resultsSignatureY + 7);
-    
-    // Add minimum signature space based on options or default
-    tableEndY += spacing.minimumSignatureSpace;
-    
-    // Check if signatures would be too close to the bottom
-    const bottomMargin = 40; // Space to leave at bottom
-    if (spacing.ensureProperSpacing && tableEndY > pageHeight - bottomMargin) {
+    // Check if we have enough space for signatures and notes, add new page if needed
+    if (tableEndY + 70 > pageHeight - 25) {
       doc.addPage();
-      tableEndY = 30; // Start from top of new page
+      
+      // Reset background on new page
+      doc.setFillColor(240, 248, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      
+      // Add green header and footer
+      doc.setFillColor(140, 205, 162);
+      doc.rect(0, 0, pageWidth, 22, 'F');
+      doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+      
+      // Add header content for new page
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 102, 204);
+      doc.setFontSize(14);
+      doc.text("ERROR DETECTOR", pageWidth / 2, 10, { align: "center" });
+      
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(11);
+      doc.text(`Calibration Certificate No. : ${certificateNo}`, margin, 30);
+      doc.text(`Page: ${currentPage + 1} of ${currentPage + 1} Pages`, margin + 100, 30);
+      
+      // Reset position for signatures
+      tableEndY = 40;
     }
     
-    // Add signatures at the bottom - only once (removed duplicate)
+    // Add signatures
     doc.setFont("helvetica", "bold");
     doc.text("Calibrated by", margin, tableEndY);
     doc.text("Checked by", pageWidth / 2 - 15, tableEndY);
@@ -1064,7 +1194,37 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
     
     tableEndY += 7;
     doc.text("Technical Manager", pageWidth - 60, tableEndY);
+    
+    // Check if we have enough space for notes
     tableEndY += 15;
+    if (tableEndY + 70 > pageHeight - 25) {
+      doc.addPage();
+      
+      // Reset background on new page
+      doc.setFillColor(240, 248, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      
+      // Add green header and footer
+      doc.setFillColor(140, 205, 162);
+      doc.rect(0, 0, pageWidth, 22, 'F');
+      doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+      
+      // Add header content for new page
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 102, 204);
+      doc.setFontSize(14);
+      doc.text("ERROR DETECTOR", pageWidth / 2, 10, { align: "center" });
+      
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(11);
+      doc.text(`Calibration Certificate No. : ${certificateNo}`, margin, 30);
+      doc.text(`Page: ${currentPage + 2} of ${currentPage + 2} Pages`, margin + 100, 30);
+      
+      // Reset position for notes
+      tableEndY = 40;
+    }
+    
+    // Add notes
     doc.text("Note:", margin, tableEndY);
     const notes = [
       "This calibration certificate shall not be reproduced except in full, without written approval of the laboratory.",
@@ -1083,25 +1243,77 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
     
     notes.forEach((note, index) => {
       tableEndY += 7;
+      
+      // Check if we need to add a new page for remaining notes
+      if (tableEndY > pageHeight - 30) {
+        doc.addPage();
+        
+        // Reset background on new page
+        doc.setFillColor(240, 248, 255);
+        doc.rect(0, 0, pageWidth, pageHeight, 'F');
+        
+        // Add green header and footer
+        doc.setFillColor(140, 205, 162);
+        doc.rect(0, 0, pageWidth, 22, 'F');
+        doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+        
+        // Add header content for new page
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 102, 204);
+        doc.setFontSize(14);
+        doc.text("ERROR DETECTOR", pageWidth / 2, 10, { align: "center" });
+        
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(11);
+        doc.text(`Calibration Certificate No. : ${certificateNo}`, margin, 30);
+        doc.text(`Continued Notes`, margin + 100, 30);
+        
+        // Reset position for notes
+        tableEndY = 40;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+      }
+      
       doc.text(`${index + 1}. ${note}`, margin, tableEndY);
     });
+    
     tableEndY += 10;
+    
+    // Check if we need to add a page for the "END OF CERTIFICATE" text
+    if (tableEndY > pageHeight - 30) {
+      doc.addPage();
+      
+      // Reset background on new page
+      doc.setFillColor(240, 248, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      
+      // Add green header and footer
+      doc.setFillColor(140, 205, 162);
+      doc.rect(0, 0, pageWidth, 22, 'F');
+      doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+      
+      tableEndY = 40;
+    }
+    
     doc.setFont("helvetica", "bold");
     doc.text("****------END OF CALIBRATION CERTIFICATE-----****", pageWidth / 2, tableEndY, { align: "center" });
     
-    // Add office contact information at the bottom in pink color
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-    doc.setTextColor(187, 107, 158); // Same pink color as accreditation text
-    doc.text("Office: 53/2, Haridevpur Road, Kolkata - 700 082, West Bengal, India", pageWidth / 2, pageHeight - 13, { align: "center" });
-    doc.text("Mobile: 9830532452, E-mail: errordetector268@gmail.com / errordetector268@yahoo.com / calibrationerror94@gmail.com", pageWidth / 2, pageHeight - 7, { align: "center" });
-    
-    // Try to add watermark to the calibration results page again 
-    try {
-      addWatermark(doc, '/watermarkupd.png');
-    } catch (watermarkError) {
-      console.warn("Error adding final watermark to calibration results:", watermarkError);
-      // Continue regardless of watermark errors
+    // Add office contact information at the bottom in pink color for all pages
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(187, 107, 158); // Same pink color as accreditation text
+      doc.text("Office: 53/2, Haridevpur Road, Kolkata - 700 082, West Bengal, India", pageWidth / 2, pageHeight - 13, { align: "center" });
+      doc.text("Mobile: 9830532452, E-mail: errordetector268@gmail.com / errordetector268@yahoo.com / calibrationerror94@gmail.com", pageWidth / 2, pageHeight - 7, { align: "center" });
+      
+      // Add watermark to each page
+      try {
+        addWatermark(doc, '/watermarkupd.png');
+      } catch (watermarkError) {
+        console.warn(`Error adding watermark to page ${i}:`, watermarkError);
+      }
     }
     
     return doc;
