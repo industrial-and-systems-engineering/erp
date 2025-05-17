@@ -1933,10 +1933,10 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
       let rowCounter = 1;
       // Process all parameters
       selectedProduct.parameters.forEach((parameter, paramIndex) => {
-        const parameterDetails = parameter.parameter || "AC Voltage (50Hz)";
-        const rangeValue = parameter.ranges || "0-5 kV";
+        const parameterDetails = parameter.parameter;
+        const rangeValue = parameter.ranges;
         const rangeDetails = formatRange(rangeValue);
-        const leastCount = "0.2 kV"; // Hardcoded least count
+        const leastCount = parameter.leastCount;
         const fullRangeInfo = `${parameterDetails} ${rangeDetails}, Least count=${leastCount}`;
 
         // If the parameter has readings
@@ -2028,7 +2028,7 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     // Create calibration results table with data
     doc.autoTable({
       startY: 75,
-      head: [["Slno.", "Parameter/range & least count", "*DUC value (in kV)", "Standard value(kV) observed average value of five readings", "(±)Measurement uncertainty at 95% at **C.L where k=2 (in %)"]],
+      head: [["Slno.", "Parameter/range & least count", "*DUC value", "Standard value observed average value of five readings", "(±)Measurement uncertainty at 95% at **C.L where k=2 (in %)"]],
       body: tableData,
       theme: 'grid',
       styles: { fontSize: 8 },
@@ -2059,7 +2059,16 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     doc.setFont("helvetica", "normal");
     // Make the remarks more specific to the product type
     let remarksText = `The above ${certificate.description} has been calibrated over its range and the readings are tabulated above.`;
-    doc.text(remarksText, leftMargin + 25, tableEndY);
+    // Add text wrapping by specifying max width to avoid overflow
+    const maxWidth = pageWidth - (leftMargin + 35);
+    doc.text(remarksText, leftMargin + 25, tableEndY, { maxWidth: maxWidth });
+
+    // Get the text splits to account for any wrapped lines
+    const textLines = doc.splitTextToSize(remarksText, maxWidth);
+    // If text wrapped to multiple lines, adjust the tableEndY accordingly
+    if (textLines.length > 1) {
+      tableEndY += (textLines.length - 1) * 5;
+    }
 
     // Separator
     tableEndY += 10;
