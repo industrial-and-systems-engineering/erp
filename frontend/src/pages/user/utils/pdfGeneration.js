@@ -4,14 +4,14 @@ import 'jspdf-autotable';
 export default function generatePdf(selectedProduct, returnDoc = false, customCertificateNo = null) {
   try {
     console.log("generatePdf function called");
-    
+
     if (!selectedProduct) {
       console.error("No product selected");
       return null;
     }
-    
+
     console.log("Full selected product object:", JSON.stringify(selectedProduct, null, 2));
-    
+
     let customerName = "Unknown Customer";
     if (selectedProduct._parentForm && selectedProduct._parentForm.organization) {
       customerName = selectedProduct._parentForm.organization;
@@ -26,7 +26,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       customerName = selectedProduct.customer;
       console.log("Using customer as fallback:", customerName);
     }
-    
+
     let customerAddress = "Unknown Address";
     if (selectedProduct._parentForm && selectedProduct._parentForm.address) {
       customerAddress = selectedProduct._parentForm.address;
@@ -38,7 +38,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       customerAddress = selectedProduct.customerAddress;
       console.log("Using customerAddress as fallback:", customerAddress);
     }
-    
+
     let productName = "Unknown Product";
     if (selectedProduct.instrumentDescription) {
       productName = selectedProduct.instrumentDescription;
@@ -50,14 +50,14 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       productName = selectedProduct.description;
       console.log("Using description as fallback:", productName);
     }
-    
+
     const productMake = selectedProduct.make || "Unknown Make";
     const serialNo = selectedProduct.serialNo || "N/A";
-    
-    const srfNo = selectedProduct._parentForm && selectedProduct._parentForm.srfNo 
-                  ? selectedProduct._parentForm.srfNo 
-                  : "Unknown SRF";
-                  
+
+    const srfNo = selectedProduct._parentForm && selectedProduct._parentForm.srfNo
+      ? selectedProduct._parentForm.srfNo
+      : "Unknown SRF";
+
     let methodUsed = "";
     if (selectedProduct._parentForm && selectedProduct._parentForm.calibrationMethodUsed) {
       methodUsed = selectedProduct._parentForm.calibrationMethodUsed;
@@ -72,14 +72,14 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       methodUsed = "ED/SOP/E-002";
       console.log("Using default methodUsed:", methodUsed);
     }
-    
+
     const formatDate = (date) => {
       if (!date) return new Date().toLocaleDateString('en-GB', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric'
       }).replace(/\//g, '.');
-      
+
       const d = new Date(date);
       return d.toLocaleDateString('en-GB', {
         day: '2-digit',
@@ -91,19 +91,19 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     // Function to format range with kV unit if no unit exists
     const formatRange = (rangeValue) => {
       if (!rangeValue) return "Full Range";
-      
+
       // If the range already includes a unit, leave it as is
       if (/[a-zA-Z]/.test(rangeValue)) {
         return rangeValue;
       }
-      
+
       // Otherwise, append "kV" as the unit
       return `${rangeValue} kV`;
     };
 
     // Generate certificate number - use consistent job number for the same product
     let jobNo;
-    
+
     // Try to use an existing job number if available
     if (selectedProduct.jobNo) {
       jobNo = selectedProduct.jobNo;
@@ -116,18 +116,18 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       }, 0);
       jobNo = Math.abs(hash % 10000).toString().padStart(4, '0');
     }
-    
-    const certificateNo = customCertificateNo || `ED/CAL/${jobNo}/${new Date().getMonth() > 3 ? 
-                          `${new Date().getFullYear()}-${new Date().getFullYear() + 1 - 2000}` : 
-                          `${new Date().getFullYear() - 1}-${new Date().getFullYear() - 2000}`}`;
+
+    const certificateNo = customCertificateNo || `ED/CAL/${jobNo}/${new Date().getMonth() > 3 ?
+      `${new Date().getFullYear()}-${new Date().getFullYear() + 1 - 2000}` :
+      `${new Date().getFullYear() - 1}-${new Date().getFullYear() - 2000}`}`;
 
     const temperature = selectedProduct.roomTemp || "25±4°C";
     const humidity = selectedProduct.humidity ? `${selectedProduct.humidity}%` : "30 to 75% RH";
-    
+
     // Make sure temperature has °C symbol
-    const formattedTemperature = temperature.includes("°C") ? temperature : 
-                              (temperature.includes("±") ? temperature.replace("±", "±") + "°C" : temperature + "°C");
-    
+    const formattedTemperature = temperature.includes("°C") ? temperature :
+      (temperature.includes("±") ? temperature.replace("±", "±") + "°C" : temperature + "°C");
+
     console.log("Extracted environmental conditions:", { temperature: formattedTemperature, humidity });
 
     // Condition - retrieve from CSR input without hardcoded default
@@ -156,7 +156,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     if (selectedProduct.calibrationDataSheet && selectedProduct.calibrationDataSheet.Location) {
       location = selectedProduct.calibrationDataSheet.Location;
       console.log("Using Location from calibration datasheet:", location);
-    // Then check in CSC/CSR form fields
+      // Then check in CSC/CSR form fields
     } else if (selectedProduct._parentForm && selectedProduct._parentForm.calibrationFacilityAvailable) {
       location = selectedProduct._parentForm.calibrationFacilityAvailable;
       console.log("Using calibrationFacilityAvailable from parent form:", location);
@@ -173,7 +173,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       location = selectedProduct._parentForm.location;
       console.log("Using location from parent form:", location);
     }
-    
+
     // Default to "At laboratory" if location is empty or undefined
     if (!location || location.trim() === "") {
       location = "At laboratory";
@@ -194,7 +194,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     if (!completionDate) {
       completionDate = formatDate();
     }
-    
+
     // Parse the completion date string to create a Date object
     const completionDateParts = completionDate.split('.');
     const completionDateObj = new Date(
@@ -202,19 +202,19 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       parseInt(completionDateParts[1]) - 1,
       parseInt(completionDateParts[0])
     );
-    
+
     // Calculate next calibration date as 1 year from completion date
     const nextCalibrationDateObj = new Date(completionDateObj);
     nextCalibrationDateObj.setFullYear(completionDateObj.getFullYear() + 1);
     const nextCalibrationDate = formatDate(nextCalibrationDateObj);
-    
+
     // Calculate valid up to date as 11 months from completion date
     const validUpToDateObj = new Date(completionDateObj);
     validUpToDateObj.setMonth(completionDateObj.getMonth() + 11);
     const validUpToDate = formatDate(validUpToDateObj);
-    
+
     const referenceStandards = [];
-    
+
     if (selectedProduct.referenceStandards && selectedProduct.referenceStandards.length > 0) {
       // Make a deep copy and ensure each standard has the correct validUpTo date
       referenceStandards.push(...selectedProduct.referenceStandards.map(std => ({
@@ -222,10 +222,10 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
         validUpTo: validUpToDate // Always use validUpToDate from completion date
       })));
       console.log("Using referenceStandards from product:", selectedProduct.referenceStandards);
-    } 
-    else if (selectedProduct.parameters && 
-             selectedProduct.parameters.length > 0 && 
-             selectedProduct.parameters[0].referenceStandards) {
+    }
+    else if (selectedProduct.parameters &&
+      selectedProduct.parameters.length > 0 &&
+      selectedProduct.parameters[0].referenceStandards) {
       // Make a deep copy and ensure each standard has the correct validUpTo date
       referenceStandards.push(...selectedProduct.parameters[0].referenceStandards.map(std => ({
         ...std,
@@ -233,34 +233,33 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       })));
       console.log("Using referenceStandards from parameters:", selectedProduct.parameters[0].referenceStandards);
     }
-    else if (selectedProduct._parentForm && 
-             selectedProduct._parentForm.referenceStandards && 
-             selectedProduct._parentForm.referenceStandards.length > 0) {
+    else if (selectedProduct._parentForm &&
+      selectedProduct._parentForm.referenceStandards &&
+      selectedProduct._parentForm.referenceStandards.length > 0) {
       // Make a deep copy and ensure each standard has the correct validUpTo date
       referenceStandards.push(...selectedProduct._parentForm.referenceStandards.map(std => ({
         ...std,
         validUpTo: validUpToDate // Always use validUpToDate from completion date
       })));
       console.log("Using referenceStandards from parent form:", selectedProduct._parentForm.referenceStandards);
-    } 
+    }
     else {
       const referenceStandard = {
         description: selectedProduct.instrumentDescription || selectedProduct.name || "Measurement Instrument",
         makeModel: selectedProduct.make || "Unknown Make",
         slNoIdNo: selectedProduct.serialNo || "N/A",
-        calibrationCertificateNo: selectedProduct.calibrationCertificateNo || 
-                                  `ED/CAL/${jobNo}/${
-                                    new Date().getFullYear()
-                                  }`,
+        calibrationCertificateNo: selectedProduct.calibrationCertificateNo ||
+          `ED/CAL/${jobNo}/${new Date().getFullYear()
+          }`,
         validUpTo: validUpToDate, // This is correct - using validUpToDate from completion date
         calibratedBy: "C and I Calibrations Pvt. Ltd", // Changed from "Error Detector"
         traceableTo: "NPL" // Changed from "National Standards"
       };
-      
+
       referenceStandards.push(referenceStandard);
       console.log("Created reference standard from product details:", referenceStandard);
     }
-    
+
     console.log("Final reference standards data:", referenceStandards);
 
     const certificate = {
@@ -272,8 +271,8 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       description: productName,
       make: productMake,
       serialNo: serialNo,
-      range: selectedProduct.parameters && selectedProduct.parameters.length > 0 ? 
-             `${formatRange(selectedProduct.parameters[0].ranges || "Full Range")}, Least count=0.2 kV` : "Full Range, Least count=0.2 kV",
+      range: selectedProduct.parameters && selectedProduct.parameters.length > 0 ?
+        `${formatRange(selectedProduct.parameters[0].ranges || "Full Range")}, Least count=0.2 kV` : "Full Range, Least count=0.2 kV",
       condition: condition,
       receivedDate: formatDate(selectedProduct._parentForm && selectedProduct._parentForm.date),
       completionDate: completionDate,
@@ -285,26 +284,26 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       method: methodUsed,
       referenceStandards: referenceStandards
     };
-    
+
     console.log("Certificate data prepared:", certificate);
     console.log("Creating jsPDF instance");
     const doc = new jsPDF();
     console.log("jsPDF instance created successfully");
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
-    
+
     // Create a light blue background for the entire page    
     doc.setFillColor(240, 248, 255);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
-    
+
     // Add a greenish background to the top section ending just above the CALIBRATION CERTIFICATE heading    
     doc.setFillColor(140, 205, 162); // #8CCDA2
     doc.rect(0, 0, pageWidth, 22, 'F'); // Height ends just before the heading at y=26
-    
+
     // Add a matching greenish background to the bottom of the page
     doc.setFillColor(140, 205, 162); // #8CCDA2
     doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
-    
+
     // Try to add watermark, but continue if it fails
     try {
       addWatermark(doc, '/watermarkupd.png');
@@ -319,30 +318,30 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setTextColor(187, 107, 158); // Same pink color as accreditation text
     doc.text("Office: 53/2, Haridevpur Road, Kolkata - 700 082, West Bengal, India", pageWidth / 2, pageHeight - 13, { align: "center" });
     doc.text("Mobile: 9830532452, E-mail: errordetector268@gmail.com / errordetector268@yahoo.com / calibrationerror94@gmail.com", pageWidth / 2, pageHeight - 7, { align: "center" });
-    
+
     // Add the logo images in the top right corner with error handling
     try {
       // Try to load cc.png, but continue if not available
       try {
         const ccImg = new Image();
-        ccImg.onload = function() {
+        ccImg.onload = function () {
           doc.addImage(ccImg, 'PNG', pageWidth - 60, 5, 25, 15);
         };
-        ccImg.onerror = function() {
+        ccImg.onerror = function () {
           console.warn("Could not load cc.png logo");
         };
         ccImg.src = '/cc.png';
       } catch (logoError) {
         console.warn("Error processing cc.png logo:", logoError);
       }
-      
+
       // Try to load ilac-mra.png, but continue if not available
       try {
         const ilacImg = new Image();
-        ilacImg.onload = function() {
+        ilacImg.onload = function () {
           doc.addImage(ilacImg, 'PNG', pageWidth - 30, 5, 25, 15);
         };
-        ilacImg.onerror = function() {
+        ilacImg.onerror = function () {
           console.warn("Could not load ilac-mra.png logo");
         };
         ilacImg.src = '/ilac-mra.png';
@@ -357,10 +356,10 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     // Try to add company logo in the top left corner
     try {
       const dImg = new Image();
-      dImg.onload = function() {
+      dImg.onload = function () {
         doc.addImage(dImg, 'PNG', 10, 5, 25, 15);
       };
-      dImg.onerror = function() {
+      dImg.onerror = function () {
         console.warn("Could not load Dupdated.png logo");
       };
       dImg.src = '/Dupdated.png';
@@ -380,30 +379,30 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     const accreditationText = "An ISO/IEC 17025:2017 Accredited Calibration Lab by NABL";
     const textWidth = doc.getStringUnitWidth(accreditationText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
     // Position the box to avoid overlap with logos
-    const boxX = pageWidth/2 - 15 - textWidth/2 - 3;
+    const boxX = pageWidth / 2 - 15 - textWidth / 2 - 3;
     const boxY = 12;
     const boxWidth = textWidth + 6;
     const boxHeight = 6;
-    
+
     doc.setDrawColor(0, 102, 204);
     doc.setLineWidth(0.5);
     doc.rect(boxX, boxY, boxWidth, boxHeight);
     // Set text color to #BB6B9E (187,107,158) for the accreditation text
     doc.setTextColor(187, 107, 158); // Set specific RGB values for color #BB6B9E
-    doc.text(accreditationText, pageWidth/2 - 15, 15, { align: "center" });
+    doc.text(accreditationText, pageWidth / 2 - 15, 15, { align: "center" });
     // Reset text color back to default
     doc.setTextColor(0, 0, 0);
-    
+
     // Add the CALIBRATION CERTIFICATE heading
     doc.setFont("helvetica", "normal");
     doc.setFontSize(14);
     doc.text("CALIBRATION CERTIFICATE", pageWidth / 2, 26, { align: "center" });
     doc.setFont("helvetica", "bold");
     doc.setTextColor(25, 118, 210);
-    
+
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(10);
-    
+
     doc.setFont("helvetica", "bold");
     doc.setTextColor(25, 118, 210);
     doc.text("Calibration Certificate No.", 20, 35); // Moved down from 30 to 35
@@ -486,7 +485,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.text(":", 80, y);
     doc.setFont("helvetica", "normal");
     doc.text(certificate.make, 85, y);
-    
+
     y += 5; // Maintained at 5
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 128, 128);
@@ -512,7 +511,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setTextColor(0, 0, 0);
     doc.text("Characterisation and Condition of the item", leftMargin + 5, y);
     y += 5;
-    
+
     // Add characterization
     doc.setTextColor(0, 128, 128);
     doc.text("i)", indentedMargin, y);
@@ -596,7 +595,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     y += 5;
     doc.text("(Traceable to National/International Standards)", leftMargin + 5, y);
     y += 8;
-    
+
     doc.autoTable({
       startY: y,
       head: [['SI no', 'Name', 'Make/Model', 'Serial No.', 'Certificate No.', 'Valid Upto', 'Calibrated By', 'Traceable To']],
@@ -611,7 +610,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
         ref.traceableTo
       ]),
       theme: 'grid',
-      styles: { 
+      styles: {
         fontSize: 8,
         cellPadding: 2,
         lineWidth: 0.1,
@@ -629,24 +628,24 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       // Set a specific width for the table to leave room for signature
       tableWidth: pageWidth - 70, // Make table narrower to make space for signature on right
       // Add a callback to check the table height and adjust signature position
-      didDrawPage: function(data) {
+      didDrawPage: function (data) {
         console.log("Table finalized at Y position:", data.cursor.y);
       }
     });
 
     // Position signature on the right side instead of below the table
     const signatureY = doc.previousAutoTable ? doc.previousAutoTable.finalY - 30 : y + 40;
-    
+
     // Ensure signature is placed properly regardless of table height
-    const rightMargin = pageWidth - 45;    
-    
+    const rightMargin = pageWidth - 45;
+
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("Authorised by", rightMargin, signatureY);
-    
+
     doc.setTextColor(25, 25, 112);
     doc.text("(P.R.SINGHA)", rightMargin, signatureY + 7);
-    
+
     doc.setFont("helvetica", "normal");
     doc.setTextColor(0, 0, 0);
     doc.text("(Technical Manager)", rightMargin, signatureY + 12);
@@ -661,7 +660,7 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.save(`Calibration_Certificate_${certificate.certificateNo.replace(/\//g, '_')}.pdf`);
     console.log("PDF saved successfully");
     return true;
-    
+
   } catch (error) {
     console.error("Error generating PDF:", error);
     return null;
@@ -674,51 +673,51 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
       console.error("No PDF document provided");
       return null;
     }
-    
+
     if (!qrCodeDataUrl) {
       console.warn("No QR code data URL provided, skipping QR code addition");
       return doc;
     }
-    
+
     console.log("Adding QR code to PDF - direct method");
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const qrSize = 30;
-    
+
     // Move QR code position to left bottom instead of center bottom
     const qrX = 5; // Position more to the left
     // Position QR code higher to avoid overlap with the green bottom region
     const qrY = pageHeight - qrSize - 25; // Position to avoid overlap with footer
-    
+
     // Get current page number
     const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
     // Get total number of pages in the document
     const totalPages = doc.internal.getNumberOfPages();
-    
+
     // Add QR code to all pages directly rather than using onload event
     try {
       // Loop through all pages
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
-        
+
         try {
           // Add QR code directly to this page
           doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
-          
+
           if (text) {
             // White background for text to make it more readable and remove green background
             doc.setFillColor(255, 255, 255);
             doc.rect(qrX - 2, qrY + qrSize, qrSize + 4, 10, 'F');
-            
+
             // Add text with smaller font and narrower width
             doc.setFontSize(7);
             doc.setTextColor(0, 0, 0);
-            
+
             // Place text below QR code without background
-            doc.text("Scan this QR code to view the complete certificate", 
-                    qrX + qrSize/2, qrY + qrSize + 5, 
-                    {align: 'center', maxWidth: qrSize*1.5});
-            
+            doc.text("Scan this QR code to view the complete certificate",
+              qrX + qrSize / 2, qrY + qrSize + 5,
+              { align: 'center', maxWidth: qrSize * 1.5 });
+
             // If there are signatures that might overlap with the QR code, adjust their positions
             if (i === 1) {
               // On first page, adjust the signature position to ensure no overlap
@@ -726,7 +725,7 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
               doc.setTextColor(70, 130, 180);
               const signatureX = pageWidth - 45; // Keep signature on the right
               const signatureY = qrY - 15; // Move signature above QR code 
-              
+
               // Re-add signature since it might have been drawn before QR code was added
               doc.text("Authorised by", signatureX, signatureY);
               doc.setTextColor(25, 25, 112);
@@ -742,13 +741,13 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
           // Continue with other pages even if one fails
         }
       }
-      
+
       // Return to the original page
       doc.setPage(currentPage);
     } catch (err) {
       console.error("Error in QR code addition process:", err);
     }
-    
+
     return doc;
   } catch (error) {
     console.error("Error adding QR code to PDF:", error);
@@ -762,35 +761,35 @@ export function compressQrCodeDataUrl(dataUrl) {
     // If the data URL is too large, reduce its quality or size
     if (dataUrl && dataUrl.length > 50000) { // If larger than ~50KB
       console.log("QR code data URL is large, compressing...");
-      
+
       // Create a temporary canvas to resize the QR code
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const img = new Image();
-      
+
       // Set up image loading
       return new Promise((resolve, reject) => {
-        img.onload = function() {
+        img.onload = function () {
           // Make QR code smaller (150x150 instead of larger size)
           canvas.width = 150;
           canvas.height = 150;
-          
+
           // Draw image with smoothing disabled to keep QR code readable
           ctx.imageSmoothingEnabled = false;
           ctx.drawImage(img, 0, 0, 150, 150);
-          
+
           // Get compressed data URL with reduced quality
           const compressedDataUrl = canvas.toDataURL('image/png', 0.6);
           console.log(`Compressed QR code from ${dataUrl.length} to ${compressedDataUrl.length} bytes`);
-          
+
           resolve(compressedDataUrl);
         };
-        
+
         img.onerror = reject;
         img.src = dataUrl;
       });
     }
-    
+
     // If not too large, return as is
     return Promise.resolve(dataUrl);
   } catch (error) {
@@ -806,15 +805,15 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
       ensureProperSpacing: options.ensureProperSpacing || true,
       minimumSignatureSpace: options.minimumSignatureSpace || 25
     };
-    
+
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     const margin = 20;
-    
+
     // Create a light blue background for the entire page
     doc.setFillColor(240, 248, 255);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
-    
+
     // Try to add watermark, but continue if it fails
     try {
       addWatermark(doc, '/watermarkupd.png');
@@ -822,38 +821,38 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
       console.warn("Error adding watermark to calibration results page:", watermarkError);
       // Continue regardless of watermark errors
     }
-    
+
     // Add a greenish background to the top section ending just above the CALIBRATION RESULTS heading
     doc.setFillColor(140, 205, 162); // #8CCDA2
     doc.rect(0, 0, pageWidth, 22, 'F'); // Height ends just before the heading
-    
+
     // Add a matching greenish background to the bottom of the page
     doc.setFillColor(140, 205, 162); // #8CCDA2
     doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
-    
+
     // Add the logo images in the top right corner with error handling
     try {
       // Try to load cc.png, but continue if not available
       try {
         const ccImg = new Image();
-        ccImg.onload = function() {
+        ccImg.onload = function () {
           doc.addImage(ccImg, 'PNG', pageWidth - 60, 5, 25, 15);
         };
-        ccImg.onerror = function() {
+        ccImg.onerror = function () {
           console.warn("Could not load cc.png logo in calibration results");
         };
         ccImg.src = '/cc.png';
       } catch (logoError) {
         console.warn("Error processing cc.png logo in calibration results:", logoError);
       }
-      
+
       // Try to load ilac-mra.png, but continue if not available
       try {
         const ilacImg = new Image();
-        ilacImg.onload = function() {
+        ilacImg.onload = function () {
           doc.addImage(ilacImg, 'PNG', pageWidth - 30, 5, 25, 15);
         };
-        ilacImg.onerror = function() {
+        ilacImg.onerror = function () {
           console.warn("Could not load ilac-mra.png logo in calibration results");
         };
         ilacImg.src = '/ilac-mra.png';
@@ -864,14 +863,14 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
       console.warn("Error processing logo images in calibration results:", imgError);
       // Continue regardless of logo errors
     }
-    
+
     // Try to add company logo in the top left corner
     try {
       const dImg = new Image();
-      dImg.onload = function() {
+      dImg.onload = function () {
         doc.addImage(dImg, 'PNG', 10, 5, 25, 15);
       };
-      dImg.onerror = function() {
+      dImg.onerror = function () {
         console.warn("Could not load Dupdated.png logo in calibration results");
       };
       dImg.src = '/Dupdated.png';
@@ -879,7 +878,7 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
       console.warn("Error processing D logo in calibration results:", imgError);
       // Continue regardless of logo errors
     }
-    
+
     // Add company name and header
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 102, 204);
@@ -891,18 +890,18 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
     const accreditationText = "An ISO/IEC 17025:2017 Accredited Calibration Lab by NABL";
     const textWidth = doc.getStringUnitWidth(accreditationText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
     // Position the box to avoid overlap with logos
-    const boxX = pageWidth/2 - 15 - textWidth/2 - 3;
+    const boxX = pageWidth / 2 - 15 - textWidth / 2 - 3;
     const boxY = 12;
     const boxWidth = textWidth + 6;
     const boxHeight = 6;
-    
+
     doc.setDrawColor(0, 102, 204);
     doc.setLineWidth(0.5);
     doc.rect(boxX, boxY, boxWidth, boxHeight);
-    
+
     // Set text color to #BB6B9E (187,107,158) for the accreditation text
     doc.setTextColor(187, 107, 158); // Set specific RGB values for color #BB6B9E
-    doc.text(accreditationText, pageWidth/2 - 15, 15, { align: "center" });
+    doc.text(accreditationText, pageWidth / 2 - 15, 15, { align: "center" });
     // Reset text color back to default black
     doc.setTextColor(0, 0, 0);
     doc.setFont("helvetica", "bold");
@@ -921,34 +920,34 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
     doc.text("Page: 02 of 02 Pages", margin + 100, 40);
     doc.setFontSize(14);
     doc.text("CALIBRATION RESULTS", pageWidth / 2, 55, { align: "center" });
-    
+
     // Format range with kV unit if not already present
     const formatRange = (rangeValue) => {
       if (!rangeValue) return "Full Range";
-      
+
       // If the range already includes a unit, leave it as is
       if (/[a-zA-Z]/.test(rangeValue)) {
         return rangeValue;
       }
-      
+
       // Otherwise, append "kV" as the unit
       return `${rangeValue} kV`;
     };
-    
+
     let tableData = [];
-    
+
     // Restructured table with new columns as per the provided requirements
     if (product.parameters && product.parameters.length > 0) {
       let rowCounter = 1;
       let lastParameterName = null; // Track last parameter name to avoid duplication
-      
+
       // Group all readings across parameters
       const allReadings = [];
-      
+
       // First collect all readings with their parameter information
       product.parameters.forEach((parameter) => {
         const parameterName = parameter.parameter || "DC high resistance @1000 Volt";
-        
+
         if (parameter.readings && parameter.readings.length > 0) {
           parameter.readings.forEach((reading) => {
             allReadings.push({
@@ -966,16 +965,16 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
           });
         }
       });
-      
+
       // Now process all readings in sequence
       allReadings.forEach((item) => {
         const { parameterName, reading, range } = item;
         const formattedRange = formatRange(range);
         const leastCount = "0.2 kV";
         const rangeWithLeastCount = `${formattedRange}, Least count=${leastCount}`;
-        
+
         let ducValue, stdValue, uncertainty;
-        
+
         if (reading) {
           ducValue = `${reading.rName || "N/A"} ${reading.rUnit || ""}`.trim();
           stdValue = `${reading.mean || "N/A"} ${reading.rUnit || ""}`.trim();
@@ -985,10 +984,10 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
           stdValue = "N/A";
           uncertainty = "N/A";
         }
-        
+
         // Only show parameter name if it's different from the previous one
         const showParameterName = parameterName !== lastParameterName;
-        
+
         tableData.push([
           `${rowCounter}.`,
           showParameterName ? parameterName : "", // Only show parameter name if it's new
@@ -997,34 +996,38 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
           ducValue,
           uncertainty
         ]);
-        
+
         // Update the last parameter name
         lastParameterName = parameterName;
         rowCounter++;
       });
-      
+
     } else {
       // Fallback data if no parameters are found
       console.warn("No calibration parameters found in product data, using default values");
-      
+
       // Example data showing parameter grouping
       const voltageGroups = [
-        {name: "Voltage DC", rows: [
-          {range: "0-600mV/0.1 mV", ducValue: "100.1 mV", stdValue: "100.0000 mV", uncertainty: "0.07%"},
-          {range: "0-6V/0.001 V", ducValue: "1.002 V", stdValue: "1.000000 V", uncertainty: "0.08%"},
-          {range: "0-60V/0.01 V", ducValue: "10.03 V", stdValue: "10.00000 V", uncertainty: "0.09%"},
-          {range: "0-600V/0.1 V", ducValue: "99.8 V", stdValue: "100.0000 V", uncertainty: "0.12%"},
-          {range: "0-1000V/1V", ducValue: "299 V", stdValue: "300.0000 V", uncertainty: "0.23%"},
-          {range: "0-1000V/1V", ducValue: "598 V", stdValue: "600.00 V", uncertainty: "0.16%"},
-          {range: "0-1000V/1V", ducValue: "898 V", stdValue: "900.00 V", uncertainty: "0.14%"}
-        ]},
-        {name: "Current DC", rows: [
-          {range: "0-60mA/0.01 mA", ducValue: "10.1 mA", stdValue: "10.0000 mA", uncertainty: "0.09%"},
-          {range: "0-400mA/0.1 mA", ducValue: "100.3 mA", stdValue: "100.0000 mA", uncertainty: "0.08%"},
-          {range: "0-10A/0.01 A", ducValue: "1.01 A", stdValue: "1.0000 A", uncertainty: "0.12%"}
-        ]}
+        {
+          name: "Voltage DC", rows: [
+            { range: "0-600mV/0.1 mV", ducValue: "100.1 mV", stdValue: "100.0000 mV", uncertainty: "0.07%" },
+            { range: "0-6V/0.001 V", ducValue: "1.002 V", stdValue: "1.000000 V", uncertainty: "0.08%" },
+            { range: "0-60V/0.01 V", ducValue: "10.03 V", stdValue: "10.00000 V", uncertainty: "0.09%" },
+            { range: "0-600V/0.1 V", ducValue: "99.8 V", stdValue: "100.0000 V", uncertainty: "0.12%" },
+            { range: "0-1000V/1V", ducValue: "299 V", stdValue: "300.0000 V", uncertainty: "0.23%" },
+            { range: "0-1000V/1V", ducValue: "598 V", stdValue: "600.00 V", uncertainty: "0.16%" },
+            { range: "0-1000V/1V", ducValue: "898 V", stdValue: "900.00 V", uncertainty: "0.14%" }
+          ]
+        },
+        {
+          name: "Current DC", rows: [
+            { range: "0-60mA/0.01 mA", ducValue: "10.1 mA", stdValue: "10.0000 mA", uncertainty: "0.09%" },
+            { range: "0-400mA/0.1 mA", ducValue: "100.3 mA", stdValue: "100.0000 mA", uncertainty: "0.08%" },
+            { range: "0-10A/0.01 A", ducValue: "1.01 A", stdValue: "1.0000 A", uncertainty: "0.12%" }
+          ]
+        }
       ];
-      
+
       // Convert to table data format
       let rowIndex = 1;
       voltageGroups.forEach(group => {
@@ -1043,9 +1046,9 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
         });
       });
     }
-    
+
     console.log("Restructured calibration results table data:", tableData);
-    
+
     // Create table with new column structure
     doc.autoTable({
       startY: 65,
@@ -1060,7 +1063,7 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
       bodyStyles: {
         fillColor: [240, 255, 240]
       },
-      styles: { 
+      styles: {
         fontSize: 8,
         cellPadding: 2,
         overflow: 'linebreak',
@@ -1076,154 +1079,154 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
       },
       margin: { left: margin, right: margin },
       // Handle page overflow automatically
-      didDrawPage: function(data) {
+      didDrawPage: function (data) {
         // Add page header/footer for any additional pages
         if (data.pageCount > 1) {
           // Reset page background
           doc.setFillColor(240, 248, 255);
           doc.rect(0, 0, pageWidth, pageHeight, 'F');
-          
+
           // Add green header and footer
           doc.setFillColor(140, 205, 162);
           doc.rect(0, 0, pageWidth, 22, 'F');
           doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
-          
+
           // Add header content
           doc.setFont("helvetica", "bold");
           doc.setTextColor(0, 102, 204);
           doc.setFontSize(14);
           doc.text("ERROR DETECTOR", pageWidth / 2, 10, { align: "center" });
-          
+
           doc.setTextColor(0, 0, 0);
           doc.setFontSize(11);
           doc.text(`Calibration Certificate No. : ${certificateNo}`, margin, 30);
           doc.text(`Page: ${data.pageCount} of ${data.pageCount} Pages`, margin + 100, 30);
         }
-        
+
         console.log(`Table finalized on page ${data.pageCount} at Y position:`, data.cursor.y);
       }
     });
-    
+
     // Calculate table end position
     let tableEndY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 200;
     const currentPage = doc.lastAutoTable ? doc.lastAutoTable.pageCount : 1;
-    
+
     // Move to the last page of the table
     if (doc.lastAutoTable && doc.lastAutoTable.pageCount > 1) {
       doc.setPage(doc.lastAutoTable.pageCount);
       tableEndY = doc.lastAutoTable.finalY + 10;
     }
-    
+
     // Add explanatory text
     doc.setFontSize(8);
     doc.setTextColor(0, 0, 0);
     doc.text("*DUC: Device Under Calibration, **C.L: Confidence Level", margin, tableEndY);
     tableEndY += 10;
-    
+
     // Make sure we have enough space for remarks, or move to next page
     if (tableEndY + 50 > pageHeight - 35) {
       doc.addPage();
-      
+
       // Reset background on new page
       doc.setFillColor(240, 248, 255);
       doc.rect(0, 0, pageWidth, pageHeight, 'F');
-      
+
       // Add green header and footer
       doc.setFillColor(140, 205, 162);
       doc.rect(0, 0, pageWidth, 22, 'F');
       doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
-      
+
       // Add header content for new page
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 102, 204);
       doc.setFontSize(14);
       doc.text("ERROR DETECTOR", pageWidth / 2, 10, { align: "center" });
-      
+
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(11);
       doc.text(`Calibration Certificate No. : ${certificateNo}`, margin, 30);
       doc.text(`Page: ${currentPage + 1} of ${currentPage + 1} Pages`, margin + 100, 30);
-      
+
       // Reset position for remarks
       tableEndY = 40;
     }
-    
+
     // Add remarks
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
     doc.text("REMARKS:", margin, tableEndY);
     doc.setFont("helvetica", "normal");
     doc.text("The above insulation tester has been calibrated over its range and readings are tabulated above.", margin + 20, tableEndY);
-    
+
     // Calculate position for the signatures
     tableEndY += 15;
-    
+
     // Check if we have enough space for signatures and notes, add new page if needed
     if (tableEndY + 70 > pageHeight - 25) {
       doc.addPage();
-      
+
       // Reset background on new page
       doc.setFillColor(240, 248, 255);
       doc.rect(0, 0, pageWidth, pageHeight, 'F');
-      
+
       // Add green header and footer
       doc.setFillColor(140, 205, 162);
       doc.rect(0, 0, pageWidth, 22, 'F');
       doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
-      
+
       // Add header content for new page
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 102, 204);
       doc.setFontSize(14);
       doc.text("ERROR DETECTOR", pageWidth / 2, 10, { align: "center" });
-      
+
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(11);
       doc.text(`Calibration Certificate No. : ${certificateNo}`, margin, 30);
       doc.text(`Page: ${currentPage + 1} of ${currentPage + 1} Pages`, margin + 100, 30);
-      
+
       // Reset position for signatures
       tableEndY = 40;
     }
-    
+
     // Add signatures
     doc.setFont("helvetica", "bold");
     doc.text("Calibrated by", margin, tableEndY);
     doc.text("Checked by", pageWidth / 2 - 15, tableEndY);
     doc.text("Authorised by", pageWidth - 60, tableEndY);
-    
+
     tableEndY += 7;
     doc.text("Technical Manager", pageWidth - 60, tableEndY);
-    
+
     // Check if we have enough space for notes
     tableEndY += 15;
     if (tableEndY + 70 > pageHeight - 25) {
       doc.addPage();
-      
+
       // Reset background on new page
       doc.setFillColor(240, 248, 255);
       doc.rect(0, 0, pageWidth, pageHeight, 'F');
-      
+
       // Add green header and footer
       doc.setFillColor(140, 205, 162);
       doc.rect(0, 0, pageWidth, 22, 'F');
       doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
-      
+
       // Add header content for new page
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 102, 204);
       doc.setFontSize(14);
       doc.text("ERROR DETECTOR", pageWidth / 2, 10, { align: "center" });
-      
+
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(11);
       doc.text(`Calibration Certificate No. : ${certificateNo}`, margin, 30);
       doc.text(`Page: ${currentPage + 2} of ${currentPage + 2} Pages`, margin + 100, 30);
-      
+
       // Reset position for notes
       tableEndY = 40;
     }
-    
+
     // Add notes
     doc.text("Note:", margin, tableEndY);
     const notes = [
@@ -1237,67 +1240,67 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
       "Next calibration due date is given as requested by customer.",
       "NABL-133 guidelines are adopted for use of NABL symbol."
     ];
-    
+
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
-    
+
     notes.forEach((note, index) => {
       tableEndY += 7;
-      
+
       // Check if we need to add a new page for remaining notes
       if (tableEndY > pageHeight - 30) {
         doc.addPage();
-        
+
         // Reset background on new page
         doc.setFillColor(240, 248, 255);
         doc.rect(0, 0, pageWidth, pageHeight, 'F');
-        
+
         // Add green header and footer
         doc.setFillColor(140, 205, 162);
         doc.rect(0, 0, pageWidth, 22, 'F');
         doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
-        
+
         // Add header content for new page
         doc.setFont("helvetica", "bold");
         doc.setTextColor(0, 102, 204);
         doc.setFontSize(14);
         doc.text("ERROR DETECTOR", pageWidth / 2, 10, { align: "center" });
-        
+
         doc.setTextColor(0, 0, 0);
         doc.setFontSize(11);
         doc.text(`Calibration Certificate No. : ${certificateNo}`, margin, 30);
         doc.text(`Continued Notes`, margin + 100, 30);
-        
+
         // Reset position for notes
         tableEndY = 40;
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
       }
-      
+
       doc.text(`${index + 1}. ${note}`, margin, tableEndY);
     });
-    
+
     tableEndY += 10;
-    
+
     // Check if we need to add a page for the "END OF CERTIFICATE" text
     if (tableEndY > pageHeight - 30) {
       doc.addPage();
-      
+
       // Reset background on new page
       doc.setFillColor(240, 248, 255);
       doc.rect(0, 0, pageWidth, pageHeight, 'F');
-      
+
       // Add green header and footer
       doc.setFillColor(140, 205, 162);
       doc.rect(0, 0, pageWidth, 22, 'F');
       doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
-      
+
       tableEndY = 40;
     }
-    
+
     doc.setFont("helvetica", "bold");
     doc.text("****------END OF CALIBRATION CERTIFICATE-----****", pageWidth / 2, tableEndY, { align: "center" });
-    
+
     // Add office contact information at the bottom in pink color for all pages
     const totalPages = doc.internal.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
@@ -1307,7 +1310,7 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
       doc.setTextColor(187, 107, 158); // Same pink color as accreditation text
       doc.text("Office: 53/2, Haridevpur Road, Kolkata - 700 082, West Bengal, India", pageWidth / 2, pageHeight - 13, { align: "center" });
       doc.text("Mobile: 9830532452, E-mail: errordetector268@gmail.com / errordetector268@yahoo.com / calibrationerror94@gmail.com", pageWidth / 2, pageHeight - 7, { align: "center" });
-      
+
       // Add watermark to each page
       try {
         addWatermark(doc, '/watermarkupd.png');
@@ -1315,7 +1318,7 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
         console.warn(`Error adding watermark to page ${i}:`, watermarkError);
       }
     }
-    
+
     return doc;
   } catch (error) {
     console.error("Error generating calibration results:", error);
@@ -1338,46 +1341,46 @@ export function addWatermark(doc, watermarkPath) {
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    
+
     try {
       // Create watermark image with error handling
       const watermarkImg = new Image();
-      
+
       // Add error handler to image
-      watermarkImg.onerror = function() {
+      watermarkImg.onerror = function () {
         console.warn(`Could not load watermark image from ${watermarkPath}, skipping watermark`);
       };
-      
-      watermarkImg.onload = function() {
+
+      watermarkImg.onload = function () {
         try {
           // Calculate center position - adjusted upward by 20 units
           const watermarkWidth = pageWidth * 0.6; // 60% of page width
           const watermarkHeight = watermarkWidth * 0.75; // Approximate height based on typical image ratio
           const x = (pageWidth - watermarkWidth) / 2;
           const y = (pageHeight - watermarkHeight) / 2 - 20; // Shifted upward by 20 units
-          
+
           // Add watermark with transparency using GState approach
           // Create a graphics state with 10% opacity
-          const gState = new doc.GState({opacity: 0.1});
+          const gState = new doc.GState({ opacity: 0.1 });
           doc.setGState(gState);
-          
+
           // Add the image with the transparency setting    
           doc.addImage(watermarkImg, 'PNG', x, y, watermarkWidth, watermarkHeight);
-          
+
           // Reset to default graphics state (100% opacity) for subsequent drawings
-          const defaultGState = new doc.GState({opacity: 1.0});
+          const defaultGState = new doc.GState({ opacity: 1.0 });
           doc.setGState(defaultGState);
         } catch (innerError) {
           console.warn("Error applying watermark to PDF:", innerError);
         }
       };
-      
+
       // Set the source to trigger loading
       watermarkImg.src = watermarkPath;
     } catch (imgError) {
       console.warn("Could not create watermark image, skipping:", imgError);
     }
-    
+
     console.log("Watermark process initiated");
     return doc;
   } catch (error) {
@@ -1398,24 +1401,24 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
       console.error("No product selected");
       return null;
     }
-    
+
     // Extract customer data
-    let customerName = selectedProduct._parentForm?.organization || 
-                      selectedProduct.organization || 
-                      selectedProduct.customerName || 
-                      selectedProduct.customer || 
-                      "Unknown Customer";
-    
-    let customerAddress = selectedProduct._parentForm?.address || 
-                         selectedProduct.address || 
-                         selectedProduct.customerAddress || 
-                         "Unknown Address";
-    
-    let productName = selectedProduct.instrumentDescription || 
-                     selectedProduct.name || 
-                     selectedProduct.description || 
-                     "Unknown Product";
-    
+    let customerName = selectedProduct._parentForm?.organization ||
+      selectedProduct.organization ||
+      selectedProduct.customerName ||
+      selectedProduct.customer ||
+      "Unknown Customer";
+
+    let customerAddress = selectedProduct._parentForm?.address ||
+      selectedProduct.address ||
+      selectedProduct.customerAddress ||
+      "Unknown Address";
+
+    let productName = selectedProduct.instrumentDescription ||
+      selectedProduct.name ||
+      selectedProduct.description ||
+      "Unknown Product";
+
     const productMake = selectedProduct.make || "Unknown Make";
     const serialNo = selectedProduct.serialNo || "N/A";
     const srfNo = selectedProduct._parentForm?.srfNo || "Unknown SRF";
@@ -1433,7 +1436,7 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
       methodUsed = "ED/SOP/E-002";
       console.log("Using default methodUsed:", methodUsed);
     }
-    
+
     // Format dates 
     const formatDate = (date) => {
       if (!date) return new Date().toLocaleDateString('en-GB', {
@@ -1454,13 +1457,13 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
       if (/[a-zA-Z]/.test(rangeValue)) {
         return rangeValue;
       }
-      
+
       return `${rangeValue} kV`;
     };
 
     // Generate certificate number - use consistent job number for the same product
     let jobNo;
-    
+
     // Try to use an existing job number if available
     if (selectedProduct.jobNo) {
       jobNo = selectedProduct.jobNo;
@@ -1473,21 +1476,20 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
       }, 0);
       jobNo = Math.abs(hash % 10000).toString().padStart(4, '0');
     }
-    
-    const certificateNo = selectedProduct.certificateNo || 
-                         `ED/CAL/${jobNo}/${
-                           new Date().getMonth() > 3 ? 
-                           `${new Date().getFullYear()}-${new Date().getFullYear() + 1 - 2000}` : 
-                           `${new Date().getFullYear() - 1}-${new Date().getFullYear() - 2000}`
-                         }`;
+
+    const certificateNo = selectedProduct.certificateNo ||
+      `ED/CAL/${jobNo}/${new Date().getMonth() > 3 ?
+        `${new Date().getFullYear()}-${new Date().getFullYear() + 1 - 2000}` :
+        `${new Date().getFullYear() - 1}-${new Date().getFullYear() - 2000}`
+      }`;
 
     const jobNoFromCertificate = certificateNo.split('/')[2];
     // Environmental conditions
     const temperature = selectedProduct.roomTemp || "25±4°C";
     const humidity = selectedProduct.humidity ? `${selectedProduct.humidity}%` : "<60% RH";
     // Make sure temperature has °C symbol
-    const formattedTemperature = temperature.includes("°C") ? temperature : 
-                              (temperature.includes("±") ? temperature.replace("±", "±") + "°C" : temperature + "°C");
+    const formattedTemperature = temperature.includes("°C") ? temperature :
+      (temperature.includes("±") ? temperature.replace("±", "±") + "°C" : temperature + "°C");
     // Condition - retrieve from CSR input without hardcoded default
     let condition = "";
     if (selectedProduct._parentForm && selectedProduct._parentForm.conditionOfProduct) {
@@ -1508,7 +1510,7 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     if (selectedProduct.calibrationDataSheet && selectedProduct.calibrationDataSheet.Location) {
       location = selectedProduct.calibrationDataSheet.Location;
       console.log("Using Location from calibration datasheet:", location);
-    // Then check in CSC/CSR form fields
+      // Then check in CSC/CSR form fields
     } else if (selectedProduct._parentForm && selectedProduct._parentForm.calibrationFacilityAvailable) {
       location = selectedProduct._parentForm.calibrationFacilityAvailable;
       console.log("Using calibrationFacilityAvailable from parent form:", location);
@@ -1545,7 +1547,7 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     if (!completionDate) {
       completionDate = formatDate();
     }
-    
+
     // Parse the completion date string to create a Date object
     const completionDateParts = completionDate.split('.');
     const completionDateObj = new Date(
@@ -1553,12 +1555,12 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
       parseInt(completionDateParts[1]) - 1,
       parseInt(completionDateParts[0])
     );
-    
+
     // Calculate next calibration date as 1 year from completion date
     const nextCalibrationDateObj = new Date(completionDateObj);
     nextCalibrationDateObj.setFullYear(completionDateObj.getFullYear() + 1);
     const nextCalibrationDate = formatDate(nextCalibrationDateObj);
-    
+
     // Calculate valid up to date as 11 months from completion date
     const validUpToDateObj = new Date(completionDateObj);
     validUpToDateObj.setMonth(completionDateObj.getMonth() + 11);
@@ -1566,43 +1568,43 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
 
     // Reference standards
     const referenceStandards = [];
-    
+
     if (selectedProduct.referenceStandards?.length > 0) {
       // Make a deep copy and ensure each standard has the correct validUpTo date
       referenceStandards.push(...selectedProduct.referenceStandards.map(std => ({
         ...std,
         validUpTo: validUpToDate // Always use validUpToDate from completion date
       })));
-    } 
-    else if (selectedProduct.parameters?.length > 0 && 
-             selectedProduct.parameters[0].referenceStandards) {
+    }
+    else if (selectedProduct.parameters?.length > 0 &&
+      selectedProduct.parameters[0].referenceStandards) {
       // Make a deep copy and ensure each standard has the correct validUpTo date
       referenceStandards.push(...selectedProduct.parameters[0].referenceStandards.map(std => ({
         ...std,
         validUpTo: validUpToDate // Always use validUpToDate from completion date
       })));
-    } 
+    }
     else if (selectedProduct._parentForm?.referenceStandards?.length > 0) {
       // Make a deep copy and ensure each standard has the correct validUpTo date
       referenceStandards.push(...selectedProduct._parentForm.referenceStandards.map(std => ({
         ...std,
         validUpTo: validUpToDate // Always use validUpToDate from completion date
       })));
-    } 
+    }
     else if (selectedProduct.calibrationDataSheet?.referenceStandards?.length > 0) {
       // Make a deep copy and ensure each standard has the correct validUpTo date
       referenceStandards.push(...selectedProduct.calibrationDataSheet.referenceStandards.map(std => ({
         ...std,
         validUpTo: validUpToDate // Always use validUpToDate from completion date
       })));
-    } 
+    }
     else if (selectedProduct._parentForm?.calibrationDataSheet?.referenceStandards?.length > 0) {
       // Make a deep copy and ensure each standard has the correct validUpTo date
       referenceStandards.push(...selectedProduct._parentForm.calibrationDataSheet.referenceStandards.map(std => ({
         ...std,
         validUpTo: validUpToDate // Always use validUpToDate from completion date
       })));
-    } 
+    }
     else {
       // Create reference standard entries using the product details but with more specific fields
       const standardsList = [
@@ -1634,13 +1636,13 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
           traceableTo: "NPL"
         }
       ];
-      
+
       // Add all reference standards to the array
       standardsList.forEach(std => {
         referenceStandards.push(std);
       });
     }
-    
+
     // Prepare certificate data
     const certificate = {
       certificateNo: certificateNo,
@@ -1652,9 +1654,9 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
       description: productName,
       make: productMake,
       serialNo: serialNo,
-      range: selectedProduct.parameters?.length > 0 ? 
-             `${formatRange(selectedProduct.parameters[0].ranges || "Full Range")}, Least count=0.2 kV` : 
-             "0-5 kV, Least count=0.2 kV",
+      range: selectedProduct.parameters?.length > 0 ?
+        `${formatRange(selectedProduct.parameters[0].ranges || "Full Range")}, Least count=0.2 kV` :
+        "0-5 kV, Least count=0.2 kV",
       condition: condition,
       receivedDate: formatDate(selectedProduct._parentForm?.date),
       completionDate: completionDate,
@@ -1673,12 +1675,12 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     const pageHeight = doc.internal.pageSize.height;
     const leftMargin = 20;
     // ===== FIRST PAGE =====
-    
+
     // Title
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
     doc.text("CALIBRATION CERTIFICATE", pageWidth / 2, 20, { align: "center" });
-    
+
     // Certificate details
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
@@ -1691,10 +1693,10 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     doc.text(":", 80, 35);
     doc.setFont("helvetica", "normal");
     doc.text(certificate.serviceRequestFormNo, 85, 35);
-    
+
     doc.setFont("helvetica", "bold");
     doc.text("ULR-CC373125000000298F", leftMargin, 40);
-    
+
     doc.setFont("helvetica", "bold");
     doc.text("Date of Issue", 140, 30);
     doc.text(":", 165, 30);
@@ -1709,7 +1711,7 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     // Separator
     doc.setLineWidth(0.5);
     doc.line(leftMargin, 45, pageWidth - leftMargin, 45);
-    
+
     let y = 55;
     const indentedMargin = leftMargin + 5;
     // 1. Certificate Issued to
@@ -1723,7 +1725,7 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     if (addressLines.length > 1) {
       y += 5;
       doc.text(addressLines[0], 85, y);
-      
+
       for (let i = 1; i < addressLines.length; i++) {
         y += 5;
         doc.text(addressLines[i].trim(), 85, y);
@@ -1761,13 +1763,13 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     doc.text(certificate.serialNo, 85, y);
     // Range
     y += 7;
-    doc.setFont("helvetica", "bold");
-    doc.text("iv)", indentedMargin, y);
-    doc.text("Range", indentedMargin + 10, y);
-    doc.text(":", 80, y);
-    doc.setFont("helvetica", "normal");
-    doc.text(certificate.range, 85, y);
-    y += 10;
+    // doc.setFont("helvetica", "bold");
+    // doc.text("iv)", indentedMargin, y);
+    // doc.text("Range", indentedMargin + 10, y);
+    // doc.text(":", 80, y);
+    // doc.setFont("helvetica", "normal");
+    // // doc.text(certificate.range, 85, y);
+    // y += 10;
     // 3. Characterization and Condition
     doc.setFont("helvetica", "bold");
     doc.text("3. Characterisation and Condition of the item", leftMargin, y);
@@ -1840,40 +1842,37 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     doc.autoTable({
       startY: y,
       head: [['SI no', 'Name', 'Make/Model', 'Serial No.', 'Certificate No.', 'Valid Upto', 'Calibrated By', 'Traceable To']],
-      body: certificate.referenceStandards.map((ref, index) => [
+      body: selectedProduct.detailsOfMasterUsed.map((ref, index) => [
         `${index + 1}.`,
-        ref.description,
-        ref.makeModel,
-        ref.slNoIdNo,
-        ref.calibrationCertificateNo,
-        ref.validUpTo || ref.validUpToDate || validUpToDate,
-        ref.calibratedBy,
-        ref.traceableTo
+        ref.name,
+        ref.MakeModel,
+        ref.serialNo,
+        ref.CertificateNo,
+        ref.ValidUpto,
+        ref.CalibratedBy,
+        ref.TraceableTo
       ]),
       theme: 'grid',
-      styles: { 
+      styles: {
         fontSize: 8,
         cellPadding: 2
       },
-      // Set a specific width for the table to leave room for signature
-      tableWidth: pageWidth - 70, // Make table narrower
-      // Add a callback to check the table height and adjust signature position
-      didDrawPage: function(data) {
+      margin: { left: leftMargin, right: leftMargin }, // Set both left and right margins equal
+      didDrawPage: function (data) {
         console.log("Simplified table finalized at Y position:", data.cursor.y);
       }
     });
-    
-    // Position signature on the right side instead of below the table
-    const simplifiedSignatureY = doc.previousAutoTable ? doc.previousAutoTable.finalY - 30 : y + 40;
-    
+
+    // Position signature at the bottom right of the page
+    const footerY = pageHeight - 35; // Position 35 units from bottom of page
+    const rightMargin = pageWidth - 45; // Position 45 units from right edge
+
     doc.setFont("helvetica", "bold");
-    const rightMargin = pageWidth - 45;
-    doc.text("Authorised by", rightMargin, simplifiedSignatureY);
-    
-    doc.text("(P.R.SINGHA)", rightMargin, simplifiedSignatureY + 7);
-    
+    doc.text("Authorised by", rightMargin, footerY);
+    doc.text("(P.R.SINGHA)", rightMargin, footerY + 7);
+
     doc.setFont("helvetica", "normal");
-    doc.text("(Technical Manager)", rightMargin, simplifiedSignatureY + 12);
+    doc.text("(Technical Manager)", rightMargin, footerY + 12);
     // ===== SECOND PAGE =====
     doc.addPage();
     // ===== SECOND PAGE =====
@@ -1881,7 +1880,7 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
     doc.text("CALIBRATION CERTIFICATE", pageWidth / 2, 20, { align: "center" });
-    
+
     // Certificate details
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
@@ -1896,7 +1895,7 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     doc.text(certificate.jobNo, 50, 35);
     doc.setFont("helvetica", "bold");
     doc.text("ULR-CC373125000000298F", leftMargin, 40);
-    
+
     doc.setFont("helvetica", "bold");
     doc.text("Date of Issue:", 140, 30);
     doc.text(":", 165, 30);
@@ -1908,17 +1907,17 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     doc.text(":", 155, 35);
     doc.setFont("helvetica", "normal");
     doc.text(certificate.serialNo, 160, 35);
-    
+
     doc.setFont("helvetica", "bold");
     doc.text("Page:", 140, 40);
     doc.text(":", 155, 40);
     doc.setFont("helvetica", "normal");
     doc.text("02 of 02 Pages", 160, 40);
-    
+
     // Separator
     doc.setLineWidth(0.5);
     doc.line(leftMargin, 45, pageWidth - leftMargin, 45);
-    
+
     // CALIBRATION RESULTS heading
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
@@ -1926,11 +1925,11 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     // Electro-technical Calibration subheading
     doc.setFontSize(12);
     doc.text("Electro-technical Calibration", leftMargin, 70);
-    
+
     // Generate calibration data
     let tableData = [];
     // If there's saved calibration data in the product, use it
-    if (selectedProduct.parameters && selectedProduct.parameters.length > 0) {      
+    if (selectedProduct.parameters && selectedProduct.parameters.length > 0) {
       let rowCounter = 1;
       // Process all parameters
       selectedProduct.parameters.forEach((parameter, paramIndex) => {
@@ -1939,7 +1938,7 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
         const rangeDetails = formatRange(rangeValue);
         const leastCount = "0.2 kV"; // Hardcoded least count
         const fullRangeInfo = `${parameterDetails} ${rangeDetails}, Least count=${leastCount}`;
-        
+
         // If the parameter has readings
         if (parameter.readings && parameter.readings.length > 0) {
           // First row of each parameter includes the parameter name
@@ -1974,7 +1973,7 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
             const stdValue = (value * 1.02).toFixed(4);
             const fullStdValue = `${stdValue} ${rangeValue.replace(/[0-9\s-]/g, '')}`;
             const uncertainty = `${(12.11 - index * 1.2).toFixed(2)}%`;
-            
+
             if (index === 0) {
               tableData.push([
                 `${rowCounter}.`,
@@ -2002,9 +2001,9 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
       const rangeDetails = "0-5 kV";
       const leastCount = "0.2 kV"; // Hardcoded least count
       const fullRangeInfo = `${parameterDetails} ${rangeDetails}, Least count=${leastCount}`;
-      
+
       const values = [1, 2, 3, 4, 5];
-      
+
       values.forEach((value, index) => {
         if (index === 0) {
           tableData.push([
@@ -2025,7 +2024,7 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
         }
       });
     }
-    
+
     // Create calibration results table with data
     doc.autoTable({
       startY: 75,
@@ -2039,19 +2038,19 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
         fontStyle: 'bold',
       }
     });
-    
+
     let tableEndY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 5 : 150;
-    
+
     // DUC explanation
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     doc.text("*DUC=Device Under Calibration, **C.L= Confidence Level", leftMargin, tableEndY);
-    
+
     // Separator
     tableEndY += 5;
     doc.setLineWidth(0.3);
     doc.line(leftMargin, tableEndY, pageWidth - leftMargin, tableEndY);
-    
+
     // Remarks
     tableEndY += 10;
     doc.setFontSize(10);
@@ -2061,11 +2060,11 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     // Make the remarks more specific to the product type
     let remarksText = `The above ${certificate.description} has been calibrated over its range and the readings are tabulated above.`;
     doc.text(remarksText, leftMargin + 25, tableEndY);
-    
+
     // Separator
     tableEndY += 10;
     doc.line(leftMargin, tableEndY, pageWidth - leftMargin, tableEndY);
-    
+
     // Notes
     tableEndY += 10;
     doc.text("Note:", leftMargin, tableEndY);
@@ -2082,24 +2081,24 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
       "Next calibration due date is given as requested by customer.",
       "NABL-133 guidelines are adopted for use of NABL symbol."
     ];
-    
+
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
-    
+
     notes.forEach((note, index) => {
       tableEndY += 5;
       doc.text(`${index + 1}. ${note}`, leftMargin, tableEndY);
     });
-    
+
     // Separator
     tableEndY += 10;
     doc.line(leftMargin, tableEndY, pageWidth - leftMargin, tableEndY);
-    
+
     // End of certificate
     tableEndY += 10;
     doc.setFont("helvetica", "bold");
     doc.text("****------END OF CALIBRATION CERTIFICATE-----****", pageWidth / 2, tableEndY, { align: "center" });
-    
+
     // Save or return the document
     if (returnDoc) {
       return doc;
@@ -2107,7 +2106,7 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
 
     doc.save(`Calibration_Certificate_${certificate.certificateNo.replace(/\//g, '_')}.pdf`);
     return true;
-    
+
   } catch (error) {
     console.error("Error generating simplified certificate:", error);
     return null;
