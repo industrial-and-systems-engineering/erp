@@ -499,11 +499,13 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 128, 128);
     doc.text("iv)", indentedMargin, y);
-    doc.text("Range", indentedMargin + 10, y);
+    doc.text("Model", indentedMargin + 10, y);
     doc.setTextColor(0, 0, 0);
     doc.text(":", 80, y);
     doc.setFont("helvetica", "normal");
-    doc.text(certificate.range, 85, y);
+    const modelValue = certificate.makeModel || selectedProduct.makeModel || selectedProduct.model || "N/A";
+    doc.text(modelValue, 85, y);
+
     y += 8; // Adjusted spacing
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
@@ -1786,15 +1788,15 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     doc.text(":", 80, y);
     doc.setFont("helvetica", "normal");
     doc.text(certificate.serialNo, 85, y);
-    // Range
+    // Model (instead of Range)
     y += 7;
-    // doc.setFont("helvetica", "bold");
-    // doc.text("iv)", indentedMargin, y);
-    // doc.text("Range", indentedMargin + 10, y);
-    // doc.text(":", 80, y);
-    // doc.setFont("helvetica", "normal");
-    // // doc.text(certificate.range, 85, y);
-    // y += 10;
+    doc.setFont("helvetica", "bold");
+    doc.text("iv)", indentedMargin, y);
+    doc.text("Model", indentedMargin + 10, y);
+    doc.text(":", 80, y);
+    doc.setFont("helvetica", "normal");
+    const modelValue = certificate.makeModel || selectedProduct.makeModel || selectedProduct.model || "N/A";
+    doc.text(modelValue, 85, y);
     // 3. Characterization and Condition
     doc.setFont("helvetica", "bold");
     doc.text("3. Characterisation and Condition of the item", leftMargin, y);
