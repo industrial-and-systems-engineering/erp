@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
-export default function generatePdf(selectedProduct, returnDoc = false, customCertificateNo = null) {
+export default function generatePdf(selectedProduct, returnDoc = false, customCertificateNo = null, qrCodeDataUrl = null) {
   try {
     console.log("generatePdf function called");
 
@@ -625,13 +625,14 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
       bodyStyles: {
         fillColor: [240, 255, 240]
       },
-      // Set a specific width for the table to leave room for signature
-      tableWidth: pageWidth - 70, // Make table narrower to make space for signature on right
-      // Add a callback to check the table height and adjust signature position
+      tableWidth: pageWidth - 70,
       didDrawPage: function (data) {
         console.log("Table finalized at Y position:", data.cursor.y);
       }
     });
+
+    // ======= Remove old signature/QR code code and add responsive block =======
+    addQrCodeAndSignaturesResponsively(doc, qrCodeDataUrl, "Scan this QR code to view the complete certificate");
 
     // Position signature on the right side instead of below the table
     const signatureY = doc.previousAutoTable ? doc.previousAutoTable.finalY - 30 : y + 40;
@@ -667,6 +668,8 @@ export default function generatePdf(selectedProduct, returnDoc = false, customCe
   }
 }
 
+// This code should be added to your pdfGeneration.js file
+
 export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
   try {
     if (!doc) {
@@ -682,12 +685,15 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
     console.log("Adding QR code to PDF - direct method");
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const qrSize = 30;
+    
+    // Reduce the QR code size to prevent overlap with table
+    const qrSize = 25; // Smaller QR code size
 
-    // Move QR code position to left bottom instead of center bottom
+    // Position QR code at the left bottom but with more space from the bottom
+    // to avoid overlap with the table and green footer
     const qrX = 5; // Position more to the left
-    // Position QR code higher to avoid overlap with the green bottom region
-    const qrY = pageHeight - qrSize - 25; // Position to avoid overlap with footer
+    // Higher position to avoid overlap with the table
+    const qrY = pageHeight - qrSize - 40; // More space from bottom 
 
     // Get current page number
     const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
@@ -705,36 +711,20 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
           doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
 
           if (text) {
-            // White background for text to make it more readable and remove green background
+            // White background for text to make it more readable
             doc.setFillColor(255, 255, 255);
             doc.rect(qrX - 2, qrY + qrSize, qrSize + 4, 10, 'F');
 
             // Add text with smaller font and narrower width
-            doc.setFontSize(7);
+            doc.setFontSize(6); // Even smaller font
             doc.setTextColor(0, 0, 0);
 
-            // Place text below QR code without background
+            // Place text below QR code
             doc.text("Scan this QR code to view the complete certificate",
               qrX + qrSize / 2, qrY + qrSize + 5,
-              { align: 'center', maxWidth: qrSize * 1.5 });
-
-            // If there are signatures that might overlap with the QR code, adjust their positions
-            if (i === 1) {
-              // On first page, adjust the signature position to ensure no overlap
-              doc.setFont("helvetica", "bold");
-              doc.setTextColor(70, 130, 180);
-              const signatureX = pageWidth - 45; // Keep signature on the right
-              const signatureY = qrY - 15; // Move signature above QR code 
-
-              // Re-add signature since it might have been drawn before QR code was added
-              doc.text("Authorised by", signatureX, signatureY);
-              doc.setTextColor(25, 25, 112);
-              doc.text("(P.R.SINGHA)", signatureX, signatureY + 7);
-              doc.setFont("helvetica", "normal");
-              doc.setTextColor(0, 0, 0);
-              doc.text("(Technical Manager)", signatureX, signatureY + 12);
-            }
+              { align: 'center', maxWidth: qrSize * 1.2 });
           }
+          
           console.log(`QR code added successfully to page ${i}`);
         } catch (imgError) {
           console.warn(`Error adding QR code to page ${i}:`, imgError);
@@ -755,7 +745,42 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
   }
 }
 
-// Add a function to compress QR code data URL to reduce storage size
+// Add a new function to handle signatures separately
+export function addSignaturesToPdf(doc) {
+  try {
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    
+    // Get total number of pages in the document
+    const totalPages = doc.internal.getNumberOfPages();
+    
+    // Only add signatures to the first page
+    doc.setPage(1);
+    
+    // Position signatures on the right side, away from the QR code
+    const signatureX = pageWidth - 45; // Keep signature on the right
+    const signatureY = pageHeight - 55; // Position signature higher
+    
+    // Add signature text
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(70, 130, 180);
+    doc.text("Authorised by", signatureX, signatureY);
+    
+    doc.setTextColor(25, 25, 112);
+    doc.text("(P.R.SINGHA)", signatureX, signatureY + 7);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(0, 0, 0);
+    doc.text("(Technical Manager)", signatureX, signatureY + 12);
+    
+    return doc;
+  } catch (error) {
+    console.error("Error adding signatures to PDF:", error);
+    return doc; // Return doc even if there's an error
+  }
+}
+
+// This function remains unchanged
 export function compressQrCodeDataUrl(dataUrl) {
   try {
     // If the data URL is too large, reduce its quality or size
@@ -2119,5 +2144,84 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
   } catch (error) {
     console.error("Error generating simplified certificate:", error);
     return null;
+  }
+}
+
+// ======= Responsive QR & Signature Helpers =======
+
+export function addQrCodeAndSignaturesResponsively(doc, qrCodeDataUrl, text) {
+  try {
+    if (!doc) {
+      console.error("No PDF document provided");
+      return null;
+    }
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const qrSize = 25;
+    const margin = 10;
+    const bottomMargin = 20;
+    const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      const currentY = doc.lastAutoTable?.finalY || doc.internal.pageSize.getHeight() - 100;
+      const availableSpace = pageHeight - currentY - bottomMargin;
+      const requiredSpace = qrSize + 30;
+      let qrY, signatureY;
+      if (availableSpace >= requiredSpace) {
+        qrY = currentY + margin;
+        signatureY = qrY;
+      } else {
+        doc.addPage();
+        qrY = margin;
+        signatureY = qrY;
+      }
+      const containerX = margin;
+      const containerY = qrY;
+      const containerWidth = pageWidth - (2 * margin);
+      const containerHeight = qrSize + 20;
+      // QR code
+      const qrX = containerX + 5;
+      if (qrCodeDataUrl) {
+        doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+        if (text) {
+          doc.setFontSize(6);
+          doc.setTextColor(0, 0, 0);
+          doc.text("Scan this QR code to view the complete certificate",
+            qrX + qrSize / 2, qrY + qrSize + 8,
+            { align: 'center', maxWidth: qrSize * 1.2 });
+        }
+      }
+      // Signature block
+      const signatureX = containerX + containerWidth - 80;
+      addSignatureBlock(doc, signatureX, signatureY);
+      doc.lastAutoTable = doc.lastAutoTable || {};
+      doc.lastAutoTable.finalY = Math.max(qrY + containerHeight, doc.lastAutoTable.finalY || 0);
+    }
+    doc.setPage(currentPage);
+    return doc;
+  } catch (error) {
+    console.error("Error in responsive layout:", error);
+    return doc;
+  }
+}
+
+function addSignatureBlock(doc, x, y) {
+  try {
+    const signatureWidth = 70;
+    const signatureHeight = 25;
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(70, 130, 180);
+    doc.setFontSize(8);
+    doc.text("Authorised by", x + 5, y + 8);
+    doc.setTextColor(25, 25, 112);
+    doc.setFontSize(9);
+    doc.text("(P.R.SINGHA)", x + 5, y + 15);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(7);
+    doc.text("(Technical Manager)", x + 5, y + 22);
+  } catch (error) {
+    console.error("Error adding signature block:", error);
   }
 }
