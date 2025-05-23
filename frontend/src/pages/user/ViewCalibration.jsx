@@ -534,11 +534,12 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 128, 128);
       doc.text("iv)", indentedMargin, y);
-      doc.text("Range", indentedMargin + 10, y);
+      doc.text("Model", indentedMargin + 10, y);
       doc.setTextColor(0, 0, 0);
       doc.text(":", 80, y);
       doc.setFont("helvetica", "normal");
-      doc.text(range, 85, y);
+      const modelValue = product.makeModel || product.model || "N/A";
+      doc.text(modelValue, 85, y);
 
       let condition = "";
       if (product._parentForm && product._parentForm.conditionOfProduct) {
