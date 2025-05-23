@@ -1,7 +1,19 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
-export default function generatePdf(selectedProduct, returnDoc = false, customCertificateNo = null, qrCodeDataUrl = null) {
+// ======= Helper function for image DataURL =======
+export async function getImageDataUrl(path) {
+  const response = await fetch(path);
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+export default async function generatePdf(selectedProduct, returnDoc = false, customCertificateNo = null, qrCodeDataUrl = null) {
   try {
     console.log("generatePdf function called");
 
@@ -1358,61 +1370,37 @@ export function generateCalibrationResults(doc, product, certificateNo, jobNo, o
  * @param {jsPDF} doc - The jsPDF document instance
  * @param {string} watermarkPath - Path to the watermark image
  */
-export function addWatermark(doc, watermarkPath) {
+export function addWatermark(doc, watermarkDataUrl) {
   try {
-    // Check if watermark path is valid before proceeding
-    if (!watermarkPath) {
-      console.log("No watermark path provided, skipping watermark");
+    if (!watermarkDataUrl) {
+      console.log("No watermark dataUrl provided, skipping watermark");
       return doc;
     }
-
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-
     try {
-      // Create watermark image with error handling
-      const watermarkImg = new Image();
-
-      // Add error handler to image
-      watermarkImg.onerror = function () {
-        console.warn(`Could not load watermark image from ${watermarkPath}, skipping watermark`);
-      };
-
-      watermarkImg.onload = function () {
-        try {
-          // Calculate center position - adjusted upward by 20 units
-          const watermarkWidth = pageWidth * 0.6; // 60% of page width
-          const watermarkHeight = watermarkWidth * 0.75; // Approximate height based on typical image ratio
-          const x = (pageWidth - watermarkWidth) / 2;
-          const y = (pageHeight - watermarkHeight) / 2 - 20; // Shifted upward by 20 units
-
-          // Add watermark with transparency using GState approach
-          // Create a graphics state with 10% opacity
-          const gState = new doc.GState({ opacity: 0.1 });
-          doc.setGState(gState);
-
-          // Add the image with the transparency setting    
-          doc.addImage(watermarkImg, 'PNG', x, y, watermarkWidth, watermarkHeight);
-
-          // Reset to default graphics state (100% opacity) for subsequent drawings
-          const defaultGState = new doc.GState({ opacity: 1.0 });
-          doc.setGState(defaultGState);
-        } catch (innerError) {
-          console.warn("Error applying watermark to PDF:", innerError);
-        }
-      };
-
-      // Set the source to trigger loading
-      watermarkImg.src = watermarkPath;
+      // Center position
+      const watermarkWidth = pageWidth * 0.6;
+      const watermarkHeight = watermarkWidth * 0.75;
+      const x = (pageWidth - watermarkWidth) / 2;
+      const y = (pageHeight - watermarkHeight) / 2 - 20;
+      // Transparency
+      if (doc.setGState) {
+        const gState = new doc.GState({ opacity: 0.1 });
+        doc.setGState(gState);
+      }
+      doc.addImage(watermarkDataUrl, 'PNG', x, y, watermarkWidth, watermarkHeight);
+      if (doc.setGState) {
+        const defaultGState = new doc.GState({ opacity: 1.0 });
+        doc.setGState(defaultGState);
+      }
     } catch (imgError) {
-      console.warn("Could not create watermark image, skipping:", imgError);
+      console.warn("Could not add watermark image, skipping:", imgError);
     }
-
-    console.log("Watermark process initiated");
     return doc;
   } catch (error) {
     console.error("Error in watermark function:", error);
-    return doc; // Return doc even if there's an error
+    return doc;
   }
 }
 

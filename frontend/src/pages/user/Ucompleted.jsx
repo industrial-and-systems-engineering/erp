@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Ucard from './components/Ucard.jsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import generatePdf, { generateCalibrationResults, generateSimplifiedCertificate, addQrCodeToPdf, addSignaturesToPdf } from './utils/pdfGeneration.js';
+import generatePdf, { generateCalibrationResults, generateSimplifiedCertificate, addQrCodeToPdf, addSignaturesToPdf, getImageDataUrl } from './utils/pdfGeneration.js';
 import QRCode from 'qrcode';
 
 const Ucompleted = () => {
@@ -174,10 +174,16 @@ const Ucompleted = () => {
         alert("Could not generate QR code, but will continue with PDF generation.");
       }
 
+      // Preload images
+      const logoDataUrl = await getImageDataUrl('/Dupdated.png');
+      const watermarkDataUrl = await getImageDataUrl('/watermarkupd.png');
+      const ilacDataUrl = await getImageDataUrl('/ilac-mra.png');
+      const ccDataUrl = await getImageDataUrl('/cc.png');
+
       // Create PDF document
       try {
         // Generate first page with the enhanced product data
-        const doc = await generatePdf(selectedProduct, true, certificateNo, qrCodeDataUrl);
+        const doc = await generatePdf(selectedProduct, true, certificateNo, qrCodeDataUrl, { logoDataUrl, watermarkDataUrl, ilacDataUrl, ccDataUrl });
         if (!doc) {
           throw new Error("Failed to generate PDF document");
         }
