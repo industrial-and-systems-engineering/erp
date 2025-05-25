@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import generatePdf, { generateCalibrationResults, addWatermark, addQrCodeToPdf } from './utils/pdfGeneration.js';
+import generatePdf, { generateCalibrationResults, addWatermark, addQrCodeToPdf, getImageDataUrl } from './utils/pdfGeneration.js';
 
 const ViewCalibration = () => {
   const { documentId } = useParams();
@@ -117,6 +117,12 @@ const ViewCalibration = () => {
       const { product, certificateNo, jobNo } = data;
       console.log(`Using job number ${jobNo} from stored certificate data for consistency`);
 
+      // Preload images
+      const logoDataUrl = await getImageDataUrl('/Dupdated.png');
+      const watermarkDataUrl = await getImageDataUrl('/watermarkupd.png');
+      const ilacDataUrl = await getImageDataUrl('/ilac-mra.png');
+      const ccDataUrl = await getImageDataUrl('/cc.png');
+
       // Make sure we have the QR code data
       let qrCodeDataUrl = null;
       if (product.qrCodeDataUrl) {
@@ -146,31 +152,20 @@ const ViewCalibration = () => {
       const doc = new jsPDF();
 
       // Generate first page
-      await generateFirstPage(doc, product, certificateNo, jobNo);
+      await generateFirstPage(doc, product, certificateNo, jobNo, { logoDataUrl, watermarkDataUrl, ilacDataUrl, ccDataUrl });
       console.log("First page generated successfully");
 
       // Add second page
       doc.addPage();
 
       // Generate calibration results on second page
-      generateCalibrationResults(doc, product, certificateNo, jobNo, {
-        ensureProperSpacing: true, // Flag to enable automatic spacing adjustment
-        minimumSignatureSpace: 25  // Minimum space required between table and signature
-      });
+      generateCalibrationResults(doc, product, certificateNo, jobNo, { logoDataUrl, watermarkDataUrl, ilacDataUrl, ccDataUrl });
       console.log("Second page (calibration results) generated successfully");
 
       // Add watermark to both pages
-      try {
-        // Add watermark to first page
-        doc.setPage(1);
-        addWatermark(doc, '/watermarkupd.png');
-
-        // Add watermark to second page
-        doc.setPage(2);
-        addWatermark(doc, '/watermarkupd.png');
-      } catch (watermarkError) {
-        console.warn("Error adding watermark to merged PDF:", watermarkError);
-        // Continue despite watermark error
+      for (let i = 1; i <= doc.internal.getNumberOfPages(); i++) {
+        doc.setPage(i);
+        addWatermark(doc, watermarkDataUrl);
       }
 
       // Add QR code to both pages if available
@@ -206,7 +201,7 @@ const ViewCalibration = () => {
     }
   };
 
-  const generateFirstPage = async (doc, product, certificateNo, jobNo) => {
+  const generateFirstPage = async (doc, product, certificateNo, jobNo, { logoDataUrl, watermarkDataUrl, ilacDataUrl, ccDataUrl }) => {
     try {
       let customerName = "Unknown Customer";
       if (product._parentForm && product._parentForm.organization) {
@@ -343,7 +338,7 @@ const ViewCalibration = () => {
         dImg.onerror = function () {
           console.warn("Could not load Dupdated.png logo in generateFirstPage");
         };
-        dImg.src = '/Dupdated.png';
+        dImg.src = logoDataUrl;
       } catch (imgError) {
         console.warn("Error processing D logo in generateFirstPage:", imgError);
       }
@@ -359,7 +354,7 @@ const ViewCalibration = () => {
           ilacImg.onerror = function () {
             console.warn("Could not load ilac-mra.png logo in generateFirstPage");
           };
-          ilacImg.src = '/ilac-mra.png';
+          ilacImg.src = ilacDataUrl;
         } catch (logoError) {
           console.warn("Error processing ilac-mra.png in generateFirstPage:", logoError);
         }
@@ -373,7 +368,7 @@ const ViewCalibration = () => {
           ccImg.onerror = function () {
             console.warn("Could not load cc.png logo in generateFirstPage");
           };
-          ccImg.src = '/cc.png';
+          ccImg.src = ccDataUrl;
         } catch (logoError) {
           console.warn("Error processing cc.png in generateFirstPage:", logoError);
         }
@@ -534,11 +529,12 @@ const ViewCalibration = () => {
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 128, 128);
       doc.text("iv)", indentedMargin, y);
-      doc.text("Range", indentedMargin + 10, y);
+      doc.text("Model", indentedMargin + 10, y);
       doc.setTextColor(0, 0, 0);
       doc.text(":", 80, y);
       doc.setFont("helvetica", "normal");
-      doc.text(range, 85, y);
+      const modelValue = product.makeModel || product.model || "N/A";
+      doc.text(modelValue, 85, y);
 
       let condition = "";
       if (product._parentForm && product._parentForm.conditionOfProduct) {
@@ -823,7 +819,7 @@ const ViewCalibration = () => {
 
       // Add watermark with improved error handling
       try {
-        addWatermark(doc, '/watermarkupd.png');
+        addWatermark(doc, watermarkDataUrl);
       } catch (watermarkError) {
         console.warn("Error adding watermark in generateFirstPage:", watermarkError);
       }

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Ucard from './components/Ucard.jsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import generatePdf, { generateCalibrationResults, generateSimplifiedCertificate, addQrCodeToPdf } from './utils/pdfGeneration.js';
+import generatePdf, { generateCalibrationResults, generateSimplifiedCertificate, addQrCodeToPdf, addSignaturesToPdf, getImageDataUrl } from './utils/pdfGeneration.js';
 import QRCode from 'qrcode';
 
 const Ucompleted = () => {
@@ -103,6 +103,8 @@ const Ucompleted = () => {
     setPdfError(null);
   };
 
+  // Update the generatePdfWithQR function in your Ucompleted.jsx file
+
   const generatePdfWithQR = async (selectedProduct) => {
     try {
       console.log("Generating first page PDF with QR code");
@@ -172,33 +174,21 @@ const Ucompleted = () => {
         alert("Could not generate QR code, but will continue with PDF generation.");
       }
 
+      // Preload images
+      const logoDataUrl = await getImageDataUrl('/Dupdated.png');
+      const watermarkDataUrl = await getImageDataUrl('/watermarkupd.png');
+      const ilacDataUrl = await getImageDataUrl('/ilac-mra.png');
+      const ccDataUrl = await getImageDataUrl('/cc.png');
+
       // Create PDF document
       try {
         // Generate first page with the enhanced product data
-        const doc = await generatePdf(selectedProduct, true, certificateNo);
+        const doc = await generatePdf(selectedProduct, true, certificateNo, qrCodeDataUrl, { logoDataUrl, watermarkDataUrl, ilacDataUrl, ccDataUrl });
         if (!doc) {
           throw new Error("Failed to generate PDF document");
         }
 
         console.log("PDF first page generated successfully");
-
-        // Add QR code to the PDF
-        if (qrCodeDataUrl) {
-          try {
-            console.log("Adding QR code to PDF document");
-            const qrText = "Scan this QR code to view the complete calibration certificate";
-
-            // Add QR code with updated function that places it directly
-            addQrCodeToPdf(doc, qrCodeDataUrl, qrText);
-
-            console.log("QR code added to PDF successfully");
-          } catch (qrAddError) {
-            console.warn("Error adding QR code to PDF:", qrAddError);
-            // Continue without QR code
-          }
-        } else {
-          console.warn("No QR code data available to add to PDF");
-        }
 
         // Save the PDF file
         try {
