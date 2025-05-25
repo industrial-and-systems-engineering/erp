@@ -699,7 +699,7 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
     console.log("Adding QR code to PDF - direct method");
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    
+
     // Reduce the QR code size to prevent overlap with table
     const qrSize = 25; // Smaller QR code size
 
@@ -738,7 +738,7 @@ export function addQrCodeToPdf(doc, qrCodeDataUrl, text) {
               qrX + qrSize / 2, qrY + qrSize + 5,
               { align: 'center', maxWidth: qrSize * 1.2 });
           }
-          
+
           console.log(`QR code added successfully to page ${i}`);
         } catch (imgError) {
           console.warn(`Error adding QR code to page ${i}:`, imgError);
@@ -764,29 +764,29 @@ export function addSignaturesToPdf(doc) {
   try {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    
+
     // Get total number of pages in the document
     const totalPages = doc.internal.getNumberOfPages();
-    
+
     // Only add signatures to the first page
     doc.setPage(1);
-    
+
     // Position signatures on the right side, away from the QR code
     const signatureX = pageWidth - 45; // Keep signature on the right
     const signatureY = pageHeight - 55; // Position signature higher
-    
+
     // Add signature text
     doc.setFont("helvetica", "bold");
     doc.setTextColor(70, 130, 180);
     doc.text("Authorised by", signatureX, signatureY);
-    
+
     doc.setTextColor(25, 25, 112);
     doc.text("(P.R.SINGHA)", signatureX, signatureY + 7);
-    
+
     doc.setFont("helvetica", "normal");
     doc.setTextColor(0, 0, 0);
     doc.text("(Technical Manager)", signatureX, signatureY + 12);
-    
+
     return doc;
   } catch (error) {
     console.error("Error adding signatures to PDF:", error);
@@ -1685,7 +1685,10 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     };
 
     // Create PDF document
-    const doc = new jsPDF();
+    const doc = new jsPDF({
+      unit: "mm",
+      format: "a4",
+    });
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     const leftMargin = 20;
@@ -1785,6 +1788,7 @@ export function generateSimplifiedCertificate(selectedProduct, returnDoc = false
     doc.setFont("helvetica", "normal");
     const modelValue = certificate.makeModel || selectedProduct.makeModel || selectedProduct.model || "N/A";
     doc.text(modelValue, 85, y);
+    y += 7;
     // 3. Characterization and Condition
     doc.setFont("helvetica", "bold");
     doc.text("3. Characterisation and Condition of the item", leftMargin, y);

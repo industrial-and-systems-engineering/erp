@@ -1,17 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import Ucard from './components/Ucard.jsx';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import generatePdf, { generateCalibrationResults, generateSimplifiedCertificate, addQrCodeToPdf, addSignaturesToPdf, getImageDataUrl } from './utils/pdfGeneration.js';
-import QRCode from 'qrcode';
+import React, { useEffect, useState } from "react";
+import Ucard from "./components/Ucard.jsx";
+import "jspdf-autotable";
+import { generateReport } from "./utils/pdfGenerator.js";
 
 const Ucompleted = () => {
   const [calibratedForms, setCalibratedForms] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedForm, setSelectedForm] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [pdfError, setPdfError] = useState(null);
   const [cardKey, setCardKey] = useState(0);
-
 
   useEffect(() => {
     const fetchCalibratedForms = async () => {
@@ -21,7 +19,6 @@ const Ucompleted = () => {
           throw new Error("Failed to fetch data");
         }
         const data = await response.json();
-        console.log("Fetched calibrated forms data:", data);
         setCalibratedForms(data.data);
       } catch (error) {
         console.error("Error fetching calibrated forms:", error);
@@ -34,211 +31,13 @@ const Ucompleted = () => {
   }, []);
 
   const toggleProductDetails = (product, parentForm) => {
-    console.log("Selected product:", product);
-    console.log("Parent form:", parentForm);
-
-    console.log("Product fields:", {
-      instrumentDescription: product.instrumentDescription,
-      make: product.make,
-      serialNo: product.serialNo
-    });
-
-    if (parentForm) {
-      console.log("Parent form fields:", {
-        organization: parentForm.organization,
-        address: parentForm.address,
-        srfNo: parentForm.srfNo
-      });
-
-      const enhancedProduct = {
-        ...product,
-        _parentForm: parentForm,
-
-        customerName:
-          parentForm.organization ||
-          product.organization ||
-          product.customerName ||
-          product.customer,
-
-        customerAddress:
-          parentForm.address ||
-          product.address ||
-          product.customerAddress,
-
-        name:
-          product.instrumentDescription ||
-          product.name ||
-          product.description,
-
-        make: product.make,
-        serialNo: product.serialNo,
-
-        location: product.calibrationFacilityAvailable || "At Laboratory",
-
-        method: product.parameters && product.parameters.length > 0
-          ? product.parameters[0].methodUsed
-          : null
-      };
-
-      console.log("Enhanced product with parent form data:", enhancedProduct);
-
-      setSelectedProduct(prevProduct =>
-        (prevProduct && prevProduct._id === product._id) ? null : enhancedProduct
-      );
-    } else {
-      const enhancedProduct = {
-        ...product,
-        customerName: product.organization || product.customerName || product.customer,
-        customerAddress: product.address || product.customerAddress,
-        name: product.instrumentDescription || product.name || product.description,
-        location: product.calibrationFacilityAvailable || "At Laboratory"
-      };
-
-      console.log("Enhanced product without parent form:", enhancedProduct);
-
-      setSelectedProduct(prevProduct =>
-        (prevProduct && prevProduct._id === product._id) ? null : enhancedProduct
-      );
-    }
+    // console.log("Selected product:", product);
+    // console.log("Parent form:", parentForm);
+    setSelectedProduct((prevProduct) =>
+      prevProduct && prevProduct._id === product._id ? null : product
+    );
+    setSelectedForm(parentForm);
     setPdfError(null);
-  };
-
-  // Update the generatePdfWithQR function in your Ucompleted.jsx file
-
-  const generatePdfWithQR = async (selectedProduct) => {
-    try {
-      console.log("Generating first page PDF with QR code");
-      setPdfError(null); // Clear any previous errors
-
-      if (!selectedProduct.referenceStandards || selectedProduct.referenceStandards.length === 0) {
-        selectedProduct.referenceStandards = [
-          {
-            description: "Digital Pressure Calibrator",
-            makeModel: "Druck DPI 603",
-            slNoIdNo: "60303803 ED/DPC/01",
-            calibrationCertificateNo: "TSC/24-25/16266-1",
-            validUpTo: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-              .toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.'),
-            calibratedBy: "Transcal Technologies LLP",
-            traceableTo: "NPL"
-          },
-          {
-            description: "Digital IR Thermo Meter",
-            makeModel: "Metravi MT-16",
-            slNoIdNo: "11018053 ED/IT(M-16)-01",
-            calibrationCertificateNo: "TSC/24-25/16266-4",
-            validUpTo: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-              .toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.'),
-            calibratedBy: "Transcal Technologies LLP",
-            traceableTo: "NPL"
-          },
-          {
-            description: "Digital Anemo Meter",
-            makeModel: "Lutron AM 4201",
-            slNoIdNo: "ED/DAM-01",
-            calibrationCertificateNo: "CL-027-04/2024-01",
-            validUpTo: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-              .toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.'),
-            calibratedBy: "CAL LABS",
-            traceableTo: "NPL"
-          }
-        ];
-      }
-
-      const certificateNo = `ED/CAL/${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}/${new Date().getMonth() > 3 ?
-        `${new Date().getFullYear()}-${new Date().getFullYear() + 1 - 2000}` :
-        `${new Date().getFullYear() - 1}-${new Date().getFullYear() - 2000}`}`;
-
-      const jobNo = certificateNo.split('/')[2];
-      const documentId = `${selectedProduct._id}_${certificateNo.replace(/\//g, '_')}`;
-      const viewUrl = `${window.location.origin}/view-calibration/${documentId}`;
-      console.log("QR code will link to:", viewUrl);
-
-      // Generate QR code with error handling - Wait for completion before continuing
-      let qrCodeDataUrl = null;
-      try {
-        const QRCode = await import('qrcode');
-        qrCodeDataUrl = await QRCode.toDataURL(viewUrl, {
-          errorCorrectionLevel: 'M', // Changed back to 'M' for better readability
-          margin: 2,
-          width: 300, // Increased size for better visibility
-          color: {
-            dark: '#000000',
-            light: '#FFFFFF'
-          }
-        });
-        console.log("QR code generated successfully with URL:", viewUrl);
-      } catch (qrError) {
-        console.warn("Error generating QR code:", qrError);
-        // Continue without QR code, but inform the user
-        alert("Could not generate QR code, but will continue with PDF generation.");
-      }
-
-      // Preload images
-      const logoDataUrl = await getImageDataUrl('/Dupdated.png');
-      const watermarkDataUrl = await getImageDataUrl('/watermarkupd.png');
-      const ilacDataUrl = await getImageDataUrl('/ilac-mra.png');
-      const ccDataUrl = await getImageDataUrl('/cc.png');
-
-      // Create PDF document
-      try {
-        // Generate first page with the enhanced product data
-        const doc = await generatePdf(selectedProduct, true, certificateNo, qrCodeDataUrl, { logoDataUrl, watermarkDataUrl, ilacDataUrl, ccDataUrl });
-        if (!doc) {
-          throw new Error("Failed to generate PDF document");
-        }
-
-        console.log("PDF first page generated successfully");
-
-        // Save the PDF file
-        try {
-          doc.save(`Calibration_Certificate_FirstPage_${certificateNo.replace(/\//g, '_')}.pdf`);
-          console.log("PDF saved successfully" + (qrCodeDataUrl ? " with QR code" : " without QR code"));
-        } catch (saveError) {
-          console.error("Error saving PDF:", saveError);
-          throw new Error("Failed to save PDF: " + saveError.message);
-        }
-
-        // Store certificate data for later retrieval
-        const certificateData = {
-          product: {
-            ...selectedProduct,
-            qrCodeDataUrl: qrCodeDataUrl,
-            qrCodeUrl: viewUrl // Store the URL in case we need to regenerate the QR code
-          },
-          certificateNo: certificateNo,
-          jobNo: jobNo,
-          documentId: documentId,
-          timestamp: new Date().toISOString(),
-          completeGenerated: false
-        };
-
-        // Try to store in localStorage first
-        try {
-          localStorage.setItem(`certificate_${documentId}`, JSON.stringify(certificateData));
-          console.log("Certificate data stored in localStorage with ID:", documentId);
-        } catch (storageError) {
-          console.warn("Failed to store in localStorage:", storageError);
-          // Try sessionStorage as fallback
-          try {
-            sessionStorage.setItem(`certificate_${documentId}`, JSON.stringify(certificateData));
-            console.log("Certificate data stored in sessionStorage instead");
-          } catch (sessionError) {
-            console.error("Failed to store certificate data:", sessionError);
-          }
-        }
-
-        alert("Certificate with QR code generated successfully. You can scan the QR code to view the complete certificate.");
-      } catch (pdfError) {
-        console.error("Error in PDF generation process:", pdfError);
-        throw new Error("Failed to process PDF: " + pdfError.message);
-      }
-
-    } catch (error) {
-      console.error("Error in overall PDF with QR process:", error);
-      setPdfError("Failed to generate PDF with QR code: " + error.message);
-      alert(`There was an error generating the PDF with QR code: ${error.message}\nPlease try using the regular Download button instead.`);
-    }
   };
 
   if (isLoading) {
@@ -269,7 +68,7 @@ const Ucompleted = () => {
           amount,
           currency,
           receipt: receiptId,
-          productId: selectedProduct._id,  // Sending the product ID
+          productId: selectedProduct._id, // Sending the product ID
         }),
       });
 
@@ -281,14 +80,14 @@ const Ucompleted = () => {
       console.log(order);
 
       var options = {
-        "key": "rzp_test_T6N1vi1kjLuL9s",
+        key: "rzp_test_T6N1vi1kjLuL9s",
         amount, // Amount is in currency subunits.
         currency,
-        "name": "Acme Corp",
-        "description": "Test Transaction",
-        "image": "https://example.com/your_logo",
-        "order_id": order.id,
-        "handler": async function (response) {
+        name: "Acme Corp",
+        description: "Test Transaction",
+        image: "https://example.com/your_logo",
+        order_id: order.id,
+        handler: async function (response) {
           const body = { ...response };
           const validateresponse = await fetch("/api/order/validate", {
             method: "POST",
@@ -300,22 +99,22 @@ const Ucompleted = () => {
           const jsonres = await validateresponse.json();
           console.log(jsonres);
         },
-        "prefill": {
-          "name": "Gaurav Kumar",
-          "email": "gaurav.kumar@example.com",
-          "contact": "9000090000"
+        prefill: {
+          name: "Gaurav Kumar",
+          email: "gaurav.kumar@example.com",
+          contact: "9000090000",
         },
-        "notes": {
-          "address": "Razorpay Corporate Office"
+        notes: {
+          address: "Razorpay Corporate Office",
         },
-        "theme": {
-          "color": "#3399cc"
-        }
+        theme: {
+          color: "#3399cc",
+        },
       };
 
       var rzp1 = new window.Razorpay(options);
       rzp1.open();
-      rzp1.on('payment.failed', function (response) {
+      rzp1.on("payment.failed", function (response) {
         alert(response.error.code);
         alert(response.error.description);
         alert(response.error.source);
@@ -361,15 +160,18 @@ const Ucompleted = () => {
                   </p>
 
                   {(product.customer || form.customerName) && (
-                    <p className="text-gray-700">Customer: {product.customer || form.customerName}</p>
+                    <p className='text-gray-700'>
+                      Customer: {product.customer || form.customerName}
+                    </p>
                   )}
 
                   <div className='flex justify-end mt-2'>
                     <button
-                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${selectedProduct && selectedProduct._id === product._id
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                        }`}
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        selectedProduct && selectedProduct._id === product._id
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                      }`}
                       onClick={() => toggleProductDetails(product, form)}
                     >
                       {selectedProduct && selectedProduct._id === product._id ? (
@@ -400,10 +202,11 @@ const Ucompleted = () => {
                 />
                 <div className='flex justify-end mt-4'>
                   <button
-                    className='bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors mr-2'
+                    className='bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors mr-2 cursor-pointer'
                     onClick={() => {
-                      console.log("Download button clicked");
-                      generateSimplifiedCertificate(selectedProduct);
+                      // console.log("Download button clicked");
+                      // generateSimplifiedCertificate(selectedProduct);
+                      generateReport(selectedProduct, selectedForm);
                     }}
                   >
                     Download Form
@@ -419,10 +222,9 @@ const Ucompleted = () => {
                     </button>
                   ) : (
                     <button
-                      className='bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors'
-                      onClick={() => {
-                        console.log("Download with QR button clicked");
-                        generatePdfWithQR(selectedProduct);
+                      className='bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors ml-2 cursor-pointer'
+                      onClick={async () => {
+                        await generateReport(selectedProduct, selectedForm, false, false, true);
                       }}
                     >
                       Download with QR
