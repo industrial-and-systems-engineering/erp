@@ -24,11 +24,16 @@ import Certification from "./pages/openingwindow/Certification.jsx";
 import IndustriesServed from "./pages/openingwindow/IndustriesServed.jsx";
 import Services from "./pages/openingwindow/Services.jsx";
 import ViewCalibration from "./pages/user/ViewCalibration.jsx";
+import PdfDownloadHandler from "./pages/user/PdfDownloadHandler.jsx";
 
 const App = () => {
   return (
     <div>
       <Routes>
+        <Route
+          path='/pdf-download'
+          element={<PdfDownloadHandler />}
+        />
         <Route
           path='*'
           element={<LandingPage />}
