@@ -40,7 +40,6 @@ const ErrorDetectorForm = () => {
     customerDrivenConformative: false,
   });
 
-
   const [signatureData, setSignatureData] = useState(null);
   const [isSignatureEmpty, setIsSignatureEmpty] = useState(true);
 
@@ -62,6 +61,7 @@ const ErrorDetectorForm = () => {
   };
 
   const [tableRows, setTableRows] = useState([{ ...emptyRow }]);
+  
   const removeProduct = (indexToRemove) => {
     setTableRows((prevRows) => prevRows.filter((_, index) => index !== indexToRemove));
   };
@@ -77,7 +77,6 @@ const ErrorDetectorForm = () => {
     setIsSignatureEmpty(false);
   };
   
-
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -86,7 +85,6 @@ const ErrorDetectorForm = () => {
       return;
     }
     
-
     // Validate that each row has at least one parameter with required fields
     const invalidRows = tableRows.filter(
       (row) =>
@@ -220,7 +218,7 @@ const ErrorDetectorForm = () => {
                 <p className='text-sm'>
                   Form No: <span className='font-mono'>{formData.srfNo}</span>
                 </p>
-                <p className='text-sm mt-1'>Date: {today}</p>
+                <p className='text-sm mt-1'>Date: {formData.date}</p>
               </div>
             </div>
           </div>
@@ -251,29 +249,33 @@ const ErrorDetectorForm = () => {
                   />
                 </div>
 
-                {/* Date row */}
+                {/* Date row - NOW EDITABLE */}
                 <div className='col-span-1'>
-                  <label className='block text-sm font-medium text-gray-700 mb-1'>Date</label>
+                  <label className='block text-sm font-medium text-gray-700 mb-1'>
+                    Date <span className='text-red-500'>*</span>
+                  </label>
                   <input
-                    type='text'
+                    type='date'
                     name='date'
                     value={formData.date}
-                    disabled
-                    className='w-full p-2 bg-gray-100 border border-gray-300 rounded-md text-gray-500 font-medium'
+                    onChange={handleInputChange}
+                    className='w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                    required
                   />
                 </div>
 
-                {/* Probable Date row */}
+                {/* Probable Date row - NOW EDITABLE */}
                 <div className='col-span-1'>
                   <label className='block text-sm font-medium text-gray-700 mb-1'>
-                    Probable Completion Date
+                    Probable Completion Date <span className='text-red-500'>*</span>
                   </label>
                   <input
                     type='date'
                     name='probableDate'
                     value={formData.probableDate}
-                    disabled
-                    className='w-full p-2 bg-gray-100 border border-gray-300 rounded-md text-gray-500 font-medium'
+                    onChange={handleInputChange}
+                    className='w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                    required
                   />
                 </div>
 
