@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
 import Tcard from "./components/Tcard";
 import { usePendingFormsStore } from "./utils/pendingForms";
+import Calculator from "./components/Calculator";
 
 const Tpending = () => {
   const { pendingForms, fetchPendingForms } = usePendingFormsStore();
   const [selectedEquipment, setSelectedEquipment] = useState(null);
   const [selectedForm, setSelectedForm] = useState(null);
-  // Add a key state to force re-render of Tcard
   const [cardKey, setCardKey] = useState(0);
+  // Add state for calculator visibility
+  const [calculatorOpen, setCalculatorOpen] = useState(false);
 
   useEffect(() => {
     fetchPendingForms();
@@ -15,12 +17,9 @@ const Tpending = () => {
 
   const toggleEquipmentDetails = (product, form) => {
     if (selectedEquipment && selectedEquipment._id === product._id) {
-      // If clicking the same equipment, hide it
       setSelectedEquipment(null);
       setSelectedForm(null);
     } else {
-      // If switching to a different equipment, update state and increment key
-      // This will force the Tcard component to re-render
       setSelectedEquipment(product);
       setSelectedForm(form);
       setCardKey((prevKey) => prevKey + 1);
@@ -28,7 +27,7 @@ const Tpending = () => {
   };
 
   return (
-    <div >
+    <div>
       {pendingForms.length > 0 ? (
         <div className='grid grid-cols-1 md:grid-cols-4 gap-6'>
           {/* Equipment List Sidebar */}
@@ -44,13 +43,14 @@ const Tpending = () => {
                 form.products.map((product) => (
                   <div
                     key={product._id}
-                    className={`bg-white p-4 rounded-lg shadow-sm my-3 border-l-4 transition-all duration-200 hover:shadow-md relative ${selectedEquipment && selectedEquipment._id === product._id
-                      ? "border-l-blue-600"
-                      : "border-l-gray-300"
-                      }`}
+                    className={`bg-white p-4 rounded-lg shadow-sm my-3 border-l-4 transition-all duration-200 hover:shadow-md relative ${
+                      selectedEquipment && selectedEquipment._id === product._id
+                        ? "border-l-blue-600"
+                        : "border-l-gray-300"
+                    }`}
                   >
                     {product.partialySaved && (
-                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 absolute top-2 right-2">
+                      <span className='px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 absolute top-2 right-2'>
                         Draft
                       </span>
                     )}
@@ -59,12 +59,13 @@ const Tpending = () => {
                         <p className='font-medium text-gray-800'>Job #{product.jobNo}</p>
                         <p className='text-sm text-gray-500'>{product.name || "Equipment"}</p>
                       </div>
-                      <div className="flex-col">
+                      <div className='flex-col'>
                         <button
-                          className={`px-3 py-2 rounded-md text-sm cursor-pointer font-medium transition-colors w-24 flex items-center justify-center ${selectedEquipment && selectedEquipment._id === product._id
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                            }`}
+                          className={`px-3 py-2 rounded-md text-sm cursor-pointer font-medium transition-colors w-24 flex items-center justify-center ${
+                            selectedEquipment && selectedEquipment._id === product._id
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                          }`}
                           onClick={() => toggleEquipmentDetails(product, form)}
                         >
                           {selectedEquipment && selectedEquipment._id === product._id ? (
@@ -139,6 +140,34 @@ const Tpending = () => {
           </p>
         </div>
       )}
+
+      {/* Floating Calculator Button */}
+      <button
+        onClick={() => setCalculatorOpen(!calculatorOpen)}
+        className='fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg transition-colors z-50 focus:outline-none'
+        aria-label='Calculator'
+      >
+        <svg
+          xmlns='http://www.w3.org/2000/svg'
+          className='h-6 w-6'
+          fill='none'
+          viewBox='0 0 24 24'
+          stroke='currentColor'
+        >
+          <path
+            strokeLinecap='round'
+            strokeLinejoin='round'
+            strokeWidth={2}
+            d='M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z'
+          />
+        </svg>
+      </button>
+
+      {/* Calculator Component */}
+      <Calculator
+        isOpen={calculatorOpen}
+        onClose={() => setCalculatorOpen(false)}
+      />
     </div>
   );
 };

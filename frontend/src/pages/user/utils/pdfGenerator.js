@@ -68,7 +68,7 @@ async function generatePreviewReport(data, form, draft = true) {
   const pageWidth = doc.internal.pageSize.getWidth();   // 210 mm
   const pageHeight = doc.internal.pageSize.getHeight(); // 297 mm     
 
-  doc.addImage(image, 'PNG', 0, 0, pageWidth, pageHeight);
+  // doc.addImage(image, 'PNG', 0, 0, pageWidth, pageHeight);
   const marginLeft = 20;
   const marginRight = 20;
   const marginTop = 80;    // header height
@@ -87,7 +87,7 @@ async function generatePreviewReport(data, form, draft = true) {
     // Call the original method
     originalAddPage.apply(this, arguments);
     // Add background to the newly created page
-    doc.addImage(image, 'PNG', 0, 0, pageWidth, pageHeight);
+    // doc.addImage(image, 'PNG', 0, 0, pageWidth, pageHeight);
     return this;
   };
   // Helper function to check and add new page if needed
@@ -97,7 +97,7 @@ async function generatePreviewReport(data, form, draft = true) {
       // Add a new page
       doc.addPage();
       // Add background image to the new page
-      doc.addImage(image, 'PNG', 0, 0, pageWidth, pageHeight);
+      // doc.addImage(image, 'PNG', 0, 0, pageWidth, pageHeight);
       // Reset Y position to top of content area
       currentPage++;
       // Return new Y position at top of content area
@@ -235,7 +235,7 @@ async function generatePreviewReport(data, form, draft = true) {
   // 4. Date of Item Received
   doc.text("4. Date of Item Received", marginLeft, y);
   doc.text(":", 80, y);
-  const receivedDate = data.updatedAt instanceof Date ? data.date : new Date(data.date);
+  const receivedDate = data.updatedAt instanceof Date ? data.updatedAt : new Date(data.updatedAt);
   doc.text(receivedDate.toLocaleDateString(), 85, y);
 
   y += rowHeight;
@@ -253,7 +253,10 @@ async function generatePreviewReport(data, form, draft = true) {
 
   // 6. Next Calibration Recommended on
   doc.text("6. Next Calibration Recommended on: ", marginLeft, y);
-  const nextCalibrationDate = data.updatedAt instanceof Date ? data.updatedAt : new Date(data.updatedAt);
+  const nextCalibrationDate = data.updatedAt instanceof Date ?
+    new Date(data.updatedAt) :
+    new Date(data.updatedAt);
+  nextCalibrationDate.setFullYear(nextCalibrationDate.getFullYear() + 1);
   doc.text(nextCalibrationDate.toLocaleDateString(), 95, y);
 
   y += rowHeight;
@@ -558,7 +561,7 @@ function generateFullReport(data, form, draft = true, withQR = false, returnData
   // 4. Date of Item Received
   doc.text("4. Date of Item Received", marginLeft, y);
   doc.text(":", 80, y);
-  const receivedDate = data.updatedAt instanceof Date ? data.date : new Date(data.date);
+  const receivedDate = data.updatedAt instanceof Date ? data.updatedAt : new Date(data.date);
   doc.text(receivedDate.toLocaleDateString(), 85, y);
 
   y += rowHeight;
