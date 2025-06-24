@@ -21,6 +21,7 @@ const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const cors = require('cors');
 const result = dotenv.config();
+const Orderroutes = require('./routes/orderroutes.js');
 
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 const PORT = process.env.PORT || 5001;
@@ -132,6 +133,7 @@ app.use('/api/technician', Technicianroutes);
 app.use('/api/errorform', Errorformroutes);
 app.use('/api/csc', Cscroutes);
 app.use('/api', Middlewareroutes);
+app.use('/api', Orderroutes);
 
 app.post("/api/order", async (req, res) => {
   try {
