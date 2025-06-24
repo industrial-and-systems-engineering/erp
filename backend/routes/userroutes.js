@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const passport = require('passport');
 const User = require('../models/user');
+const { Product } = require('../models/db');
 
 router.post('/login', (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
@@ -52,5 +53,7 @@ router.get('/logout', (req, res) => {
         });
     });
 });
+
+
 
 module.exports = router;

@@ -4,6 +4,7 @@ import Ucard from "./components/Ucard";
 const Ucompleted = () => {
   const [calibratedForms, setCalibratedForms] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedForm, setSelectedForm] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [cardKey, setCardKey] = useState(0);
 
@@ -29,13 +30,11 @@ const Ucompleted = () => {
     fetchCalibratedForms();
   }, []);
 
-  const toggleProductDetails = (product) => {
-    if (selectedProduct && selectedProduct._id === product._id) {
-      setSelectedProduct(null);
-    } else {
-      setSelectedProduct(product);
-      setCardKey((prevKey) => prevKey + 1);
-    }
+  const toggleProductDetails = (product, parentForm) => {
+    setSelectedProduct((prevProduct) =>
+      prevProduct && prevProduct._id === product._id ? null : product
+    );
+    setSelectedForm(parentForm);
   };
 
   if (isLoading) {
@@ -60,11 +59,10 @@ const Ucompleted = () => {
               form.products.map((product, productIndex) => (
                 <div
                   key={product._id}
-                  className={`bg-white p-4 rounded-lg shadow-sm my-3 border-l-4 transition-all duration-200 hover:shadow-md ${
-                    selectedProduct && selectedProduct._id === product._id
-                      ? "border-l-blue-600"
-                      : "border-l-gray-300"
-                  }`}
+                  className={`bg-white p-4 rounded-lg shadow-sm my-3 border-l-4 transition-all duration-200 hover:shadow-md ${selectedProduct && selectedProduct._id === product._id
+                    ? "border-l-blue-600"
+                    : "border-l-gray-300"
+                    }`}
                 >
                   <div className='flex flex-col gap-2'>
                     <div>
@@ -72,12 +70,11 @@ const Ucompleted = () => {
                       <p className='text-sm text-gray-500'>Product #{productIndex + 1}</p>
                     </div>
                     <button
-                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                        selectedProduct && selectedProduct._id === product._id
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                      }`}
-                      onClick={() => toggleProductDetails(product)}
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${selectedProduct && selectedProduct._id === product._id
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                        }`}
+                      onClick={() => toggleProductDetails(product, form)}
                     >
                       {selectedProduct && selectedProduct._id === product._id ? (
                         <span className='flex items-center justify-center gap-1'>
@@ -105,6 +102,7 @@ const Ucompleted = () => {
                 <Ucard
                   key={cardKey}
                   equipment={selectedProduct}
+                  parentForm={selectedForm}
                 />
               </div>
             ) : (

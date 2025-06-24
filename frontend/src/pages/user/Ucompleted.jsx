@@ -167,11 +167,10 @@ const Ucompleted = () => {
 
                   <div className='flex justify-end mt-2'>
                     <button
-                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                        selectedProduct && selectedProduct._id === product._id
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${selectedProduct && selectedProduct._id === product._id
                           ? "bg-blue-100 text-blue-700"
                           : "bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                      }`}
+                        }`}
                       onClick={() => toggleProductDetails(product, form)}
                     >
                       {selectedProduct && selectedProduct._id === product._id ? (
@@ -199,6 +198,7 @@ const Ucompleted = () => {
                 <Ucard
                   key={cardKey}
                   equipment={selectedProduct}
+                  parentForm={selectedForm}
                 />
                 <div className='flex justify-end mt-4'>
                   <button
