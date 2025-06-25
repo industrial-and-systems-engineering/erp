@@ -59,7 +59,7 @@ router.post("/", isLoggedIn, async (req, res) => {
       .json({ success: false, error: "Internal Server Error" });
   }
 });
-router.get("/completed", async (req, res) => {
+router.get("/completed", isLoggedIn, async (req, res) => {
   try {
     const userId = req.user._id;
     const PartiallyCompletedForms = await srfForms
@@ -81,7 +81,7 @@ router.get("/completed", async (req, res) => {
   }
 });
 
-router.get("/pending", async (req, res) => {
+router.get("/pending", isLoggedIn, async (req, res) => {
   try {
     const userId = req.user._id;
     const pendingForms = await srfForms
@@ -96,6 +96,65 @@ router.get("/pending", async (req, res) => {
     return res.status(200).json({ success: true, data: pendingForms });
   } catch (error) {
     console.error("Error fetching pending error forms:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+router.post("/amendmentrequest/:fid/:pid", isLoggedIn, async (req, res) => {
+  try {
+    const { pid, fid } = req.params;
+    const { reason, details } = req.body;
+    if (!reason || !details) {
+      return res.status(400).json({ success: false, message: "All fields are required" });
+    }
+    const userId = req.user._id;
+
+    // First, find and update the form
+    const form = await srfForms.findOneAndUpdate(
+      {
+        _id: fid,
+        user: userId,
+        products: { $in: [pid] }
+      },
+      {
+        requestStatus: false, // Set requestStatus to false when amendment is requested
+        formUpdated: false // Reset formUpdated status
+      },
+      { new: true }
+    ).populate({
+      path: "products",
+      match: { _id: pid }
+    });
+
+    if (!form) {
+      return res.status(404).json({ success: false, message: "Form not found" });
+    }
+
+    if (!form.products || form.products.length === 0) {
+      return res.status(404).json({ success: false, message: "Product not found" });
+    }
+
+    // Then, update the product with amendment request and reset calibration status
+    const product = await Product.findByIdAndUpdate(
+      pid,
+      {
+        $push: {
+          amendmentRequests: {
+            reason,
+            details,
+            requestedBy: userId,
+            requestedAt: new Date()
+          }
+        },
+        isCalibrated: false, // Reset calibration status
+        csccalibrated: false // Reset CSCC calibration status
+      },
+      { new: true }
+    );
+
+    res.status(201).json({ success: true, message: "Amendment request submitted successfully" });
+  } catch (error) {
+    console.error("Error submitting amendment request:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 });

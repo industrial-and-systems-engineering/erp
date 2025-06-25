@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import Ucard from "./components/Ucard.jsx";
 import "jspdf-autotable";
 import { generateReport } from "./utils/pdfGenerator.js";
+import AmendmentRequestModal from "../../components/modals/AmendmentRequestModal";
 
 const Ucompleted = () => {
   const [calibratedForms, setCalibratedForms] = useState([]);
@@ -10,6 +11,7 @@ const Ucompleted = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [pdfError, setPdfError] = useState(null);
   const [cardKey, setCardKey] = useState(0);
+  const [isAmendmentModalOpen, setIsAmendmentModalOpen] = useState(false); // State for amendment request modal
 
   useEffect(() => {
     const fetchCalibratedForms = async () => {
@@ -31,13 +33,19 @@ const Ucompleted = () => {
   }, []);
 
   const toggleProductDetails = (product, parentForm) => {
-    // console.log("Selected product:", product);
-    // console.log("Parent form:", parentForm);
     setSelectedProduct((prevProduct) =>
       prevProduct && prevProduct._id === product._id ? null : product
     );
     setSelectedForm(parentForm);
     setPdfError(null);
+  };
+
+  const handleAmendmentRequest = () => {
+    setIsAmendmentModalOpen(true);
+  };
+
+  const closeAmendmentModal = () => {
+    setIsAmendmentModalOpen(false);
   };
 
   if (isLoading) {
@@ -63,12 +71,11 @@ const Ucompleted = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        // Include productId in the request body
         body: JSON.stringify({
           amount,
           currency,
           receipt: receiptId,
-          productId: selectedProduct._id, // Sending the product ID
+          productId: selectedProduct._id,
         }),
       });
 
@@ -81,7 +88,7 @@ const Ucompleted = () => {
 
       var options = {
         key: "rzp_test_T6N1vi1kjLuL9s",
-        amount, // Amount is in currency subunits.
+        amount,
         currency,
         name: "Acme Corp",
         description: "Test Transaction",
@@ -167,10 +174,11 @@ const Ucompleted = () => {
 
                   <div className='flex justify-end mt-2'>
                     <button
-                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${selectedProduct && selectedProduct._id === product._id
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        selectedProduct && selectedProduct._id === product._id
                           ? "bg-blue-100 text-blue-700"
                           : "bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-                        }`}
+                      }`}
                       onClick={() => toggleProductDetails(product, form)}
                     >
                       {selectedProduct && selectedProduct._id === product._id ? (
@@ -200,12 +208,17 @@ const Ucompleted = () => {
                   equipment={selectedProduct}
                   parentForm={selectedForm}
                 />
+
                 <div className='flex justify-end mt-4'>
                   <button
                     className='bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors mr-2 cursor-pointer'
+                    onClick={() => setIsAmendmentModalOpen(true)}
+                  >
+                    Amendment Request
+                  </button>
+                  <button
+                    className='bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors mr-2 cursor-pointer'
                     onClick={() => {
-                      // console.log("Download button clicked");
-                      // generateSimplifiedCertificate(selectedProduct);
                       generateReport(selectedProduct, selectedForm);
                     }}
                   >
@@ -276,6 +289,14 @@ const Ucompleted = () => {
       )}
 
       {/* <button onClick={paymenthandler}>pay</button> */}
+
+      {/* Amendment Request Modal */}
+      <AmendmentRequestModal
+        isOpen={isAmendmentModalOpen}
+        onClose={() => setIsAmendmentModalOpen(false)}
+        product={selectedProduct}
+        form={selectedForm}
+      />
     </div>
   );
 };
