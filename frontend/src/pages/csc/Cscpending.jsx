@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { usePendingFormsStore } from "./utils/pendingFroms";
+import { generateReport } from "../user/utils/pdfGenerator.js";
 
 const Tpending = () => {
   const { pendingForms, fetchPendingForms, updateFormDetails, markFormCompleted } =
@@ -13,6 +14,11 @@ const Tpending = () => {
   const [successMessage, setSuccessMessage] = useState("");
   // Add key state to force re-render when form changes
   const [cardKey, setCardKey] = useState(0);
+  // Add state for rejection modal
+  const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [rejectionProduct, setRejectionProduct] = useState(null);
+  const [rejectionForm, setRejectionForm] = useState(null);
+  const [rejectionFeedback, setRejectionFeedback] = useState("");
 
   useEffect(() => {
     const loadForms = async () => {
@@ -118,6 +124,111 @@ const Tpending = () => {
     }
   };
 
+  // New handler functions for approve/reject functionality
+  const handleViewReport = async (productId, reportType) => {
+    try {
+      // Find the product in the selected form
+      const product = selectedForm.products.find(p => p._id === productId);
+      if (!product) {
+        alert('Product not found');
+        return;
+      }
+
+      // Generate the report based on type
+      if (reportType === 'with-qr') {
+        await generateReport(product, selectedForm, false, false, true);
+      } else {
+        await generateReport(product, selectedForm);
+      }
+    } catch (error) {
+      console.error('Error generating report:', error);
+      alert('Failed to generate report');
+    }
+  };
+
+  const handleApproveProduct = async (productId, formId) => {
+    try {
+      const response = await fetch(`/api/csc/approve/${productId}/${formId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to approve product');
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        setSuccessMessage("Product approved successfully");
+        fetchPendingForms(); // Refresh the list
+        // Update selected form with new data
+        if (result.data && result.data.length > 0) {
+          setSelectedForm(result.data[0]);
+        }
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (err) {
+      console.error("Failed to approve product", err);
+      setError("Failed to approve product");
+    }
+  };
+
+  const handleRejectProduct = (productId, formId) => {
+    setRejectionProduct(productId);
+    setRejectionForm(formId);
+    setRejectionFeedback("");
+    setShowRejectionModal(true);
+  };
+
+  const confirmRejectProduct = async () => {
+    try {
+      const response = await fetch(`/api/csc/reject/${rejectionProduct}/${rejectionForm}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          feedback: rejectionFeedback
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reject product');
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        setSuccessMessage("Product rejected and sent back to technician with feedback");
+        fetchPendingForms(); // Refresh the list
+        // Update selected form with new data
+        if (result.data && result.data.length > 0) {
+          setSelectedForm(result.data[0]);
+        }
+        setShowRejectionModal(false);
+        setRejectionProduct(null);
+        setRejectionForm(null);
+        setRejectionFeedback("");
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (err) {
+      console.error("Failed to reject product", err);
+      setError("Failed to reject product");
+    }
+  };
+
+  const cancelRejection = () => {
+    setShowRejectionModal(false);
+    setRejectionProduct(null);
+    setRejectionForm(null);
+    setRejectionFeedback("");
+  };
+
   const handleMarkAsCompleted = async () => {
     if (!selectedForm) return;
 
@@ -175,8 +286,8 @@ const Tpending = () => {
                   <div
                     key={form._id}
                     className={`bg-white p-4 rounded-lg shadow-sm border-l-4 transition-all duration-200 hover:shadow-md ${selectedForm && selectedForm._id === form._id
-                        ? "border-l-blue-600"
-                        : "border-l-gray-300"
+                      ? "border-l-blue-600"
+                      : "border-l-gray-300"
                       }`}
                   >
                     <div className="flex justify-between items-center gap-2">
@@ -191,8 +302,8 @@ const Tpending = () => {
                       </div>
                       <button
                         className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${selectedForm && selectedForm._id === form._id
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600"
                           }`}
                         onClick={() => toggleFormDetails(form)}
                       >
@@ -290,7 +401,7 @@ const Tpending = () => {
                           onClick={startEditing}
                         >
                           Edit Form Details
-                        </button>                        
+                        </button>
                       </div>
                     )}
                   </div>
@@ -679,7 +790,12 @@ const Tpending = () => {
                                 <th className="border border-gray-200 px-4 py-2 text-left">
                                   Instrument Description
                                 </th>
-                                {/* <th className="border border-gray-200 px-4 py-2 text-left"></th> */}
+                                <th className="border border-gray-200 px-4 py-2 text-left">
+                                  Status
+                                </th>
+                                <th className="border border-gray-200 px-4 py-2 text-left">
+                                  Actions
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
@@ -696,11 +812,61 @@ const Tpending = () => {
                                   <td className="border border-gray-200 px-4 py-2">
                                     {product.instrumentDescription}
                                   </td>
-                                  {/* <td className="border border-gray-200 px-4 py-2">
-                                    <button className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm">
-                                      View JobCard
-                                    </button>
-                                  </td> */}
+                                  <td className="border border-gray-200 px-4 py-2">
+                                    {product.technicianCompleted && !product.cscReviewed ? (
+                                      <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-lg text-sm">
+                                        Pending Review
+                                      </span>
+                                    ) : product.cscApproved ? (
+                                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-lg text-sm">
+                                        Approved
+                                      </span>
+                                    ) : product.rejectedToDraft ? (
+                                      <span className="bg-red-100 text-red-800 px-2 py-1 rounded-lg text-sm">
+                                        Rejected to Draft
+                                      </span>
+                                    ) : product.isCalibrated ? (
+                                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-lg text-sm">
+                                        Calibrated
+                                      </span>
+                                    ) : (
+                                      <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-lg text-sm">
+                                        Not Started
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="border border-gray-200 px-4 py-2">
+                                    {product.technicianCompleted && !product.cscReviewed ? (
+                                      <div className="flex space-x-2 flex-wrap">
+                                        <button
+                                          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm mb-1"
+                                          onClick={() => handleViewReport(product._id, 'with-qr')}
+                                        >
+                                          View Report (QR)
+                                        </button>
+                                        <button
+                                          className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded-lg text-sm mb-1"
+                                          onClick={() => handleViewReport(product._id, 'without-qr')}
+                                        >
+                                          View Report (No QR)
+                                        </button>
+                                        <button
+                                          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-sm mb-1"
+                                          onClick={() => handleApproveProduct(product._id, selectedForm._id)}
+                                        >
+                                          Approve
+                                        </button>
+                                        <button
+                                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm mb-1"
+                                          onClick={() => handleRejectProduct(product._id, selectedForm._id)}
+                                        >
+                                          Reject
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <span className="text-gray-400">No actions available</span>
+                                    )}
+                                  </td>
                                 </tr>
                               ))}
                             </tbody>
@@ -753,6 +919,39 @@ const Tpending = () => {
           <p className="text-gray-500">
             There are currently no pending SRF forms to display.
           </p>
+        </div>
+      )}
+
+      {/* Rejection Modal */}
+      {showRejectionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-medium mb-4">Reject Product</h3>
+            <p className="text-gray-600 mb-4">
+              Please provide feedback for the technician about why this product is being rejected:
+            </p>
+            <textarea
+              value={rejectionFeedback}
+              onChange={(e) => setRejectionFeedback(e.target.value)}
+              className="w-full border border-gray-300 rounded-md p-3 h-32 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter feedback for the technician..."
+            />
+            <div className="flex justify-end space-x-3 mt-4">
+              <button
+                onClick={cancelRejection}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRejectProduct}
+                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+                disabled={!rejectionFeedback.trim()}
+              >
+                Reject
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

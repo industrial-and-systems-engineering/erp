@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const passport = require("passport");
 const { srfForms, Product } = require("../models/db");
-const { isLoggedIn } = require('../middleware1');
+const { isLoggedIn } = require("../middleware1");
 
 function preprocessing(products) {
   for (let i = 0; i < products.length; i++) {
@@ -14,13 +14,17 @@ function preprocessing(products) {
 router.post("/", isLoggedIn, async (req, res) => {
   try {
     let { form, products } = req.body;
-    if (!form || !products) { return res.status(400).json({ success: false, message: "All fields are required" }); }
+    if (!form || !products) {
+      return res
+        .status(400)
+        .json({ success: false, message: "All fields are required" });
+    }
     const userId = req.user.id;
     const newForm = new srfForms({
       ...form,
       user: userId,
       products: [],
-      URL_NO: 'hello',
+      URL_NO: "hello",
     });
     const savedForm = await newForm.save();
     if (savedForm.formNumber) {
@@ -42,7 +46,7 @@ router.post("/", isLoggedIn, async (req, res) => {
         console.error("Error saving product:", productError);
         return res.status(400).json({
           success: false,
-          error: `Error saving product: ${productError.message}`
+          error: `Error saving product: ${productError.message}`,
         });
       }
     }
@@ -66,7 +70,10 @@ router.get("/completed", isLoggedIn, async (req, res) => {
       .find({ user: userId, requestStatus: false })
       .populate({
         path: "products",
-        match: { isCalibrated: true }
+        match: {
+          isCalibrated: true,
+          cscApproved: true,
+        },
       });
     const completedForms = await srfForms
       .find({ user: userId, requestStatus: true })
@@ -91,7 +98,10 @@ router.get("/pending", isLoggedIn, async (req, res) => {
       })
       .populate({
         path: "products",
-        match: { isCalibrated: false }
+        match: {
+          isCalibrated: false,
+          cscApproved: false,
+        },
       });
     return res.status(200).json({ success: true, data: pendingForms });
   } catch (error) {
@@ -105,33 +115,41 @@ router.post("/amendmentrequest/:fid/:pid", isLoggedIn, async (req, res) => {
     const { pid, fid } = req.params;
     const { reason, details } = req.body;
     if (!reason || !details) {
-      return res.status(400).json({ success: false, message: "All fields are required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "All fields are required" });
     }
     const userId = req.user._id;
 
     // First, find and update the form
-    const form = await srfForms.findOneAndUpdate(
-      {
-        _id: fid,
-        user: userId,
-        products: { $in: [pid] }
-      },
-      {
-        requestStatus: false, // Set requestStatus to false when amendment is requested
-        formUpdated: false // Reset formUpdated status
-      },
-      { new: true }
-    ).populate({
-      path: "products",
-      match: { _id: pid }
-    });
+    const form = await srfForms
+      .findOneAndUpdate(
+        {
+          _id: fid,
+          user: userId,
+          products: { $in: [pid] },
+        },
+        {
+          requestStatus: false, // Set requestStatus to false when amendment is requested
+          formUpdated: false, // Reset formUpdated status
+        },
+        { new: true }
+      )
+      .populate({
+        path: "products",
+        match: { _id: pid },
+      });
 
     if (!form) {
-      return res.status(404).json({ success: false, message: "Form not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Form not found" });
     }
 
     if (!form.products || form.products.length === 0) {
-      return res.status(404).json({ success: false, message: "Product not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
     }
 
     // Then, update the product with amendment request and reset calibration status
@@ -143,16 +161,21 @@ router.post("/amendmentrequest/:fid/:pid", isLoggedIn, async (req, res) => {
             reason,
             details,
             requestedBy: userId,
-            requestedAt: new Date()
-          }
+            requestedAt: new Date(),
+          },
         },
         isCalibrated: false, // Reset calibration status
-        csccalibrated: false // Reset CSCC calibration status
+        csccalibrated: false, // Reset CSCC calibration status
       },
       { new: true }
     );
 
-    res.status(201).json({ success: true, message: "Amendment request submitted successfully" });
+    res
+      .status(201)
+      .json({
+        success: true,
+        message: "Amendment request submitted successfully",
+      });
   } catch (error) {
     console.error("Error submitting amendment request:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
